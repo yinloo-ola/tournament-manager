@@ -73,7 +73,10 @@ function startDraw(idx: number) {
         </template>
       </div>
     </div>
-    <div v-if="drawIndex >= 0" class="fixed inset-2 bg-blue-200 rounded-lg shadow-xl">
+    <div
+      v-if="drawIndex >= 0"
+      class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300"
+    >
       <Draw :category="tournament.categories[drawIndex]" @close="() => (drawIndex = -1)"></Draw>
     </div>
   </main>

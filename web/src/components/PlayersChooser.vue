@@ -6,15 +6,18 @@ const props = defineProps<{
   players: Array<Player>
 }>()
 
-const emit = defineEmits(['playerChosen'])
+const emit = defineEmits(['playerChosen', 'close'])
 </script>
 
 <template>
-  <div class="flex flex-col bg-gray-200 rounded border border-solid">
+  <div
+    class="relative flex flex-col bg-purple-200 rounded-xl border border-solid shadow-lg border-gray-300"
+  >
+    <div @click="emit('close')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
     <div class="font-black py-2 px-3 border border-solid border-0 border-b">Choose a Player</div>
-    <div class="flex flex-col px-3 overflow-y-auto">
+    <div class="flex flex-col px-3 overflow-y-auto bg-purple-100 rounded-b-xl">
       <div class="py-1 border border-solid border-0 border-b" v-for="(player, i) in players">
-        <div class="cursor-pointer py-2">
+        <div class="cursor-pointer py-2" @click="emit('playerChosen', i)">
           {{ getPlayerDisplay(player) }}
         </div>
       </div>

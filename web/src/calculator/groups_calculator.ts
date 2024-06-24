@@ -1,3 +1,5 @@
+import type { Player } from '@/types/types'
+
 export function calculatorGroups(
   playersCount: number,
   playersPerGrpMain: number,
@@ -18,4 +20,39 @@ export function calculatorGroups(
       numGroupsRemainder: remainder
     }
   }
+}
+
+export function removeExistingPlayer(groups: Array<Array<Player>>, player: Player) {
+  for (let i = 0; i < groups.length; i++) {
+    const grp = groups[i]
+    for (let j = 0; j < grp.length; j++) {
+      const p = grp[j]
+      if (isSamePlayer(p, player)) {
+        grp[j] = getEmptyPlayer()
+      }
+    }
+  }
+}
+
+export function getGroup(numPlayers: number) {
+  const players: Array<Player> = []
+  for (let j = 0; j < numPlayers; j++) {
+    players.push(getEmptyPlayer())
+  }
+  return players
+}
+
+export function getEmptyPlayer(): Player {
+  return {
+    name: '',
+    club: undefined,
+    seeding: undefined
+  }
+}
+
+export function isSamePlayer(p1: Player, p2: Player): boolean {
+  if (p1.name === p2.name && p1.club === p2.club && p1.seeding === p2.seeding) {
+    return true
+  }
+  return false
 }
