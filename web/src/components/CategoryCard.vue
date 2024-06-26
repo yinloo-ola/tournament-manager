@@ -39,7 +39,6 @@ function onFileSelected(event: any) {
         return
       }
       emit('playersImported', results.data)
-      alert('Players imported successfully')
     }
   })
 }
@@ -52,7 +51,9 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw'])
 </script>
 
 <template>
-  <div class="relative flex flex-col border rounded-lg border-solid p-3">
+  <div
+    class="relative flex flex-col border border-solid border-gray-200 rounded-lg shadow-sm bg-gray-100 p-3 hover:shadow-xl"
+  >
     <div @click="emit('remove')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
     <div class="h-0.5"></div>
     <LabeledInput

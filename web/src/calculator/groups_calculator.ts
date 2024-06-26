@@ -22,7 +22,7 @@ export function calculatorGroups(
   }
 }
 
-export function removeExistingPlayer(groups: Array<Array<Player>>, player: Player) {
+export function removePlayerFromAllGroups(groups: Array<Array<Player>>, player: Player) {
   for (let i = 0; i < groups.length; i++) {
     const grp = groups[i]
     for (let j = 0; j < grp.length; j++) {
