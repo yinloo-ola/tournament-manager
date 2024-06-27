@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import Papa from 'papaparse'
 import LabeledInput from '../widgets/LabeledInput.vue'
 import OutlinedButton from '../widgets/OutlinedButton.vue'
-import type { Category, Player } from '@/types/types'
+import type { Category } from '@/types/types'
 
 const file = ref<HTMLInputElement | null>(null)
 function onFileSelected(event: any) {
