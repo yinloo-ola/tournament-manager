@@ -56,3 +56,29 @@ export function isSamePlayer(p1: Player, p2: Player): boolean {
   }
   return false
 }
+
+export function isPlayerChosen(p: Player, groups: Array<Array<Player>>): boolean {
+  for (let idx = 0; idx < groups.length; idx++) {
+    const grp = groups[idx]
+    for (let j = 0; j < grp.length; j++) {
+      const player = grp[j]
+      if (isSamePlayer(player, p)) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+export function hasEmptyPlayer(groups: Array<Array<Player>>): boolean {
+  for (let idx = 0; idx < groups.length; idx++) {
+    const grp = groups[idx]
+    for (let j = 0; j < grp.length; j++) {
+      const player = grp[j]
+      if (player.name.length === 0) {
+        return true
+      }
+    }
+  }
+  return false
+}

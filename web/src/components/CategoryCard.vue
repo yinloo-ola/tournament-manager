@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import Papa from 'papaparse'
 import LabeledInput from '../widgets/LabeledInput.vue'
 import OutlinedButton from '../widgets/OutlinedButton.vue'
-import type { Category } from '@/types/types'
+import type { Category, Player } from '@/types/types'
 
 const file = ref<HTMLInputElement | null>(null)
 function onFileSelected(event: any) {
@@ -16,6 +16,14 @@ function onFileSelected(event: any) {
     header: true,
     transformHeader: (s: string) => {
       return s.charAt(0).toLowerCase() + s.slice(1)
+    },
+    transform(value, field) {
+      if (field === 'seeding') {
+        return +value
+      } else if (field === 'name') {
+        return value.trim()
+      }
+      return value
     },
     complete(results) {
       if (results.errors.length !== 0) {
@@ -38,16 +46,30 @@ function onFileSelected(event: any) {
         alert('No players found')
         return
       }
+      const names: { [key: string]: boolean } = {}
+      for (let i = 0; i < results.data.length; i++) {
+        const player: any = results.data[i]
+        if (!player['name'] || typeof player['name'] !== 'string' || player['name'].length === 0) {
+          emit('error', 'Name cannot be empty')
+          return
+        }
+        if (names[player['name']]) {
+          emit('error', 'Duplicate player detected: ' + player['name'])
+          return
+        }
+        names[player['name']] = true
+      }
       emit('playersImported', results.data)
     }
   })
+  file.value!.value = ''
 }
 
 const category = defineModel<Category>({
   required: true
 })
 
-const emit = defineEmits(['remove', 'playersImported', 'startDraw'])
+const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error'])
 </script>
 
 <template>

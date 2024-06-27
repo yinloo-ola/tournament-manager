@@ -4,7 +4,7 @@ import CategoryCard from '../components/CategoryCard.vue'
 import TournamentInfo from '../components/TournamentInfo.vue'
 import Draw from '../components/Draw.vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
-import type { Tournament } from '@/types/types'
+import type { Player, Tournament } from '@/types/types'
 
 let tournament = ref<Tournament>({
   name: '',
@@ -29,6 +29,11 @@ function addCategory() {
   })
 }
 
+function playersImported(categoryIdx: number, players: Player[]) {
+  tournament.value.categories[categoryIdx].groups = []
+  tournament.value.categories[categoryIdx].players = players
+}
+
 let drawIndex = ref(-1)
 function startDraw(idx: number) {
   let diff =
@@ -41,6 +46,14 @@ function startDraw(idx: number) {
     return
   }
   drawIndex.value = idx
+}
+function drawDone(groups: Player[][]) {
+  tournament.value.categories[drawIndex.value].groups = groups
+  drawIndex.value = -1
+}
+
+function showAlert(msg: string) {
+  alert(msg)
 }
 </script>
 
@@ -67,8 +80,9 @@ function startDraw(idx: number) {
           <CategoryCard
             v-model="tournament.categories[i]"
             @remove="tournament.categories.splice(i, 1)"
-            @playersImported="(players) => (tournament.categories[i].players = players)"
+            @playersImported="(players) => playersImported(i, players)"
             @startDraw="startDraw(i)"
+            @error="showAlert"
           ></CategoryCard>
         </template>
       </div>
@@ -77,7 +91,7 @@ function startDraw(idx: number) {
       v-if="drawIndex >= 0"
       class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300"
     >
-      <Draw :category="tournament.categories[drawIndex]" @close="() => (drawIndex = -1)"></Draw>
+      <Draw :category="tournament.categories[drawIndex]" @close="drawDone"></Draw>
     </div>
   </main>
 </template>

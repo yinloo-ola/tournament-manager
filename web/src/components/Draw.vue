@@ -3,6 +3,7 @@ import {
   calculatorGroups,
   getEmptyPlayer,
   getGroup,
+  isPlayerChosen,
   removePlayerFromAllGroups
 } from '@/calculator/groups_calculator'
 import type { Category, Player } from '@/types/types'
@@ -10,10 +11,14 @@ import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'
 import { getPlayerDisplay } from '@/calculator/player_display'
-import { doDraw } from '@/calculator/draw'
+import { clearDraw, doDraw } from '@/calculator/draw'
 
 let groups = ref<Array<Array<Player>>>([])
 onMounted(() => {
+  if (props.category.groups.length > 0) {
+    groups.value = [...props.category.groups]
+    return
+  }
   const { numGroupsMain, numGroupsRemainder } = calculatorGroups(
     props.category.players.length,
     props.category.playersPerGrpMain,
@@ -42,11 +47,20 @@ const emit = defineEmits(['close'])
 let players = computed(() => {
   return props.category.players.map(getPlayerDisplay)
 })
+let chosenPlayersIndices = computed<{ [key: number]: boolean }>(() => {
+  let out: { [key: number]: boolean } = {}
+  props.category.players.forEach((player, i) => {
+    if (isPlayerChosen(player, groups.value)) {
+      out[i] = true
+    }
+  })
+  return out
+})
 
 let isChoosingPlayer = ref(false)
 let grpOnChoosing: number = -1
 let posOnChoosing: number = -1
-let chosenPlayersIndices = ref<{ [key: number]: boolean }>({})
+
 function choosePlayer(grp: number, pos: number) {
   grpOnChoosing = grp
   posOnChoosing = pos
@@ -54,19 +68,17 @@ function choosePlayer(grp: number, pos: number) {
 }
 function unselectPlayer(grp: number, pos: number) {
   const i = props.category.players.indexOf(groups.value[grp][pos])
-  chosenPlayersIndices.value[i] = false
   groups.value[grp][pos] = getEmptyPlayer()
 }
 function playerChosen(playerIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
   removePlayerFromAllGroups(groups.value, props.category.players[playerIdx])
-  chosenPlayersIndices.value[playerIdx] = true
   groups.value[grpOnChoosing][posOnChoosing] = props.category.players[playerIdx]
   grpOnChoosing = -1
   posOnChoosing = -1
   isChoosingPlayer.value = false
 }
-function autoDraw() {
+async function autoDraw() {
   const ok = confirm('Auto draw will overwrite existing players. Continue?')
   if (!ok) return
   const seededPlayers = props.category.players.filter(
@@ -76,7 +88,13 @@ function autoDraw() {
   if (seededPlayers.length + otherPlayers.length !== props.category.players.length) {
     alert("Something's wrong. Please check player list")
   }
-  doDraw(groups.value, seededPlayers, otherPlayers)
+  clearDraw(groups.value)
+  await new Promise((r) => setTimeout(r, 200))
+  try {
+    doDraw(groups.value, seededPlayers, otherPlayers)
+  } catch (e: any) {
+    alert(e.message)
+  }
 }
 </script>
 
@@ -87,7 +105,10 @@ function autoDraw() {
       <div class="flex flex-col justify-center pr-14">
         <SimpleButton class="bg-blue-700 text-white px-5" @click="autoDraw">AUTO DRAW</SimpleButton>
       </div>
-      <div @click="emit('close')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
+      <div
+        @click="emit('close', groups)"
+        class="i-line-md-close absolute right-3 top-3 cursor-pointer"
+      />
     </div>
     <div class="h-full flex flex-row">
       <div
@@ -109,7 +130,7 @@ function autoDraw() {
       >
         <div
           v-for="(grp, i) in groups"
-          class="flex flex-col border-solid border border-blue-200 bg-blue-100 shadow-sm hover:shadow-md rounded p-2"
+          class="flex flex-col border-solid border border-blue-200 bg-blue-100 shadow-sm hover:shadow-md rounded-lg p-2"
         >
           <div class="py-2">Group {{ i + 1 }}</div>
           <div v-for="(playerInGrp, j) in grp" class="py-3 flex items-center">
