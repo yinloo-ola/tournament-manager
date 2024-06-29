@@ -3,6 +3,7 @@ import {
   calculatorGroups,
   getEmptyPlayer,
   getGroup,
+  isGroupEmpty,
   isPlayerChosen,
   removePlayerFromAllGroups
 } from '@/calculator/groups_calculator'
@@ -78,9 +79,14 @@ function playerChosen(playerIdx: number) {
   posOnChoosing = -1
   isChoosingPlayer.value = false
 }
+
+let sleep = ref(10)
+
 async function autoDraw() {
-  const ok = confirm('Auto draw will overwrite existing players. Continue?')
-  if (!ok) return
+  if (!isGroupEmpty(groups.value)) {
+    const ok = confirm('Auto draw will overwrite existing players. Continue?')
+    if (!ok) return
+  }
   const seededPlayers = props.category.players.filter(
     (player) => player.seeding && player.seeding > 0
   )
@@ -89,12 +95,8 @@ async function autoDraw() {
     alert("Something's wrong. Please check player list")
   }
   clearDraw(groups.value)
-  await new Promise((r) => setTimeout(r, 200))
-  try {
-    doDraw(groups.value, seededPlayers, otherPlayers)
-  } catch (e: any) {
-    alert(e.message)
-  }
+  await new Promise((r) => setTimeout(r, sleep.value))
+  doDraw(groups.value, seededPlayers, otherPlayers, sleep.value).catch((e: any) => alert(e.message))
 }
 </script>
 
@@ -103,14 +105,24 @@ async function autoDraw() {
     <div class="outline-none border-solid border-0 flex justify-between h-12 bg-blue-300">
       <div class="flex flex-col justify-center px-4 font-black">Draw for {{ category?.name }}</div>
       <div class="flex flex-col justify-center pr-14">
-        <SimpleButton class="bg-blue-700 text-white px-5" @click="autoDraw">AUTO DRAW</SimpleButton>
+        <div class="flex gap-x-4">
+          <input
+            type="number"
+            placeholder="sleep"
+            v-model="sleep"
+            class="w-13 pl-1 border-none outline-none bg-blue-200 rounded"
+          />
+          <SimpleButton class="bg-blue-700 text-white px-5" @click="autoDraw"
+            >AUTO DRAW</SimpleButton
+          >
+        </div>
       </div>
       <div
         @click="emit('close', groups)"
         class="i-line-md-close absolute right-3 top-3 cursor-pointer"
       />
     </div>
-    <div class="h-full flex flex-row">
+    <div class="h-17/18 flex flex-row">
       <div
         class="w-64 flex flex-col pb-2 border-solid border-0 border-r overflow-y-auto bg-blue-100"
       >

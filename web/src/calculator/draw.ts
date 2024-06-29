@@ -4,7 +4,8 @@ import { getEmptyPlayer, hasEmptyPlayer } from './groups_calculator'
 export async function doDraw(
   groups: Array<Array<Player>>,
   seededPlayers: Array<Player>,
-  otherPlayers: Array<Player>
+  otherPlayers: Array<Player>,
+  sleepDur: number
 ) {
   const maxPos = Math.max(...groups.map((grp) => grp.length))
   const randSeededPlayers = seededPlayers.map((p) => {
@@ -30,7 +31,7 @@ export async function doDraw(
   })
   const allPlayers = randOtherPlayers.concat(randSeededPlayers)
   const groupsClubs: { [key: number]: { [key: string]: boolean } } = {}
-  const sleepDur = 50
+
   for (let pos = 0; pos < maxPos; pos++) {
     if (pos % 2 === 0) {
       for (let j = 0; j < groups.length; j++) {
@@ -50,6 +51,7 @@ export async function doDraw(
       }
     }
   }
+
   if (allPlayers.length !== 0) {
     throw new Error('Something is wrong. Some players are not drawn!!!')
   }

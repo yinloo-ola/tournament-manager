@@ -82,3 +82,16 @@ export function hasEmptyPlayer(groups: Array<Array<Player>>): boolean {
   }
   return false
 }
+
+export function isGroupEmpty(groups: Array<Array<Player>>): boolean {
+  for (let idx = 0; idx < groups.length; idx++) {
+    const grp = groups[idx]
+    for (let j = 0; j < grp.length; j++) {
+      const player = grp[j]
+      if (player.name.length > 0) {
+        return false
+      }
+    }
+  }
+  return true
+}
