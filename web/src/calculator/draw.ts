@@ -34,7 +34,7 @@ export async function doDraw(
   for (let pos = 0; pos < maxPos; pos++) {
     if (pos % 2 === 0) {
       for (let j = 0; j < groups.length; j++) {
-        if (!groups[j]) {
+        if (!groups[j][pos]) {
           continue
         }
         drawPlayerForGrpPos(groups, j, pos, allPlayers, groupsClubs)
@@ -42,7 +42,7 @@ export async function doDraw(
       }
     } else {
       for (let j = groups.length - 1; j >= 0; j--) {
-        if (!groups[j]) {
+        if (!groups[j][pos]) {
           continue
         }
         drawPlayerForGrpPos(groups, j, pos, allPlayers, groupsClubs)

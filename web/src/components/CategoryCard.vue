@@ -65,11 +65,15 @@ function onFileSelected(event: any) {
   file.value!.value = ''
 }
 
+function playerCountChanged(countType: string) {
+  emit('playerCountChanged', countType)
+}
+
 const category = defineModel<Category>({
   required: true
 })
 
-const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error'])
+const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'playerCountChanged'])
 </script>
 
 <template>
@@ -89,12 +93,14 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error'])
       label="Players Per Group (Main)"
       type="number"
       v-model="category.playersPerGrpMain"
+      @change="() => playerCountChanged('main')"
     ></LabeledInput>
     <LabeledInput
       name="players"
       label="Players Per Group (Remainder)"
       type="number"
       v-model="category.playersPerGrpRemainder"
+      @change="() => playerCountChanged('remainder')"
     ></LabeledInput>
     <LabeledInput
       name="playerCount"

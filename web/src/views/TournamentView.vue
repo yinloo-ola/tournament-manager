@@ -30,8 +30,12 @@ function addCategory() {
 }
 
 function playersImported(categoryIdx: number, players: Player[]) {
-  tournament.value.categories[categoryIdx].groups = []
+  clearGroup(categoryIdx)
   tournament.value.categories[categoryIdx].players = players
+}
+
+function clearGroup(categoryIdx: number) {
+  tournament.value.categories[categoryIdx].groups = []
 }
 
 let drawIndex = ref(-1)
@@ -80,9 +84,10 @@ function showAlert(msg: string) {
           <CategoryCard
             v-model="tournament.categories[i]"
             @remove="tournament.categories.splice(i, 1)"
-            @playersImported="(players) => playersImported(i, players)"
+            @players-imported="(players) => playersImported(i, players)"
             @startDraw="startDraw(i)"
             @error="showAlert"
+            @player-count-changed="clearGroup(i)"
           ></CategoryCard>
         </template>
       </div>

@@ -14,3 +14,9 @@ export type Player = {
   seeding: number | undefined
   club: string | undefined
 }
+export type Match = {
+  player1: Player
+  player2: Player
+  datetime: string
+  table: string
+}
