@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import Papa from 'papaparse'
 import LabeledInput from '../widgets/LabeledInput.vue'
 import OutlinedButton from '../widgets/OutlinedButton.vue'
 import type { Category } from '@/types/types'
+import { isGroupEmpty } from '@/calculator/groups'
 
 const file = ref<HTMLInputElement | null>(null)
 function onFileSelected(event: any) {
@@ -73,6 +74,8 @@ const category = defineModel<Category>({
   required: true
 })
 
+let canChangePlayersPerGrp = computed(() => isGroupEmpty(category.value.groups))
+
 const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'playerCountChanged'])
 </script>
 
@@ -94,6 +97,7 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
       type="number"
       v-model="category.playersPerGrpMain"
       @change="() => playerCountChanged('main')"
+      :readonly="!canChangePlayersPerGrp"
     ></LabeledInput>
     <LabeledInput
       name="players"
@@ -101,6 +105,7 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
       type="number"
       v-model="category.playersPerGrpRemainder"
       @change="() => playerCountChanged('remainder')"
+      :readonly="!canChangePlayersPerGrp"
     ></LabeledInput>
     <LabeledInput
       name="playerCount"

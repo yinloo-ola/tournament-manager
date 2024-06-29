@@ -1,5 +1,5 @@
 import type { Player } from '@/types/types'
-import { getEmptyPlayer, hasEmptyPlayer } from './groups_calculator'
+import { getEmptyPlayer, hasEmptyPlayer } from './groups'
 
 export async function doDraw(
   groups: Array<Array<Player>>,

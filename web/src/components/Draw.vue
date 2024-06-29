@@ -6,7 +6,7 @@ import {
   isGroupEmpty,
   isPlayerChosen,
   removePlayerFromAllGroups
-} from '@/calculator/groups_calculator'
+} from '@/calculator/groups'
 import type { Category, Player } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
@@ -104,18 +104,14 @@ async function autoDraw() {
   <div class="relative w-full h-full overflow-y-auto rounded-xl">
     <div class="outline-none border-solid border-0 flex justify-between h-12 bg-blue-300">
       <div class="flex flex-col justify-center px-4 font-black">Draw for {{ category?.name }}</div>
-      <div class="flex flex-col justify-center pr-14">
-        <div class="flex gap-x-4">
-          <input
-            type="number"
-            placeholder="sleep"
-            v-model="sleep"
-            class="w-13 pl-1 border-none outline-none bg-blue-200 rounded"
-          />
-          <SimpleButton class="bg-blue-700 text-white px-5" @click="autoDraw"
-            >AUTO DRAW</SimpleButton
-          >
-        </div>
+      <div class="flex items-center justify-between gap-x-4 mr-14">
+        <input
+          type="number"
+          placeholder="sleep"
+          v-model="sleep"
+          class="w-13 pl-1 border-none outline-none bg-blue-200 rounded"
+        />
+        <SimpleButton class="bg-blue-700 text-white px-5" @click="autoDraw">AUTO DRAW</SimpleButton>
       </div>
       <div
         @click="emit('close', groups)"
