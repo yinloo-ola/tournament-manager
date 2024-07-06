@@ -4,6 +4,7 @@ export type Tournament = {
 }
 export type Category = {
   name: string
+  shortName: string
   playersPerGrpMain: number
   playersPerGrpRemainder: number
   players: Array<Player>

@@ -92,6 +92,12 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
       v-model="category.name"
     ></LabeledInput>
     <LabeledInput
+      name="categoryShort"
+      label="Short Form"
+      type="text"
+      v-model="category.shortName"
+    ></LabeledInput>
+    <LabeledInput
       name="players"
       label="Players Per Group (Main)"
       type="number"

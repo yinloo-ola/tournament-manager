@@ -7,14 +7,15 @@ import UnoCSS from 'unocss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    VueDevTools(),
-    UnoCSS(),
-  ],
+  plugins: [vue(), VueDevTools(), UnoCSS()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  server: {
+    proxy: {
+      '/api': 'http://127.0.0.1:8082'
     }
   }
 })

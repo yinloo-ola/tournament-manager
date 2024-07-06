@@ -23,7 +23,7 @@ function padTwoDigits(num: number) {
   return num.toString().padStart(2, '0')
 }
 
-function dateInYyyyMmDdHhMmSs(date: Date, dateDiveder: string = '-') {
+export function dateInYyyyMmDdHhMmSs(date: Date, dateDiveder: string = '-') {
   // :::: Exmple Usage ::::
   // The function takes a Date object as a parameter and formats the date as YYYY-MM-DD hh:mm:ss.
   // 👇️ 2023-04-11 16:21:23 (yyyy-mm-dd hh:mm:ss)
