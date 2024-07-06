@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { Transition, ref } from 'vue'
 import CategoryCard from '../components/CategoryCard.vue'
 import TournamentInfo from '../components/TournamentInfo.vue'
 import Draw from '../components/Draw.vue'
 import type { Player, Tournament } from '@/types/types'
 import { exportTournamentJson } from '@/calculator/tournament'
-import SimpleButton from '@/widgets/SimpleButton.vue'
-import OutlinedButton from '@/widgets/OutlinedButton.vue'
 
 let tournament = ref<Tournament>({
   name: '',
@@ -80,6 +78,8 @@ function onReaderLoad(event: any) {
   var obj = JSON.parse(event.target.result)
   tournament.value = obj
 }
+
+let showTournamentMenu = ref(false)
 </script>
 
 <template>
@@ -88,22 +88,31 @@ function onReaderLoad(event: any) {
       <div class="px-4 text-2xl text-gray-800">
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
-      <div class="group relative px-4 py-3">
+      <div
+        @mouseover="showTournamentMenu = true"
+        @mouseleave="showTournamentMenu = false"
+        class="relative px-3 py-2"
+      >
         <button class="bg-lime-700 text-white i-line-md-menu-fold-left h-8 w-8"></button>
-        <div
-          class="invisible absolute z-50 right-0 rounded-lg flex flex-col w-fit gap-3 p-3 mr-4 bg-lime-100 border-solid border border-lime-200 shadow-xl group-hover:visible"
-        >
-          <SimpleButton
-            @click.prevent="exportTournament"
-            class="px-5 text-white bg-lime-700 py-2 rounded-md cursor-pointer"
-            >EXPORT</SimpleButton
+        <Transition name="bounce">
+          <div
+            v-if="showTournamentMenu"
+            class="absolute z-50 right-0 rounded-lg flex flex-col w-fit gap-2 p-2 mr-4 bg-gray-200 border-solid border border-gray-300 shadow-xl"
           >
-          <OutlinedButton
-            @click.prevent="tournamentFile?.click()"
-            class="border-red-600 text-red-700 hover:bg-red-700 hover:text-white"
-            >IMPORT</OutlinedButton
-          >
-        </div>
+            <div
+              @click.prevent="exportTournament"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white"
+            >
+              EXPORT
+            </div>
+            <div
+              @click.prevent="tournamentFile?.click()"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white"
+            >
+              IMPORT
+            </div>
+          </div>
+        </Transition>
       </div>
     </header>
     <input
@@ -134,13 +143,33 @@ function onReaderLoad(event: any) {
         </template>
       </div>
     </div>
-    <div
-      v-if="drawIndex >= 0"
-      class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300"
-    >
-      <Draw :category="tournament.categories[drawIndex]" @close="drawDone"></Draw>
-    </div>
+    <Transition name="bounce">
+      <div
+        v-if="drawIndex >= 0"
+        class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300"
+      >
+        <Draw :category="tournament.categories[drawIndex]" @close="drawDone"></Draw>
+      </div>
+    </Transition>
   </main>
 </template>
 
-<style></style>
+<style>
+.bounce-enter-active {
+  animation: bounce-in 0.3s;
+}
+.bounce-leave-active {
+  animation: bounce-in 0.3s reverse;
+}
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+</style>
