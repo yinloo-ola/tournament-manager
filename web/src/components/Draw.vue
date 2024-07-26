@@ -7,14 +7,14 @@ import {
   isPlayerChosen,
   removePlayerFromAllGroups
 } from '@/calculator/groups'
-import type { Category, Player } from '@/types/types'
+import type { Category, Group, Player } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'
 import { getPlayerDisplay } from '@/calculator/player_display'
 import { clearDraw, doDraw } from '@/calculator/draw'
 
-let groups = ref<Array<Array<Player>>>([])
+let groups = ref<Array<Group>>([])
 onMounted(() => {
   if (props.category.groups.length > 0) {
     groups.value = [...props.category.groups]
@@ -68,13 +68,13 @@ function choosePlayer(grp: number, pos: number) {
   isChoosingPlayer.value = true
 }
 function unselectPlayer(grp: number, pos: number) {
-  const i = props.category.players.indexOf(groups.value[grp][pos])
-  groups.value[grp][pos] = getEmptyPlayer()
+  const i = props.category.players.indexOf(groups.value[grp].players[pos])
+  groups.value[grp].players[pos] = getEmptyPlayer()
 }
 function playerChosen(playerIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
   removePlayerFromAllGroups(groups.value, props.category.players[playerIdx])
-  groups.value[grpOnChoosing][posOnChoosing] = props.category.players[playerIdx]
+  groups.value[grpOnChoosing].players[posOnChoosing] = props.category.players[playerIdx]
   grpOnChoosing = -1
   posOnChoosing = -1
   isChoosingPlayer.value = false
@@ -141,7 +141,7 @@ async function autoDraw() {
           class="flex flex-col border-solid border border-blue-200 bg-blue-100 shadow-sm hover:shadow-md rounded-lg p-2"
         >
           <div class="py-2">Group {{ i + 1 }}</div>
-          <div v-for="(playerInGrp, j) in grp" class="py-3 flex items-center">
+          <div v-for="(playerInGrp, j) in grp.players" class="py-3 flex items-center">
             <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2" />
             <span> {{ j + 1 }}.</span>
             <span class="px-2">{{ getPlayerDisplay(playerInGrp) }}</span>

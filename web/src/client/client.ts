@@ -1,6 +1,36 @@
 import type { Tournament } from '@/types/types'
 
 export async function apiExportRoundRobinExcel(tournament: Tournament) {
+  validTournament(tournament)
+
+  return fetch('/api/exportRoundRobinExcel', {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify(tournament)
+  }).then(function (res) {
+    return res.blob()
+  })
+}
+
+export async function apiExportDraftSchedule(tournament: Tournament) {
+  validTournament(tournament)
+
+  return fetch('/api/exportDraftSchedule', {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify(tournament)
+  }).then(function (res) {
+    return res.blob()
+  })
+}
+
+function validTournament(tournament: Tournament) {
   const nameMap: { [key: string]: boolean } = {}
   const shortFormMap: { [key: string]: boolean } = {}
   for (let i = 0; i < tournament.categories.length; i++) {
@@ -19,15 +49,4 @@ export async function apiExportRoundRobinExcel(tournament: Tournament) {
       shortFormMap[category.shortName] = true
     }
   }
-
-  return fetch('/api/exportRoundRobinExcel', {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json'
-    },
-    method: 'POST',
-    body: JSON.stringify(tournament)
-  }).then(function (res) {
-    return res.blob()
-  })
 }

@@ -6,12 +6,17 @@ type Tournament struct {
 }
 
 type Category struct {
-	Name                   string     `json:"name"`
-	ShortName              string     `json:"shortName"`
-	PlayersPerGrpMain      int        `json:"playersPerGrpMain"`
-	PlayersPerGrpRemainder int        `json:"playersPerGrpRemainder"`
-	Players                []Player   `json:"players"`
-	Groups                 [][]Player `json:"groups"`
+	Name                   string   `json:"name"`
+	ShortName              string   `json:"shortName"`
+	PlayersPerGrpMain      int      `json:"playersPerGrpMain"`
+	PlayersPerGrpRemainder int      `json:"playersPerGrpRemainder"`
+	Players                []Player `json:"players"`
+	Groups                 []Group  `json:"groups"`
+}
+
+type Group struct {
+	Players []Player
+	Matches []Match
 }
 
 type Player struct {

@@ -1,4 +1,4 @@
-import type { Player } from '@/types/types'
+import type { Group, Player } from '@/types/types'
 
 export function calculatorGroups(
   playersCount: number,
@@ -22,9 +22,9 @@ export function calculatorGroups(
   }
 }
 
-export function removePlayerFromAllGroups(groups: Array<Array<Player>>, player: Player) {
+export function removePlayerFromAllGroups(groups: Array<Group>, player: Player) {
   for (let i = 0; i < groups.length; i++) {
-    const grp = groups[i]
+    const grp = groups[i].players
     for (let j = 0; j < grp.length; j++) {
       const p = grp[j]
       if (isSamePlayer(p, player)) {
@@ -34,12 +34,18 @@ export function removePlayerFromAllGroups(groups: Array<Array<Player>>, player: 
   }
 }
 
-export function getGroup(numPlayers: number) {
+export function getGroup(numPlayers: number): Group {
+  const group: Group = {
+    matches: [],
+    players: []
+  }
   const players: Array<Player> = []
   for (let j = 0; j < numPlayers; j++) {
     players.push(getEmptyPlayer())
+    group.players = players
+    group.matches = []
   }
-  return players
+  return group
 }
 
 export function getEmptyPlayer(): Player {
@@ -57,11 +63,11 @@ export function isSamePlayer(p1: Player, p2: Player): boolean {
   return false
 }
 
-export function isPlayerChosen(p: Player, groups: Array<Array<Player>>): boolean {
+export function isPlayerChosen(p: Player, groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
-    for (let j = 0; j < grp.length; j++) {
-      const player = grp[j]
+    for (let j = 0; j < grp.players.length; j++) {
+      const player = grp.players[j]
       if (isSamePlayer(player, p)) {
         return true
       }
@@ -70,11 +76,11 @@ export function isPlayerChosen(p: Player, groups: Array<Array<Player>>): boolean
   return false
 }
 
-export function hasEmptyPlayer(groups: Array<Array<Player>>): boolean {
+export function hasEmptyPlayer(groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
-    for (let j = 0; j < grp.length; j++) {
-      const player = grp[j]
+    for (let j = 0; j < grp.players.length; j++) {
+      const player = grp.players[j]
       if (player.name.length === 0) {
         return true
       }
@@ -83,11 +89,11 @@ export function hasEmptyPlayer(groups: Array<Array<Player>>): boolean {
   return false
 }
 
-export function isGroupEmpty(groups: Array<Array<Player>>): boolean {
+export function isGroupEmpty(groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
-    for (let j = 0; j < grp.length; j++) {
-      const player = grp[j]
+    for (let j = 0; j < grp.players.length; j++) {
+      const player = grp.players[j]
       if (player.name.length > 0) {
         return false
       }

@@ -3,9 +3,9 @@ import { Transition, ref } from 'vue'
 import CategoryCard from '../components/CategoryCard.vue'
 import TournamentInfo from '../components/TournamentInfo.vue'
 import Draw from '../components/Draw.vue'
-import type { Player, Tournament } from '@/types/types'
+import type { Group, Player, Tournament } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
-import { apiExportRoundRobinExcel } from '@/client/client'
+import { apiExportDraftSchedule, apiExportRoundRobinExcel } from '@/client/client'
 
 let tournament = ref<Tournament>({
   name: '',
@@ -54,7 +54,7 @@ function startDraw(idx: number) {
   }
   drawIndex.value = idx
 }
-function drawDone(groups: Player[][]) {
+function drawDone(groups: Array<Group>) {
   tournament.value.categories[drawIndex.value].groups = groups
   drawIndex.value = -1
 }
@@ -98,6 +98,21 @@ function exportRoundRobin() {
       alert(e.message)
     })
 }
+
+function exportDraftSchedule() {
+  apiExportDraftSchedule(tournament.value)
+    .then((blob) => {
+      var a = document.createElement('a')
+      var file = window.URL.createObjectURL(blob)
+      a.href = file
+      a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(file)
+    })
+    .catch((e: any) => {
+      alert(e.message)
+    })
+}
 </script>
 
 <template>
@@ -134,6 +149,12 @@ function exportRoundRobin() {
               class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
             >
               EXPORT RR CHARTS
+            </div>
+            <div
+              @click.prevent="exportDraftSchedule"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
+            >
+              EXPORT DRAFT SCHEDULE
             </div>
           </div>
         </Transition>

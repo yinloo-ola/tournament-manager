@@ -8,7 +8,7 @@ export type Category = {
   playersPerGrpMain: number
   playersPerGrpRemainder: number
   players: Array<Player>
-  groups: Array<Array<Player>>
+  groups: Array<Group>
 }
 export type Player = {
   name: string
@@ -20,4 +20,8 @@ export type Match = {
   player2: Player
   datetime: string
   table: string
+}
+export type Group = {
+  players: Array<Player>
+  matches: Array<Match>
 }

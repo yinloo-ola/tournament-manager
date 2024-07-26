@@ -2,19 +2,15 @@ package internal
 
 import (
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
 
 	xlsx "github.com/tealeg/xlsx/v3"
+	"github.com/yinloo-ola/tournament-manager/endpoint"
 	"github.com/yinloo-ola/tournament-manager/model"
 )
 
-type IoWriter interface {
-	Write(writer io.Writer) error
-}
-
-func CreateRobinCharts(tournament model.Tournament) (IoWriter, error) {
+func CreateRobinCharts(tournament model.Tournament) (endpoint.IoWriter, error) {
 	book := xlsx.NewFile()
 	for _, category := range tournament.Categories {
 		sheet, err := book.AddSheet(category.ShortName)
@@ -32,8 +28,8 @@ func CreateRobinCharts(tournament model.Tournament) (IoWriter, error) {
 func createCategorySheet(tournamentName string, category model.Category, sheet *xlsx.Sheet) error {
 	maxPlayer := 0
 	for _, grp := range category.Groups {
-		if len(grp) > maxPlayer {
-			maxPlayer = len(grp)
+		if len(grp.Players) > maxPlayer {
+			maxPlayer = len(grp.Players)
 		}
 	}
 
@@ -43,7 +39,7 @@ func createCategorySheet(tournamentName string, category model.Category, sheet *
 		c := sheet.AddRow().AddCell()
 		c.SetString(fmt.Sprintf("Group %d", g+1))
 		c.Merge(1, 0)
-		createTableForGroup(grp, sheet)
+		createTableForGroup(grp.Players, sheet)
 	}
 
 	sheet.SetColWidth(1, 1, 4.0)
