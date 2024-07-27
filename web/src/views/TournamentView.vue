@@ -5,7 +5,11 @@ import TournamentInfo from '../components/TournamentInfo.vue'
 import Draw from '../components/Draw.vue'
 import type { Group, Player, Tournament } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
-import { apiExportDraftSchedule, apiExportRoundRobinExcel } from '@/client/client'
+import {
+  apiExportDraftSchedule,
+  apiExportRoundRobinExcel,
+  apiGenerateRounds
+} from '@/client/client'
 
 let tournament = ref<Tournament>({
   name: '',
@@ -99,19 +103,26 @@ function exportRoundRobin() {
     })
 }
 
-function exportDraftSchedule() {
-  apiExportDraftSchedule(tournament.value)
-    .then((blob) => {
-      var a = document.createElement('a')
-      var file = window.URL.createObjectURL(blob)
-      a.href = file
-      a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
-      a.click()
-      window.URL.revokeObjectURL(file)
-    })
-    .catch((e: any) => {
-      alert(e.message)
-    })
+async function exportDraftSchedule() {
+  try {
+    const tournamentRes = await apiGenerateRounds(tournament.value)
+    console.log(tournamentRes)
+    tournament.value = tournamentRes
+  } catch (e: any) {
+    alert(e.message)
+  }
+  // apiExportDraftSchedule(tournament.value)
+  //   .then((blob) => {
+  //     var a = document.createElement('a')
+  //     var file = window.URL.createObjectURL(blob)
+  //     a.href = file
+  //     a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
+  //     a.click()
+  //     window.URL.revokeObjectURL(file)
+  //   })
+  //   .catch((e: any) => {
+  //     alert(e.message)
+  //   })
 }
 </script>
 

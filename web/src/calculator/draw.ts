@@ -104,7 +104,7 @@ function drawPlayerForGrpPos(
 export function clearDraw(groups: Array<Group>) {
   for (let i = 0; i < groups.length; i++) {
     const grp = groups[i]
-    grp.matches = []
+    grp.rounds = []
     for (let j = 0; j < grp.players.length; j++) {
       grp.players[j] = getEmptyPlayer()
     }

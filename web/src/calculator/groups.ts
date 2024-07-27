@@ -24,11 +24,14 @@ export function calculatorGroups(
 
 export function removePlayerFromAllGroups(groups: Array<Group>, player: Player) {
   for (let i = 0; i < groups.length; i++) {
-    const grp = groups[i].players
-    for (let j = 0; j < grp.length; j++) {
-      const p = grp[j]
+    const grp = groups[i]
+    if (!grp || !grp.players) {
+      continue
+    }
+    for (let j = 0; j < grp.players.length; j++) {
+      const p = grp.players[j]
       if (isSamePlayer(p, player)) {
-        grp[j] = getEmptyPlayer()
+        grp.players[j] = getEmptyPlayer()
       }
     }
   }
@@ -36,14 +39,14 @@ export function removePlayerFromAllGroups(groups: Array<Group>, player: Player) 
 
 export function getGroup(numPlayers: number): Group {
   const group: Group = {
-    matches: [],
+    rounds: [],
     players: []
   }
   const players: Array<Player> = []
   for (let j = 0; j < numPlayers; j++) {
     players.push(getEmptyPlayer())
     group.players = players
-    group.matches = []
+    group.rounds = []
   }
   return group
 }
@@ -66,6 +69,9 @@ export function isSamePlayer(p1: Player, p2: Player): boolean {
 export function isPlayerChosen(p: Player, groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
+    if (!grp || !grp.players) {
+      continue
+    }
     for (let j = 0; j < grp.players.length; j++) {
       const player = grp.players[j]
       if (isSamePlayer(player, p)) {
@@ -79,6 +85,9 @@ export function isPlayerChosen(p: Player, groups: Array<Group>): boolean {
 export function hasEmptyPlayer(groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
+    if (!grp || !grp.players) {
+      continue
+    }
     for (let j = 0; j < grp.players.length; j++) {
       const player = grp.players[j]
       if (player.name.length === 0) {
@@ -92,6 +101,9 @@ export function hasEmptyPlayer(groups: Array<Group>): boolean {
 export function isGroupEmpty(groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
+    if (!grp || !grp.players) {
+      continue
+    }
     for (let j = 0; j < grp.players.length; j++) {
       const player = grp.players[j]
       if (player.name.length > 0) {

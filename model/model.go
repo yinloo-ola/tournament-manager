@@ -15,8 +15,8 @@ type Category struct {
 }
 
 type Group struct {
-	Players []Player
-	Matches []Match
+	Players []Player  `json:"players"`
+	Rounds  [][]Match `json:"rounds"`
 }
 
 type Player struct {

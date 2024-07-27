@@ -144,5 +144,16 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
         IMPORT PLAYERS
       </OutlinedButton>
     </div>
+    <div>
+      <div v-for="(grp, g) in category.groups" class="px-2 py-2">
+        Group {{ g + 1 }}
+        <div v-for="(round, r) in grp.rounds" class="px-2 py-1">
+          Round {{ r + 1 }}
+          <div v-for="(match, m) in round" class="px-2">
+            {{ match.player1.name }} vs {{ match.player2.name }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

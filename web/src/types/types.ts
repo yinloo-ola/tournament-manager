@@ -23,5 +23,5 @@ export type Match = {
 }
 export type Group = {
   players: Array<Player>
-  matches: Array<Match>
+  rounds: Array<Array<Match>>
 }

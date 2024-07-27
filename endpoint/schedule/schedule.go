@@ -31,3 +31,18 @@ func (z *Service) ExportDraftSchedule(c *gin.Context) {
 		return
 	}
 }
+
+func (z *Service) GenerateRounds(c *gin.Context) {
+	var tournament model.Tournament
+	err := c.BindJSON(&tournament)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid tournament: %w", err))
+		return
+	}
+	tournament, err = internal.GenerateRoundsForTournament(tournament)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("GenerateRoundsForTournament failed: %w", err))
+		return
+	}
+	c.JSON(200, tournament)
+}
