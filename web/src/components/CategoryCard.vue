@@ -150,7 +150,8 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
         <div v-for="(round, r) in grp.rounds" class="px-2 py-1">
           Round {{ r + 1 }}
           <div v-for="(match, m) in round" class="px-2">
-            {{ match.player1.name }} vs {{ match.player2.name }}
+            M{{ m + 1 }} - <span class="text-red-700">{{ match.player1.name }}</span> vs
+            <span class="text-red-700">{{ match.player2.name }}</span>
           </div>
         </div>
       </div>
