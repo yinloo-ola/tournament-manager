@@ -29,7 +29,6 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 			category.Groups[g].Rounds = rounds
 		}
 		tournament.Categories[i] = category
-		// slog.Debug("tournament", "category", category)
 	}
 	return tournament, nil
 }
@@ -89,16 +88,15 @@ func generateRounds(players []model.Player) [][]model.Match {
 			p2Elem = p2Elem.Next()
 		}
 		rounds.PushBack(round)
-		last := otherPlayers.Remove(otherPlayers.Last()) // rotate
+		last := otherPlayers.Remove(otherPlayers.Last()) // rotate list
 		otherPlayers.PushFront(last)
 	}
-	isValid := validateRounds(rounds, numMatches, numMatchesPerRound)
+	isValid := isRoundValid(rounds, numMatches, numMatchesPerRound)
 	if !isValid {
 		slog.Error("generateRounds encounter error", "rounds", rounds, "numMatches", numMatches)
 		panic("generateRounds encounter error")
 	}
 	rotateTillLastRoundContains(rounds, players[1], players[2])
-	slog.Debug("rounds", "rounds", rounds)
 	return rounds.ToSlice()
 }
 
@@ -125,9 +123,20 @@ func roundContains(round []model.Match, player1, player2 model.Player) bool {
 	return false
 }
 
-func validateRounds(rounds *list.List[[]model.Match], numMatches int, numMatchesPerRound int) bool {
-	// TODO
-	return true
+func isRoundValid(rounds *list.List[[]model.Match], numMatches int, numMatchesPerRound int) bool {
+	round := rounds.First()
+	totalMatchCount := 0
+	for round != nil {
+		matches := round.Value
+		if len(matches) != numMatchesPerRound {
+			slog.Error("num of matches wrong!", "expected", numMatchesPerRound, "gotten", len(matches))
+			return false
+		}
+		totalMatchCount += len(matches)
+		round = round.Next()
+	}
+	slog.Error("total matches wrong!", "expected", numMatches, "gotten", totalMatchCount)
+	return totalMatchCount == numMatches
 }
 
 func generateMatches(players []model.Player) []model.Match {
