@@ -9,6 +9,7 @@ export type Category = {
   playersPerGrpRemainder: number
   players: Array<Player>
   groups: Array<Group>
+  durationMinutes: number
 }
 export type Player = {
   name: string
@@ -20,6 +21,7 @@ export type Match = {
   player2: Player
   datetime: string
   table: string
+  durationMinutes: number
 }
 export type Group = {
   players: Array<Player>

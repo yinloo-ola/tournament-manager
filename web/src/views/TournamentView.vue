@@ -20,7 +20,8 @@ let tournament = ref<Tournament>({
       playersPerGrpMain: 3,
       playersPerGrpRemainder: 4,
       players: [],
-      groups: []
+      groups: [],
+      durationMinutes: 0
     }
   ]
 })
@@ -32,7 +33,8 @@ function addCategory() {
     playersPerGrpMain: 3,
     playersPerGrpRemainder: 4,
     players: [],
-    groups: []
+    groups: [],
+    durationMinutes: 0
   })
 }
 

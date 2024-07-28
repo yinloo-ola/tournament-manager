@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type Tournament struct {
 	Name       string     `json:"name"`
 	Categories []Category `json:"categories"`
@@ -12,6 +14,7 @@ type Category struct {
 	PlayersPerGrpRemainder int      `json:"playersPerGrpRemainder"`
 	Players                []Player `json:"players"`
 	Groups                 []Group  `json:"groups"`
+	DurationMinutes        int      `json:"durationMinutes"`
 }
 
 type Group struct {
@@ -26,8 +29,9 @@ type Player struct {
 }
 
 type Match struct {
-	Player1  Player `json:"player1"`
-	Player2  Player `json:"player2"`
-	Datetime string `json:"datetime"`
-	Table    string `json:"table"`
+	Player1         Player    `json:"player1"`
+	Player2         Player    `json:"player2"`
+	StartTime       time.Time `json:"startTime"`
+	DurationMinutes int       `json:"durationMinutes"`
+	Table           string    `json:"table"`
 }

@@ -98,6 +98,12 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
       v-model="category.shortName"
     ></LabeledInput>
     <LabeledInput
+      name="durationMinutes"
+      label="Match Duration (minutes)"
+      type="number"
+      v-model.number="category.durationMinutes"
+    ></LabeledInput>
+    <LabeledInput
       name="players"
       label="Players Per Group (Main)"
       type="number"

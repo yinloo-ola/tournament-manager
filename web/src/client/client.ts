@@ -61,5 +61,8 @@ function validTournament(tournament: Tournament) {
     } else {
       shortFormMap[category.shortName] = true
     }
+    if (category.durationMinutes == 0) {
+      throw new Error('Duration must be specified')
+    }
   }
 }
