@@ -13,6 +13,7 @@ import {
 
 let tournament = ref<Tournament>({
   name: '',
+  numTables: 0,
   categories: [
     {
       name: '',

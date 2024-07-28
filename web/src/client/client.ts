@@ -64,5 +64,8 @@ function validTournament(tournament: Tournament) {
     if (category.durationMinutes == 0) {
       throw new Error('Duration must be specified')
     }
+    if (tournament.numTables == 0) {
+      throw new Error('Number of tables must be specified')
+    }
   }
 }

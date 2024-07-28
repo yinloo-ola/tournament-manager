@@ -18,19 +18,31 @@ const emit = defineEmits(['addCategory'])
     label="Tournament Name"
     type="text"
   ></OutlinedInput>
-  <div class="flex gap-x-4">
-    <OutlinedInput
-      class="w-full"
-      name="categories"
-      label="No. of Categories"
-      type="number"
-      :modelValue="tournament.categories.length"
-      readonly
-    ></OutlinedInput>
-    <div class="flex flex-col justify-end">
-      <SimpleButton @click="emit('addCategory')" class="h-10 w-42 bg-blue-600 text-white">
-        ADD CATEGORY
-      </SimpleButton>
+  <div class="flex flex-col gap-x-4">
+    <div class="flex w-full gap-x-4 mb-2">
+      <OutlinedInput
+        class="w-full"
+        name="categories"
+        label="No. of Table"
+        type="number"
+        :modelValue="tournament.numTables"
+        readonly
+      ></OutlinedInput>
+    </div>
+    <div class="flex gap-x-4">
+      <OutlinedInput
+        class="w-full"
+        name="categories"
+        label="No. of Categories"
+        type="number"
+        :modelValue="tournament.categories.length"
+        readonly
+      ></OutlinedInput>
+      <div class="flex flex-col justify-end">
+        <SimpleButton @click="emit('addCategory')" class="h-10 w-42 bg-blue-600 text-white">
+          ADD CATEGORY
+        </SimpleButton>
+      </div>
     </div>
   </div>
 </template>
