@@ -10,10 +10,12 @@ import {
   apiExportRoundRobinExcel,
   apiGenerateRounds
 } from '@/client/client'
+import { getDateStringFromNow } from '@/calculator/date'
 
 let tournament = ref<Tournament>({
   name: '',
   numTables: 0,
+  startTime: getDateStringFromNow(7, 9),
   categories: [
     {
       name: '',
@@ -114,18 +116,18 @@ async function exportDraftSchedule() {
   } catch (e: any) {
     alert(e.message)
   }
-  // apiExportDraftSchedule(tournament.value)
-  //   .then((blob) => {
-  //     var a = document.createElement('a')
-  //     var file = window.URL.createObjectURL(blob)
-  //     a.href = file
-  //     a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
-  //     a.click()
-  //     window.URL.revokeObjectURL(file)
-  //   })
-  //   .catch((e: any) => {
-  //     alert(e.message)
-  //   })
+  apiExportDraftSchedule(tournament.value)
+    .then((blob) => {
+      var a = document.createElement('a')
+      var file = window.URL.createObjectURL(blob)
+      a.href = file
+      a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(file)
+    })
+    .catch((e: any) => {
+      alert(e.message)
+    })
 }
 </script>
 

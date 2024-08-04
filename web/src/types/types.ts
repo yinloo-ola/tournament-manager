@@ -1,6 +1,7 @@
 export type Tournament = {
   name: string
   numTables: number
+  startTime: string
   categories: Array<Category>
 }
 export type Category = {

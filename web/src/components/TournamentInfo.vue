@@ -25,8 +25,14 @@ const emit = defineEmits(['addCategory'])
         name="categories"
         label="No. of Table"
         type="number"
-        :modelValue="tournament.numTables"
-        readonly
+        v-model="tournament.numTables"
+      ></OutlinedInput>
+      <OutlinedInput
+        class="w-full"
+        name="categories"
+        label="Start Date/Time"
+        type="datetime-local"
+        v-model="tournament.startTime"
       ></OutlinedInput>
     </div>
     <div class="flex gap-x-4">
