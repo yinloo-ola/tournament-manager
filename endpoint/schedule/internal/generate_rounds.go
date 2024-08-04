@@ -124,7 +124,6 @@ func isRoundValid(rounds *list.List[[]model.Match], numMatches int, numMatchesPe
 		totalMatchCount += len(matches)
 		round = round.Next()
 	}
-	slog.Error("total matches wrong!", "expected", numMatches, "gotten", totalMatchCount)
 	return totalMatchCount == numMatches
 }
 

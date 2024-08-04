@@ -2,12 +2,23 @@ package model
 
 import "time"
 
-type TimeSlot struct {
-	Tables []*Match // nil means table not allocated to any match yet
-}
 type Schedule struct {
 	StartTime time.Time
 	TimeSlots []TimeSlot
+}
+
+func (schedule *Schedule) MaxTableCount() int {
+	tables := 0
+	for _, slot := range schedule.TimeSlots {
+		if len(slot.Tables) > tables {
+			tables = len(slot.Tables)
+		}
+	}
+	return tables
+}
+
+type TimeSlot struct {
+	Tables []*Match // nil means table not allocated to any match yet
 }
 
 func (slot *TimeSlot) IsEmpty() bool {

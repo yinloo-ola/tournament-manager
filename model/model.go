@@ -54,9 +54,12 @@ type Player struct {
 }
 
 type Match struct {
-	Player1         Player    `json:"player1"`
-	Player2         Player    `json:"player2"`
-	StartTime       time.Time `json:"startTime"`
-	DurationMinutes int       `json:"durationMinutes"`
-	Table           string    `json:"table"`
+	Player1           Player    `json:"player1"`
+	Player2           Player    `json:"player2"`
+	StartTime         time.Time `json:"startTime"`
+	DurationMinutes   int       `json:"durationMinutes"`
+	Table             string    `json:"table"`
+	CategoryShortName string
+	GroupIdx          int
+	RoundIdx          int
 }
