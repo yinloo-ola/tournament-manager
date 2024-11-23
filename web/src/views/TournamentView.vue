@@ -11,6 +11,9 @@ import {
   apiGenerateRounds
 } from '@/client/client'
 import { getDateStringFromNow } from '@/calculator/date'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 let tournament = ref<Tournament>({
   name: '',
@@ -171,6 +174,12 @@ async function exportDraftSchedule() {
               class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
             >
               EXPORT DRAFT SCHEDULE
+            </div>
+            <div
+              @click="router.push('/schedule')"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white"
+            >
+              SCHEDULE
             </div>
           </div>
         </Transition>
