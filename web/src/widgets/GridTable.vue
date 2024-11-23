@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
+
+interface CellCoordinates {
+  row: number
+  col: number
+}
 
 const props = defineProps({
   rowCount: {
@@ -19,53 +24,115 @@ const props = defineProps({
 const emit = defineEmits(['update:grid'])
 
 const gridLocal = ref<string[][]>([])
+const selectedCells = ref<CellCoordinates[]>([])
+const draggedCells = ref<CellCoordinates[] | null>(null)
+let isDragging = false
 
 const gridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${props.columnCount}, 1fr)`
 }))
 
-const draggedCell = ref<{ row: number; col: number } | null>(null)
-
 const initializeGrid = () => {
-  const newGrid = []
+  const newGrid: string[][] = []
   for (let i = 0; i < props.rowCount; i++) {
-    newGrid.push(Array(props.columnCount).fill('')) // Initialize with empty strings
+    newGrid.push(Array(props.columnCount).fill(''))
   }
-  // Populate with provided data if available, respecting boundaries
   for (let i = 0; i < props.grid.length && i < props.rowCount; i++) {
     for (let j = 0; j < props.grid[i].length && j < props.columnCount; j++) {
       newGrid[i][j] = props.grid[i][j]
     }
   }
-
   gridLocal.value = newGrid
 }
 
 watch(() => [props.rowCount, props.columnCount, props.grid], initializeGrid, { immediate: true })
 
-const handleDragStart = (event: DragEvent, row: number, col: number) => {
-  draggedCell.value = { row, col }
-  event.dataTransfer?.setData('text/plain', '')
+const handleCellClick = (rowIndex: number, colIndex: number, event: MouseEvent) => {
+  if (!event.shiftKey) {
+    selectedCells.value = [{ row: rowIndex, col: colIndex }]
+  } else {
+    if (selectedCells.value.length > 0 && selectedCells.value[0].row === rowIndex) {
+      const startCol = Math.min(selectedCells.value[0].col, colIndex)
+      const endCol = Math.max(selectedCells.value[0].col, colIndex)
+      const newSelectedCells: CellCoordinates[] = []
+      for (let i = startCol; i <= endCol; i++) {
+        newSelectedCells.push({ row: rowIndex, col: i })
+      }
+      selectedCells.value = newSelectedCells
+    } else {
+      selectedCells.value = [{ row: rowIndex, col: colIndex }]
+    }
+  }
+}
+
+const handleDragStart = (event: DragEvent, rowIndex: number, colIndex: number) => {
+  const cell = { row: rowIndex, col: colIndex }
+  if (
+    selectedCells.value.some(
+      (selectedCell) => selectedCell.row === cell.row && selectedCell.col === cell.col
+    )
+  ) {
+    isDragging = true
+    draggedCells.value = selectedCells.value.sort((a, b) => a.col - b.col)
+    event.dataTransfer?.setData('text/plain', '')
+  } else {
+    event.preventDefault()
+  }
 }
 
 const handleDragEnd = () => {
-  draggedCell.value = null
+  isDragging = false
+  draggedCells.value = null
 }
 
 const handleDrop = (event: DragEvent, row: number, col: number) => {
   event.preventDefault()
 
-  if (draggedCell.value) {
-    const updatedGrid = JSON.parse(JSON.stringify(gridLocal.value)) // Deep copy
+  if (!isDragging || !draggedCells.value || draggedCells.value.length === 0) return
 
-    if (updatedGrid[row] && updatedGrid[row][col] === '') {
-      // Check for valid indices and empty target
-      updatedGrid[row][col] = updatedGrid[draggedCell.value.row][draggedCell.value.col]
-      updatedGrid[draggedCell.value.row][draggedCell.value.col] = ''
-      gridLocal.value = updatedGrid
-      emit('update:grid', updatedGrid)
-    }
+  let dropRow = row
+  let dropCol = col
+
+  const updatedGrid = JSON.parse(JSON.stringify(gridLocal.value))
+
+  // Null check for draggedCells.value and add type annotation for cell
+  const canFit = draggedCells.value!.every((cell: CellCoordinates) => {
+    const targetCol = dropCol + (cell.col - draggedCells.value![0].col)
+    return targetCol >= 0 && targetCol < props.columnCount && updatedGrid[dropRow][targetCol] === ''
+  })
+
+  if (!canFit) return
+
+  const draggedData: string[] = []
+
+  // Null check for draggedCells.value and add type annotation for cell
+  for (let i = 0; i < draggedCells.value!.length; i++) {
+    const cell: CellCoordinates = draggedCells.value![i]
+    draggedData.push(updatedGrid[cell.row][cell.col])
+    updatedGrid[cell.row][cell.col] = ''
   }
+
+  // Null check for draggedCells.value and add type annotation for cell
+  for (let i = 0; i < draggedCells.value!.length; i++) {
+    const cell: CellCoordinates = draggedCells.value![i]
+    const targetCol = dropCol + (cell.col - draggedCells.value![0].col)
+    updatedGrid[dropRow][targetCol] = draggedData[i]
+  }
+
+  gridLocal.value = updatedGrid
+  emit('update:grid', updatedGrid)
+
+  // Null check for draggedCells.value and add type annotation for cell
+  selectedCells.value = draggedCells.value!.map((cell: CellCoordinates) => ({
+    row: dropRow,
+    col: dropCol + (cell.col - draggedCells.value![0].col)
+  }))
+
+  draggedCells.value = null
+}
+
+const isCellSelected = (rowIndex: number, colIndex: number) => {
+  return selectedCells.value.some((cell) => cell.row === rowIndex && cell.col === colIndex)
 }
 </script>
 
@@ -76,7 +143,9 @@ const handleDrop = (event: DragEvent, row: number, col: number) => {
         v-for="(cell, colIndex) in row"
         :key="colIndex"
         class="grid-cell"
+        :class="{ 'selected-cell': isCellSelected(rowIndex, colIndex) }"
         draggable="true"
+        @click="handleCellClick(rowIndex, colIndex, $event)"
         @drop="handleDrop($event, rowIndex, colIndex)"
         @dragover.prevent
         @dragstart="handleDragStart($event, rowIndex, colIndex)"
@@ -95,7 +164,7 @@ const handleDrop = (event: DragEvent, row: number, col: number) => {
 }
 
 .grid-row {
-  display: contents; /* More efficient than flex for this purpose */
+  display: contents;
 }
 
 .grid-cell {
@@ -103,6 +172,14 @@ const handleDrop = (event: DragEvent, row: number, col: number) => {
   padding: 20px;
   text-align: center;
   min-height: 50px;
+  cursor: pointer;
+}
+
+.grid-cell[draggable='true'] {
   cursor: move;
+}
+
+.selected-cell {
+  background-color: lightblue;
 }
 </style>
