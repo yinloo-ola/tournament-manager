@@ -28,6 +28,7 @@ func main() {
 		apiRouters.POST("/exportRoundRobinExcel", roundRobinSvc.ExportRoundRobinExcel)
 		scheduleSvc := &schedule.Service{}
 		apiRouters.POST("/exportDraftSchedule", scheduleSvc.ExportDraftSchedule)
+		apiRouters.POST("/importFinalSchedule", scheduleSvc.ExportDraftSchedule)
 		apiRouters.POST("/generateRounds", scheduleSvc.GenerateRounds)
 	}
 

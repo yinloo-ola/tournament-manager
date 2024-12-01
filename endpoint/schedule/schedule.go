@@ -11,6 +11,12 @@ import (
 
 type Service struct{}
 
+func (z *Service) ImportFinalSchedule(c *gin.Context) {
+	// TODO: use excelize to read the excel file
+	// c.Request.
+	// c.JSON(200, tournament)
+}
+
 func (z *Service) ExportDraftSchedule(c *gin.Context) {
 	var tournament model.Tournament
 	err := c.BindJSON(&tournament)
