@@ -81,12 +81,13 @@ function exportTournament() {
 }
 
 const finalScheduleFile = ref<HTMLInputElement | null>(null)
-function finalScheduleFileSelected() {
-  if (finalScheduleFile.value === null) {
+function finalScheduleFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input === null) {
     alert('No file selected')
     return
   }
-  const files = finalScheduleFile.value.files
+  const files = input.files
   if (files == null || files?.length === 0) {
     alert('No file selected')
     return
