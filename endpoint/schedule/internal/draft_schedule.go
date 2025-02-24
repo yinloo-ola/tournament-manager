@@ -11,6 +11,8 @@ import (
 )
 
 const matchesSheetPassword = "12345654321"
+const scheduleSheetName = "schedule"
+const matchesSheetName = "matches"
 
 func CreateDraftSchedule(tournament model.Tournament) (*excelize.File, error) {
 	schedule := scheduleMatches(tournament)
@@ -44,14 +46,12 @@ func generateCategoryGroupColorMap(tournament model.Tournament) map[string]strin
 }
 
 func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map[string]string) error {
-	scheduleSheet := "schedule"
-	_, err := book.NewSheet(scheduleSheet)
+	_, err := book.NewSheet(scheduleSheetName)
 	if err != nil {
 		return fmt.Errorf("fail to add sheet %s: %w", "schedule", err)
 	}
 
-	matchesSheet := "matches"
-	_, err = book.NewSheet(matchesSheet)
+	_, err = book.NewSheet(matchesSheetName)
 	if err != nil {
 		return fmt.Errorf("fail to add sheet %s: %w", "schedule", err)
 	}
@@ -68,31 +68,31 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 	tableCount := schedule.MaxTableCount()
 	row := 1
 	cell := 'A'
-	book.SetCellStr(scheduleSheet, currentCell(row, cell), "Date/Time")
+	book.SetCellStr(scheduleSheetName, currentCell(row, cell), "Date/Time")
 	for i := 0; i < tableCount; i++ {
 		cell++
-		book.SetCellStr(scheduleSheet, currentCell(row, cell), fmt.Sprintf("T%d", i+1))
+		book.SetCellStr(scheduleSheetName, currentCell(row, cell), fmt.Sprintf("T%d", i+1))
 	}
 
 	row = 1
 	cell = 'A'
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "SN")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "SN")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Category")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Category")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Round")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Round")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Group")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Group")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Date Time")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Date Time")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Table")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Table")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Player1")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player1")
 	cell++
-	book.SetCellStr(matchesSheet, currentCell(row, cell), "Player2")
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player2")
 
-	err = book.SetCellStyle(matchesSheet, currentCell(1, 'A'), currentCell(1, cell), headerStyleID)
+	err = book.SetCellStyle(matchesSheetName, currentCell(1, 'A'), currentCell(1, cell), headerStyleID)
 	if err != nil {
 		return fmt.Errorf("fail to set style: %w", err)
 	}
@@ -101,21 +101,21 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 	matchesRow := 2
 	for slotIdx, slot := range schedule.TimeSlots {
 		startTime, _ := slot.StartTimeAndDuration()
-		book.SetCellValue(scheduleSheet, currentCell(slotIdx+2, 'A'), startTime)
-		book.SetCellStyle(scheduleSheet, "A1", currentCell(1, 'A'+rune(len(slot.Tables))), headerStyleID)
+		book.SetCellValue(scheduleSheetName, currentCell(slotIdx+2, 'A'), startTime)
+		book.SetCellStyle(scheduleSheetName, "A1", currentCell(1, 'A'+rune(len(slot.Tables))), headerStyleID)
 		for tableIdx, match := range slot.Tables {
 			if match == nil {
 				continue
 			}
-			book.SetCellInt(matchesSheet, currentCell(matchesRow, 'A'), sn)
+			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'A'), sn)
 			sn++
-			book.SetCellStr(matchesSheet, currentCell(matchesRow, 'B'), match.CategoryShortName)
-			book.SetCellInt(matchesSheet, currentCell(matchesRow, 'C'), match.RoundIdx+1)
-			book.SetCellInt(matchesSheet, currentCell(matchesRow, 'D'), match.GroupIdx+1)
-			book.SetCellValue(matchesSheet, currentCell(matchesRow, 'E'), match.StartTime)
-			book.SetCellStr(matchesSheet, currentCell(matchesRow, 'F'), match.Table)
-			book.SetCellStr(matchesSheet, currentCell(matchesRow, 'G'), match.Player1.Name)
-			book.SetCellStr(matchesSheet, currentCell(matchesRow, 'H'), match.Player2.Name)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'B'), match.CategoryShortName)
+			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'C'), match.RoundIdx+1)
+			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'D'), match.GroupIdx+1)
+			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'E'), match.StartTime)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'F'), match.Table)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'G'), match.Player1.Name)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Player2.Name)
 			matchesRow++
 
 			displayText := fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
@@ -126,9 +126,9 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 				return fmt.Errorf("fail to get match style: %w", err)
 			}
 			matchCell := currentCell(slotIdx+2, 'A'+rune(tableIdx+1))
-			book.SetCellStyle(scheduleSheet, matchCell, matchCell, matchStyle)
-			book.SetCellStr(scheduleSheet, matchCell, displayText)
-			book.SetCellHyperLink(scheduleSheet, matchCell, matchLink, "Location", excelize.HyperlinkOpts{
+			book.SetCellStyle(scheduleSheetName, matchCell, matchCell, matchStyle)
+			book.SetCellStr(scheduleSheetName, matchCell, displayText)
+			book.SetCellHyperLink(scheduleSheetName, matchCell, matchLink, "Location", excelize.HyperlinkOpts{
 				Display: pointer.Of(displayText),
 				Tooltip: pointer.Of(toolTip),
 			})
@@ -141,26 +141,26 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 		return fmt.Errorf("fail to delete sheet %s: %w", "Sheet1", err)
 	}
 
-	err = book.SetCellStyle(scheduleSheet, "A2", currentCell(len(schedule.TimeSlots)+1, 'A'), dtStyleID)
+	err = book.SetCellStyle(scheduleSheetName, "A2", currentCell(len(schedule.TimeSlots)+1, 'A'), dtStyleID)
 	if err != nil {
 		return fmt.Errorf("fail to set style: %w", err)
 	}
 
-	err = book.SetColWidth(scheduleSheet, "A", "A", 16.0)
+	err = book.SetColWidth(scheduleSheetName, "A", "A", 16.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
 
-	err = book.SetColWidth(matchesSheet, "E", "E", 16.0)
+	err = book.SetColWidth(matchesSheetName, "E", "E", 16.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
-	err = book.SetColWidth(matchesSheet, "G", "H", 25.0)
+	err = book.SetColWidth(matchesSheetName, "G", "H", 25.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
 
-	book.ProtectSheet(matchesSheet, &excelize.SheetProtectionOptions{
+	book.ProtectSheet(matchesSheetName, &excelize.SheetProtectionOptions{
 		Password:            matchesSheetPassword,
 		SelectLockedCells:   true,
 		SelectUnlockedCells: true,

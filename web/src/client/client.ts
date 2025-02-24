@@ -43,6 +43,21 @@ export async function apiExportDraftSchedule(tournament: Tournament) {
   })
 }
 
+export async function apiImportFinalSchedule(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return fetch('/api/importFinalSchedule', {
+    headers: {
+      Accept: 'application/json'
+      // 'Content-Type': 'multipart/form-data'
+    },
+    method: 'POST',
+    body: file
+  }).then(function (res) {
+    return res.json()
+  })
+}
+
 function validTournament(tournament: Tournament) {
   const nameMap: { [key: string]: boolean } = {}
   const shortFormMap: { [key: string]: boolean } = {}

@@ -8,7 +8,8 @@ import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournam
 import {
   apiExportDraftSchedule,
   apiExportRoundRobinExcel,
-  apiGenerateRounds
+  apiGenerateRounds,
+  apiImportFinalSchedule
 } from '@/client/client'
 import { getDateStringFromNow } from '@/calculator/date'
 import { useRouter } from 'vue-router'
@@ -77,6 +78,28 @@ function showAlert(msg: string) {
 
 function exportTournament() {
   exportTournamentJson(tournament.value)
+}
+
+const finalScheduleFile = ref<HTMLInputElement | null>(null)
+function finalScheduleFileSelected() {
+  if (finalScheduleFile.value === null) {
+    alert('No file selected')
+    return
+  }
+  const files = finalScheduleFile.value.files
+  if (files == null || files?.length === 0) {
+    alert('No file selected')
+    return
+  }
+  const file = files[0]
+  if (file == null) {
+    alert('No file selected')
+    return
+  }
+  apiImportFinalSchedule(file).then((tournamentRes) => {
+    tournament.value = tournamentRes
+    console.log(tournamentRes)
+  })
 }
 
 const tournamentFile = ref<HTMLInputElement | null>(null)
@@ -174,6 +197,21 @@ async function exportDraftSchedule() {
               class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
             >
               EXPORT DRAFT SCHEDULE
+            </div>
+            <input
+              type="file"
+              name="finalScheduleFile"
+              id="finalScheduleFile"
+              class="hidden"
+              ref="finalScheduleFile"
+              accept=".xlsx"
+              @change="finalScheduleFileSelected"
+            />
+            <div
+              @click="finalScheduleFile?.click()"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
+            >
+              IMPORT FINAL SCHEDULE
             </div>
             <div
               @click="router.push('/schedule')"

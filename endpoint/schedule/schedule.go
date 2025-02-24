@@ -12,9 +12,14 @@ import (
 type Service struct{}
 
 func (z *Service) ImportFinalSchedule(c *gin.Context) {
-	// TODO: use excelize to read the excel file
-	// c.Request.
-	// c.JSON(200, tournament)
+	ctx := c.Request.Context()
+	var tournament model.Tournament
+	tournament, err := internal.ImportFinalSchedule(ctx, c.Request.Body)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("ImportFinalSchedule failed: %w", err))
+		return
+	}
+	c.JSON(200, tournament)
 }
 
 func (z *Service) ExportDraftSchedule(c *gin.Context) {
