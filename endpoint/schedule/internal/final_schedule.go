@@ -34,7 +34,7 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 	slog.InfoContext(ctx, "headerMap", slog.Any("headerMap", headerMap))
 
 	// read the rest of the rows, if the first cell is empty or not datetime, skip this row
-	rowIdx, colIdx := 1, 'A'
+	rowIdx := 1
 	for _, row := range rows[1:] {
 		rowIdx++
 		if len(strings.TrimSpace(row[0])) == 0 {
@@ -51,7 +51,8 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 			continue
 		}
 		slog.DebugContext(ctx, "datetime", slog.Any("datetime", datetime))
-		for _, cell := range row[1:] {
+		colIdx := 'A'
+		for cellIdx, cell := range row[1:] {
 			colIdx++
 			cellAddr := fmt.Sprintf("%c%d", colIdx, rowIdx)
 			hasLink, link, err := file.GetCellHyperLink(scheduleSheetName, cellAddr)
@@ -59,15 +60,18 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 				slog.WarnContext(ctx, "GetCellHyperLink failed", slog.Any("cellAddr", cellAddr), slog.Any("err", err))
 				continue
 			}
+			if !hasLink {
+				continue
+			}
+			table := rows[0][cellIdx+1]
 			slog.DebugContext(ctx, "cell link",
 				slog.Any("cellAddr", cellAddr),
 				slog.Any("hasLink", hasLink),
 				slog.Any("link", link),
 				slog.Any("cell", cell),
+				slog.Any("table", table),
+				slog.Any("Datetime", datetime),
 			)
-			if !hasLink {
-				continue
-			}
 			// TODO: get match info from the link
 		}
 	}
