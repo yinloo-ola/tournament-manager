@@ -90,7 +90,15 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 	cell++
 	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player1")
 	cell++
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player1 Club")
+	cell++
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player1 Seeding")
+	cell++
 	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player2")
+	cell++
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player2 Club")
+	cell++
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Player2 Seeding")
 
 	err = book.SetCellStyle(matchesSheetName, currentCell(1, 'A'), currentCell(1, cell), headerStyleID)
 	if err != nil {
@@ -112,10 +120,25 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'B'), match.CategoryShortName)
 			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'C'), match.RoundIdx+1)
 			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'D'), match.GroupIdx+1)
-			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'E'), match.StartTime)
+			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'E'), match.DateTime)
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'F'), match.Table)
+
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'G'), match.Player1.Name)
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Player2.Name)
+			if match.Player1.Club != nil && *match.Player1.Club != "" {
+				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), *match.Player1.Club)
+			}
+			if match.Player1.Seeding != nil && *match.Player1.Seeding != 0 {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'I'), *match.Player1.Seeding)
+			}
+
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'J'), match.Player2.Name)
+			if match.Player2.Club != nil && *match.Player2.Club != "" {
+				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'K'), *match.Player2.Club)
+			}
+			if match.Player2.Seeding != nil && *match.Player2.Seeding != 0 {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'L'), *match.Player2.Seeding)
+			}
+
 			matchesRow++
 
 			displayText := fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
@@ -155,7 +178,11 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
-	err = book.SetColWidth(matchesSheetName, "G", "H", 25.0)
+	err = book.SetColWidth(matchesSheetName, "G", "G", 25.0)
+	if err != nil {
+		return fmt.Errorf("fail to set col width: %w", err)
+	}
+	err = book.SetColWidth(matchesSheetName, "J", "J", 25.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
@@ -325,7 +352,7 @@ func getSlotsForCategory(category model.Category, numOfTable int, startTime time
 					Player1:           match.Player1,
 					Player2:           match.Player2,
 					DurationMinutes:   category.DurationMinutes,
-					StartTime:         matchStartTime,
+					DateTime:          matchStartTime,
 					Table:             fmt.Sprintf("T%d", tableIdx+1),
 					CategoryShortName: category.ShortName,
 					GroupIdx:          g,

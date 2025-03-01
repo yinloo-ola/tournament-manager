@@ -46,8 +46,8 @@ func (slot *TimeSlot) StartTimeAndDuration() (time.Time, int) {
 		if match == nil {
 			continue
 		}
-		if match.StartTime.Before(t) {
-			t = match.StartTime
+		if match.DateTime.Before(t) {
+			t = match.DateTime
 		}
 		if match.DurationMinutes > d {
 			d = match.DurationMinutes
@@ -63,10 +63,10 @@ func (slot *TimeSlot) HasDifferentStartTime() bool {
 			continue
 		}
 		if t.IsZero() {
-			t = match.StartTime
+			t = match.DateTime
 			continue
 		}
-		if !match.StartTime.Equal(t) {
+		if !match.DateTime.Equal(t) {
 			return true
 		}
 	}

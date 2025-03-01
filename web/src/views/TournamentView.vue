@@ -8,6 +8,7 @@ import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournam
 import {
   apiExportDraftSchedule,
   apiExportRoundRobinExcel,
+  apiExportScoresheetWithTemplate,
   apiGenerateRounds,
   apiImportFinalSchedule
 } from '@/client/client'
@@ -80,6 +81,38 @@ function exportTournament() {
   exportTournamentJson(tournament.value)
 }
 
+const exportScoresheetWithTemplateFile = ref<HTMLInputElement | null>(null)
+function exportScoresheetWithTemplateSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (input === null) {
+    alert('No file selected')
+    return
+  }
+  if (input.files == null || input.files?.length === 0) {
+    alert('No file selected')
+    return
+  }
+  if (input.files[0] == null) {
+    alert('No file selected')
+    return
+  }
+
+  apiExportScoresheetWithTemplate(tournament.value, input.files[0])
+    .then((blob) => {
+      var a = document.createElement('a')
+      var file = window.URL.createObjectURL(blob)
+      a.href = file
+      a.download = `${tournament.value.name}_scoresheet_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(file)
+    })
+    .catch((e: any) => {
+      alert(e.message)
+    })
+
+  exportScoresheetWithTemplateFile.value!.value = ''
+}
+
 const finalScheduleFile = ref<HTMLInputElement | null>(null)
 function finalScheduleFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
@@ -97,10 +130,38 @@ function finalScheduleFileSelected(event: Event) {
     alert('No file selected')
     return
   }
-  apiImportFinalSchedule(file).then((tournamentRes) => {
-    tournament.value = tournamentRes
-    console.log(tournamentRes)
+  apiImportFinalSchedule(file).then((categoriesGroupsMap: { [category: string]: Group[] }) => {
+    console.log(categoriesGroupsMap)
+    // replace the rounds of each group in each category with the ones from categoriesGroupsMap except for the durationMinutes in each match
+    for (let categoryIdx = 0; categoryIdx < tournament.value.categories.length; categoryIdx++) {
+      let category = tournament.value.categories[categoryIdx]
+      // Check if this category exists in the imported data
+      if (categoriesGroupsMap[category.shortName]) {
+        const importedGroups = categoriesGroupsMap[category.shortName]
+
+        // For each group in the category
+        for (let i = 0; i < category.groups.length; i++) {
+          // If there's a corresponding imported group
+          category.groups[i].rounds = importedGroups[i].rounds
+          for (let j = 0; j < category.groups[i].rounds.length; j++) {
+            for (let k = 0; k < category.groups[i].rounds[j].length; k++) {
+              category.groups[i].rounds[j][k].durationMinutes = category.durationMinutes
+            }
+          }
+        }
+      } else {
+        alert(`No data found for category ${category.name}`)
+        return
+      }
+    }
+    tournament.value = tournament.value
+    alert('Final schedule imported successfully')
+  }).catch(error => {
+    console.error('Error importing final schedule:', error)
+    alert('Error importing final schedule: ' + error.message)
   })
+
+  finalScheduleFile.value!.value = ''
 }
 
 const tournamentFile = ref<HTMLInputElement | null>(null)
@@ -164,99 +225,66 @@ async function exportDraftSchedule() {
       <div class="px-4 text-2xl text-lime-900 font-800">
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
-      <div
-        @mouseover="showTournamentMenu = true"
-        @mouseleave="showTournamentMenu = false"
-        class="relative px-3 py-2"
-      >
+      <div @mouseover="showTournamentMenu = true" @mouseleave="showTournamentMenu = false" class="relative px-3 py-2">
         <button class="bg-lime-900 text-white i-line-md-menu-fold-left h-8 w-8"></button>
         <Transition name="bounce">
-          <div
-            v-if="showTournamentMenu"
-            class="absolute z-50 right-0 rounded-lg flex flex-col w-fit gap-1 p-2 mr-4 bg-gray-200 border-solid border border-gray-300 shadow-xl"
-          >
-            <div
-              @click.prevent="exportTournament"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white"
-            >
+          <div v-if="showTournamentMenu"
+            class="absolute z-50 right-0 rounded-lg flex flex-col w-fit gap-1 p-2 mr-4 bg-gray-200 border-solid border border-gray-300 shadow-xl">
+            <div @click.prevent="exportTournament"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white">
               SAVE
             </div>
-            <div
-              @click.prevent="tournamentFile?.click()"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white"
-            >
+            <div @click.prevent="tournamentFile?.click()"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white">
               LOAD
             </div>
-            <div
-              @click.prevent="exportRoundRobin"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
-            >
+            <div class="border-solid border-0 border-b border-gray-400"></div>
+            <div @click.prevent="exportRoundRobin"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
               EXPORT RR CHARTS
             </div>
-            <div
-              @click.prevent="exportDraftSchedule"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
-            >
+            <div @click.prevent="exportDraftSchedule"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
               EXPORT DRAFT SCHEDULE
             </div>
-            <input
-              type="file"
-              name="finalScheduleFile"
-              id="finalScheduleFile"
-              class="hidden"
-              ref="finalScheduleFile"
-              accept=".xlsx"
-              @change="finalScheduleFileSelected"
-            />
-            <div
-              @click="finalScheduleFile?.click()"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38"
-            >
+            <div @click="finalScheduleFile?.click()"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
               IMPORT FINAL SCHEDULE
             </div>
-            <div
-              @click="router.push('/schedule')"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white"
-            >
+            <div @click="exportScoresheetWithTemplateFile?.click()"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
+              EXPORT SCORESHEET WITH TEMPLATE
+            </div>
+            <div @click="router.push('/schedule')"
+              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white">
               SCHEDULE
             </div>
           </div>
         </Transition>
       </div>
     </header>
-    <input
-      type="file"
-      name=""
-      id=""
-      ref="tournamentFile"
-      @change="onTournamentFileSelected"
-      class="invisible"
-    />
+    <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
+      class="invisible" />
+    <input type="file" ref="exportScoresheetWithTemplateFile" @change="exportScoresheetWithTemplateSelected"
+      accept=".xlsx" class="invisible" />
+    <input type="file" name="finalScheduleFile" id="finalScheduleFile" class="hidden" ref="finalScheduleFile"
+      accept=".xlsx" @change="finalScheduleFileSelected" />
     <div class="flex flex-col">
       <div class="flex flex-col gap-3 p-4">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>
 
-      <div
-        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
-      >
+      <div class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
         <template v-for="(category, i) in tournament.categories" :key="i">
-          <CategoryCard
-            v-model="tournament.categories[i]"
-            @remove="tournament.categories.splice(i, 1)"
-            @players-imported="(players) => playersImported(i, players)"
-            @startDraw="startDraw(i)"
-            @error="showAlert"
-            @player-count-changed="clearGroup(i)"
-          ></CategoryCard>
+          <CategoryCard v-model="tournament.categories[i]" @remove="tournament.categories.splice(i, 1)"
+            @players-imported="(players) => playersImported(i, players)" @startDraw="startDraw(i)" @error="showAlert"
+            @player-count-changed="clearGroup(i)"></CategoryCard>
         </template>
       </div>
     </div>
     <Transition name="bounce">
-      <div
-        v-if="drawIndex >= 0"
-        class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300"
-      >
+      <div v-if="drawIndex >= 0"
+        class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300">
         <Draw :category="tournament.categories[drawIndex]" @close="drawDone"></Draw>
       </div>
     </Transition>
@@ -267,16 +295,20 @@ async function exportDraftSchedule() {
 .bounce-enter-active {
   animation: bounce-in 0.3s;
 }
+
 .bounce-leave-active {
   animation: bounce-in 0.3s reverse;
 }
+
 @keyframes bounce-in {
   0% {
     transform: scale(0);
   }
+
   70% {
     transform: scale(1.05);
   }
+
   100% {
     transform: scale(1);
   }

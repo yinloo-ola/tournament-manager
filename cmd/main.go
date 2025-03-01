@@ -30,6 +30,7 @@ func main() {
 		apiRouters.POST("/exportDraftSchedule", scheduleSvc.ExportDraftSchedule)
 		apiRouters.POST("/importFinalSchedule", scheduleSvc.ImportFinalSchedule)
 		apiRouters.POST("/generateRounds", scheduleSvc.GenerateRounds)
+		apiRouters.POST("/exportScoresheetWithTemplate", scheduleSvc.ExportScoresheetWithTemplate)
 	}
 
 	srv := &http.Server{

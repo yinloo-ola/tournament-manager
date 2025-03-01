@@ -49,12 +49,29 @@ export async function apiImportFinalSchedule(file: File) {
   return fetch('/api/importFinalSchedule', {
     headers: {
       Accept: 'application/json'
-      // 'Content-Type': 'multipart/form-data'
     },
     method: 'POST',
     body: file
   }).then(function (res) {
     return res.json()
+  })
+}
+
+export async function apiExportScoresheetWithTemplate(tournament: Tournament, file: File) {
+  validTournament(tournament)
+  const form = new FormData()
+  form.append('file', file)
+  // Convert tournament object to JSON string and append it to the form
+  form.append('tournament', JSON.stringify(tournament))
+  
+  return fetch('/api/exportScoresheetWithTemplate', {
+    headers: {
+      Accept: 'application/json'
+    },
+    method: 'POST',
+    body: form
+  }).then(function (res) {
+    return res.blob()
   })
 }
 
