@@ -39,7 +39,7 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 	rowIdx := 1
 	for _, row := range rows[1:] {
 		rowIdx++
-		if len(strings.TrimSpace(row[0])) == 0 {
+		if len(row) == 0 || len(strings.TrimSpace(row[0])) == 0 {
 			continue
 		}
 		datetimeFloat, err := strconv.ParseFloat(row[0], 64)
