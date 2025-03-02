@@ -11,6 +11,11 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 	for i, category := range tournament.Categories {
 		for g, grp := range category.Groups {
 			rounds := generateRounds(grp.Players, category.DurationMinutes)
+			for i := range rounds {
+				for j := range rounds[i] {
+					rounds[i][j].CategoryShortName = category.ShortName
+				}
+			}
 			if len(category.Groups[g].Rounds) == 0 {
 				category.Groups[g].Rounds = rounds
 			} else {

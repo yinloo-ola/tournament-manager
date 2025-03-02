@@ -15,6 +15,7 @@ import {
 import { getDateStringFromNow } from '@/calculator/date'
 import { useRouter } from 'vue-router'
 import { importFinalSchedule } from '@/calculator/schedule'
+import { calculatorGroups, getGroup } from '@/calculator/groups'
 
 const router = useRouter()
 
@@ -50,6 +51,28 @@ function addCategory() {
 function playersImported(categoryIdx: number, players: Player[]) {
   clearGroup(categoryIdx)
   tournament.value.categories[categoryIdx].players = players
+
+  const { numGroupsMain, numGroupsRemainder } = calculatorGroups(
+    tournament.value.categories[categoryIdx].players.length,
+    tournament.value.categories[categoryIdx].playersPerGrpMain,
+    tournament.value.categories[categoryIdx].playersPerGrpRemainder
+  )
+
+  if (tournament.value.categories[categoryIdx].playersPerGrpMain > tournament.value.categories[categoryIdx].playersPerGrpRemainder) {
+    for (let i = 0; i < numGroupsRemainder; i++) {
+      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder))
+    }
+    for (let i = 0; i < numGroupsMain; i++) {
+      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain))
+    }
+  } else {
+    for (let i = 0; i < numGroupsMain; i++) {
+      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain))
+    }
+    for (let i = 0; i < numGroupsRemainder; i++) {
+      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder))
+    }
+  }
 }
 
 function clearGroup(categoryIdx: number) {
@@ -70,8 +93,12 @@ function startDraw(idx: number) {
   drawIndex.value = idx
 }
 async function drawDone(groups: Array<Group>) {
-  tournament.value.categories[drawIndex.value].groups
-    .forEach((_g, i) => (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players))
+  if (tournament.value.categories[drawIndex.value].groups == null || tournament.value.categories[drawIndex.value].groups.length === 0) {
+    tournament.value.categories[drawIndex.value].groups = groups
+  } else {
+    tournament.value.categories[drawIndex.value].groups
+      .forEach((_g, i) => (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players))
+  }
   drawIndex.value = -1
   const tournamentRes = await apiGenerateRounds(tournament.value)
   tournament.value = tournamentRes

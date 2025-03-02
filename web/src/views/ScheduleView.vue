@@ -1,6 +1,6 @@
 <template>
   <div class="p-4">
-    <h1 class="text-2xl font-bold mb-4">Schedule</h1>
+    <h1 class="mb-4 text-2xl font-bold">Schedule</h1>
     <GridTable :rowCount="10" :columnCount="8" :grid="myGrid" @update:grid="updatedGrid" />
     <button @click="logGrid">Log Grid</button>
   </div>

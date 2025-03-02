@@ -15,6 +15,7 @@ func ExportScoresheet(ctx context.Context, tournament model.Tournament, template
 		for _, grp := range category.Groups {
 			for _, round := range grp.Rounds {
 				for _, match := range round {
+					match.CategoryShortName = category.ShortName
 					if err := AddMatchScoresheet(ctx, tournament.Name, match, templateFile); err != nil {
 						return nil, err
 					}
