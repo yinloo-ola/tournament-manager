@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/yinloo-ola/tournament-manager/model"
@@ -10,7 +11,19 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 	for i, category := range tournament.Categories {
 		for g, grp := range category.Groups {
 			rounds := generateRounds(grp.Players, category.DurationMinutes)
-			category.Groups[g].Rounds = rounds
+			if len(category.Groups[g].Rounds) == 0 {
+				category.Groups[g].Rounds = rounds
+			} else {
+				if len(category.Groups[g].Rounds) != len(rounds) {
+					return tournament, fmt.Errorf("number of rounds for group %d is not equal", g+1)
+				}
+				for i := range category.Groups[g].Rounds {
+					for j := range category.Groups[g].Rounds[i] {
+						category.Groups[g].Rounds[i][j].Player1 = rounds[i][j].Player1
+						category.Groups[g].Rounds[i][j].Player2 = rounds[i][j].Player2
+					}
+				}
+			}
 		}
 		tournament.Categories[i] = category
 	}
