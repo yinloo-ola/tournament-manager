@@ -11,6 +11,11 @@ export async function apiExportRoundRobinExcel(tournament: Tournament) {
     method: 'POST',
     body: JSON.stringify(tournament)
   }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then(text => {
+        throw new Error(`Failed to export round robin excel: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      })
+    }
     return res.blob()
   })
 }
@@ -25,6 +30,11 @@ export async function apiGenerateRounds(tournament: Tournament) {
     method: 'POST',
     body: JSON.stringify(tournament)
   }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then(text => {
+        throw new Error(`Failed to generate rounds: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      })
+    }
     return res.json()
   })
 }
@@ -39,6 +49,11 @@ export async function apiExportDraftSchedule(tournament: Tournament) {
     method: 'POST',
     body: JSON.stringify(tournament)
   }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then(text => {
+        throw new Error(`Failed to export draft schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      })
+    }
     return res.blob()
   })
 }
@@ -51,8 +66,13 @@ export async function apiImportFinalSchedule(file: File) {
       Accept: 'application/json'
     },
     method: 'POST',
-    body: file
+    body: form
   }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then(text => {
+        throw new Error(`Failed to import final schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      })
+    }
     return res.json()
   })
 }
@@ -63,7 +83,7 @@ export async function apiExportScoresheetWithTemplate(tournament: Tournament, fi
   form.append('file', file)
   // Convert tournament object to JSON string and append it to the form
   form.append('tournament', JSON.stringify(tournament))
-  
+
   return fetch('/api/exportScoresheetWithTemplate', {
     headers: {
       Accept: 'application/json'
@@ -71,6 +91,11 @@ export async function apiExportScoresheetWithTemplate(tournament: Tournament, fi
     method: 'POST',
     body: form
   }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then(text => {
+        throw new Error(`Failed to export scoresheet with template: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      })
+    }
     return res.blob()
   })
 }
