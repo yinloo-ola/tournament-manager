@@ -420,28 +420,28 @@ func Benchmark_generateRounds(b *testing.B) {
 
 }
 
-func Benchmark_generateRoundsOld(b *testing.B) {
-	players := []model.Player{
-		{
-			Name: "A",
-		},
-		{
-			Name: "B",
-		},
-		{
-			Name: "C",
-		},
-		{
-			Name: "D",
-		},
-		{
-			Name: "E",
-		},
-		{
-			Name: "F",
-		},
-	}
-	for i := 0; i < b.N; i++ {
-		out = generateRoundsOld(players, 30)
-	}
-}
+// func Benchmark_generateRoundsOld(b *testing.B) {
+// 	players := []model.Player{
+// 		{
+// 			Name: "A",
+// 		},
+// 		{
+// 			Name: "B",
+// 		},
+// 		{
+// 			Name: "C",
+// 		},
+// 		{
+// 			Name: "D",
+// 		},
+// 		{
+// 			Name: "E",
+// 		},
+// 		{
+// 			Name: "F",
+// 		},
+// 	}
+// 	for i := 0; i < b.N; i++ {
+// 		out = generateRoundsOld(players, 30)
+// 	}
+// }

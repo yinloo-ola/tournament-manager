@@ -4,8 +4,6 @@ import (
 	"log/slog"
 
 	"github.com/yinloo-ola/tournament-manager/model"
-	"github.com/yinloo-ola/tournament-manager/utils/list"
-	"github.com/yinloo-ola/tournament-manager/utils/pointer"
 )
 
 func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament, error) {
@@ -17,75 +15,6 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 		tournament.Categories[i] = category
 	}
 	return tournament, nil
-}
-
-func generateRoundsOld(players []model.Player, matchDurationMinutes int) [][]model.Match {
-	if len(players) < 2 {
-		return nil
-	}
-	player0 := players[0]
-
-	otherPlayers := list.FromSlice([]*model.Player{})
-	for i := 1; i < len(players); i++ {
-		otherPlayers.PushBack(pointer.Of(players[i]))
-	}
-	if len(players)%2 == 1 {
-		otherPlayers.PushBack(pointer.Nil[model.Player]())
-	}
-	if otherPlayers.Len%2 != 1 {
-		panic("invalid num of players to rotate. remember to add bye")
-	}
-
-	numMatches := (len(players) * (len(players) - 1)) / 2
-	numMatchesPerRound := len(players) / 2
-	numRounds := numMatches / numMatchesPerRound
-	rounds := make([][]model.Match, 0, numRounds)
-
-	for r := 0; r < numRounds; r++ {
-		round := make([]model.Match, 0, numMatchesPerRound)
-		frontElem := otherPlayers.First()
-		frontPlayer := frontElem.Value
-		matchIdx := 0
-		if frontPlayer != nil {
-			match0 := model.Match{
-				Player1:         player0,
-				Player2:         *frontPlayer,
-				DurationMinutes: matchDurationMinutes,
-			}
-			round = append(round, match0)
-			matchIdx++
-		}
-		p1Elem := otherPlayers.Last()
-		p2Elem := frontElem.Next()
-		for matchIdx < numMatchesPerRound {
-			if p1Elem == nil || p2Elem == nil {
-				break
-			}
-			p1 := p1Elem.Value
-			p2 := p2Elem.Value
-			if p1 != nil && p2 != nil {
-				m := model.Match{
-					Player1:         *p1,
-					Player2:         *p2,
-					DurationMinutes: matchDurationMinutes,
-				}
-				round = append(round, m)
-				matchIdx++
-			}
-			p1Elem = p1Elem.Prev()
-			p2Elem = p2Elem.Next()
-		}
-		rounds = append(rounds, round)
-		last := otherPlayers.Remove(otherPlayers.Last()) // rotate list
-		otherPlayers.PushFront(last)
-	}
-	isValid := isRoundValid(rounds, numMatches, numMatchesPerRound)
-	if !isValid {
-		slog.Error("generateRounds encounter error", "rounds", rounds, "numMatches", numMatches)
-		panic("generateRounds encounter error")
-	}
-	swapRoundWithPlayersToEnd(rounds, players[1], players[2])
-	return rounds
 }
 
 func swapRoundWithPlayersToEnd(rounds [][]model.Match, player1, player2 model.Player) {
@@ -127,6 +56,8 @@ func isRoundValid(rounds [][]model.Match, numMatches int, numMatchesPerRound int
 	return totalMatchCount == numMatches
 }
 
+const playerByeName = "{BYE}"
+
 func generateRounds(players []model.Player, matchDurationMinutes int) [][]model.Match {
 	if len(players) < 2 {
 		return nil
@@ -138,7 +69,9 @@ func generateRounds(players []model.Player, matchDurationMinutes int) [][]model.
 	numRounds := numMatches / numMatchesPerRound
 
 	if numPlayers%2 == 1 {
-		players = append(players, model.Player{})
+		players = append(players, model.Player{
+			Name: playerByeName,
+		})
 		numPlayers++
 	}
 
@@ -168,7 +101,7 @@ func getRoundMatches(round int, players []model.Player, matchDurationMinutes int
 		}
 		p1 := players[ind1]
 		p2 := players[ind2]
-		if len(p1.Name) == 0 || len(p2.Name) == 0 {
+		if p1.Name == playerByeName || p2.Name == playerByeName {
 			continue
 		}
 		match := model.Match{

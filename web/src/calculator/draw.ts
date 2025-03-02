@@ -1,4 +1,4 @@
-import type { Group, Player } from '@/types/types'
+import type { Group, Match, Player } from '@/types/types'
 import { getEmptyPlayer, hasEmptyPlayer } from './groups'
 
 export async function doDraw(
@@ -104,9 +104,19 @@ function drawPlayerForGrpPos(
 export function clearDraw(groups: Array<Group>) {
   for (let i = 0; i < groups.length; i++) {
     const grp = groups[i]
-    grp.rounds = []
+    clearRound(grp.rounds)
     for (let j = 0; j < grp.players.length; j++) {
       grp.players[j] = getEmptyPlayer()
+    }
+  }
+}
+
+function clearRound(rounds: Match[][]) {
+  for (let i = 0; i < rounds.length; i++) {
+    const round = rounds[i]
+    for (let j = 0; j < round.length; j++) {
+      round[j].player1 = getEmptyPlayer()
+      round[j].player2 = getEmptyPlayer() 
     }
   }
 }

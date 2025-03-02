@@ -14,6 +14,7 @@ import {
 } from '@/client/client'
 import { getDateStringFromNow } from '@/calculator/date'
 import { useRouter } from 'vue-router'
+import { importFinalSchedule } from '@/calculator/schedule'
 
 const router = useRouter()
 
@@ -68,9 +69,12 @@ function startDraw(idx: number) {
   }
   drawIndex.value = idx
 }
-function drawDone(groups: Array<Group>) {
-  tournament.value.categories[drawIndex.value].groups = groups
+async function drawDone(groups: Array<Group>) {
+  tournament.value.categories[drawIndex.value].groups
+    .forEach((_g, i) => (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players))
   drawIndex.value = -1
+  const tournamentRes = await apiGenerateRounds(tournament.value)
+  tournament.value = tournamentRes
 }
 
 function showAlert(msg: string) {
@@ -134,29 +138,10 @@ function finalScheduleFileSelected(event: Event) {
   }
   apiImportFinalSchedule(file).then((categoriesGroupsMap: { [category: string]: Group[] }) => {
     console.log(categoriesGroupsMap)
-    // replace the rounds of each group in each category with the ones from categoriesGroupsMap except for the durationMinutes in each match
-    for (let categoryIdx = 0; categoryIdx < tournament.value.categories.length; categoryIdx++) {
-      const category = tournament.value.categories[categoryIdx]
-      // Check if this category exists in the imported data
-      if (categoriesGroupsMap[category.shortName]) {
-        const importedGroups = categoriesGroupsMap[category.shortName]
-
-        // For each group in the category
-        for (let i = 0; i < category.groups.length; i++) {
-          // If there's a corresponding imported group
-          category.groups[i].rounds = importedGroups[i].rounds
-          for (let j = 0; j < category.groups[i].rounds.length; j++) {
-            for (let k = 0; k < category.groups[i].rounds[j].length; k++) {
-              category.groups[i].rounds[j][k].durationMinutes = category.durationMinutes
-            }
-          }
-        }
-      } else {
-        alert(`No data found for category ${category.name}`)
-        return
-      }
+    const ok = importFinalSchedule(categoriesGroupsMap, tournament.value)
+    if (!ok) {
+      return
     }
-    // Removed self-assignment
     alert('Final schedule imported successfully')
   }).catch(error => {
     console.error('Error importing final schedule:', error)
@@ -178,6 +163,7 @@ function onTournamentFileSelected(event: Event) {
   const reader = new FileReader()
   reader.onload = onReaderLoad
   reader.readAsText(target.files![0])
+  tournamentFile.value!.value = ''
 }
 function onReaderLoad(event: ProgressEvent<FileReader>) {
   const result = event.target?.result as string
@@ -210,6 +196,7 @@ async function exportDraftSchedule() {
   } catch (e: unknown) {
     const error = e as Error
     alert(error.message)
+    return
   }
   apiExportDraftSchedule(tournament.value)
     .then((blob) => {
