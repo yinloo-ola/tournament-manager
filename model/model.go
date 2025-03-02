@@ -33,13 +33,20 @@ type Tournament struct {
 }
 
 type Category struct {
-	Name                   string   `json:"name"`
-	ShortName              string   `json:"shortName"`
-	PlayersPerGrpMain      int      `json:"playersPerGrpMain"`
-	PlayersPerGrpRemainder int      `json:"playersPerGrpRemainder"`
-	Players                []Player `json:"players"`
-	Groups                 []Group  `json:"groups"`
-	DurationMinutes        int      `json:"durationMinutes"`
+	Name                   string          `json:"name"`
+	ShortName              string          `json:"shortName"`
+	PlayersPerGrpMain      int             `json:"playersPerGrpMain"`
+	PlayersPerGrpRemainder int             `json:"playersPerGrpRemainder"`
+	Players                []Player        `json:"players"`
+	Groups                 []Group         `json:"groups"`
+	KnockoutRounds         []KnockoutRound `json:"knockoutRounds"`
+	DurationMinutes        int             `json:"durationMinutes"`
+	NumQualifiedPerGroup   int             `json:"numQualifiedPerGroup"`
+}
+
+type KnockoutRound struct {
+	Round   int     `json:"round"`
+	Matches []Match `json:"matches"`
 }
 
 type Group struct {

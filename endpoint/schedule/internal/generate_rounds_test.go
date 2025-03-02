@@ -420,6 +420,275 @@ func Benchmark_generateRounds(b *testing.B) {
 
 }
 
+func Test_generateKnockoutRounds(t *testing.T) {
+	tests := []struct {
+		name                 string
+		groups               []model.Group
+		numQualifiedPerGroup int
+		want                 []model.KnockoutRound
+		wantErr              bool
+	}{
+		{
+			name: "not enough players",
+			groups: []model.Group{
+				{
+					Players: []model.Player{
+						{Name: "Player1"},
+					},
+				},
+			},
+			numQualifiedPerGroup: 2,
+			want:                 nil,
+			wantErr:              true,
+		},
+		{
+			name: "2 groups, 2 qualified per group",
+			groups: []model.Group{
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group2Player1"},
+						{Name: "Group2Player2"},
+						{Name: "Group2Player3"},
+					},
+				},
+			},
+			numQualifiedPerGroup: 2,
+			want: []model.KnockoutRound{
+				{
+					Round:   4,
+					Matches: make([]model.Match, 2),
+				},
+				{
+					Round:   2,
+					Matches: make([]model.Match, 1),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "4 groups, 1 qualified per group",
+			groups: []model.Group{
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group2Player1"},
+						{Name: "Group2Player2"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group3Player1"},
+						{Name: "Group3Player2"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group4Player1"},
+						{Name: "Group4Player2"},
+					},
+				},
+			},
+			numQualifiedPerGroup: 1,
+			want: []model.KnockoutRound{
+				{
+					Round:   4,
+					Matches: make([]model.Match, 2),
+				},
+				{
+					Round:   2,
+					Matches: make([]model.Match, 1),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "3 groups, 2 qualified per group",
+			groups: []model.Group{
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group2Player1"},
+						{Name: "Group2Player2"},
+						{Name: "Group2Player3"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group3Player1"},
+						{Name: "Group3Player2"},
+						{Name: "Group3Player3"},
+					},
+				},
+			},
+			numQualifiedPerGroup: 2,
+			want: []model.KnockoutRound{
+				{
+					Round:   8,
+					Matches: make([]model.Match, 2),
+				},
+				{
+					Round:   4,
+					Matches: make([]model.Match, 2),
+				},
+				{
+					Round:   2,
+					Matches: make([]model.Match, 1),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "5 groups, 5 qualified per group",
+			groups: []model.Group{
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+						{Name: "Group1Player4"},
+						{Name: "Group1Player5"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+						{Name: "Group1Player4"},
+						{Name: "Group1Player5"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+						{Name: "Group1Player4"},
+						{Name: "Group1Player5"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+						{Name: "Group1Player4"},
+						{Name: "Group1Player5"},
+					},
+				},
+				{
+					Players: []model.Player{
+						{Name: "Group1Player1"},
+						{Name: "Group1Player2"},
+						{Name: "Group1Player3"},
+						{Name: "Group1Player4"},
+						{Name: "Group1Player5"},
+					},
+				},
+			},
+			numQualifiedPerGroup: 5,
+			want: []model.KnockoutRound{
+				{
+					Round:   32,
+					Matches: make([]model.Match, 9),
+				},
+				{
+					Round:   16,
+					Matches: make([]model.Match, 8),
+				},
+				{
+					Round:   8,
+					Matches: make([]model.Match, 4),
+				},
+				{
+					Round:   4,
+					Matches: make([]model.Match, 2),
+				},
+				{
+					Round:   2,
+					Matches: make([]model.Match, 1),
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := generateKnockoutRounds(tt.groups, tt.numQualifiedPerGroup)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("generateKnockoutRounds() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				if len(got) != len(tt.want) {
+					t.Errorf("generateKnockoutRounds() returned %d rounds, want %d rounds", len(got), len(tt.want))
+					return
+				}
+
+				for i := range got {
+					if got[i].Round != tt.want[i].Round {
+						t.Errorf("generateKnockoutRounds() round[%d].Round = %d, want %d", i, got[i].Round, tt.want[i].Round)
+					}
+					if len(got[i].Matches) != len(tt.want[i].Matches) {
+						t.Errorf("generateKnockoutRounds() round[%d] has %d matches, want %d matches", i, len(got[i].Matches), len(tt.want[i].Matches))
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestNextPowerOfTwo(t *testing.T) {
+	tests := []struct {
+		input  int
+		expect int
+	}{
+		{0, 1},
+		{1, 1},
+		{2, 2},
+		{3, 4},
+		{4, 4},
+		{5, 8},
+		{7, 8},
+		{8, 8},
+		{9, 16},
+		{15, 16},
+		{16, 16},
+		{63, 64},
+		{127, 128},
+		{129, 256},
+		{1025, 2048},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("Input%d", tt.input), func(t *testing.T) {
+			if got := nextPowerOfTwo(tt.input); got != tt.expect {
+				t.Errorf("nextPowerOfTwo(%d) = %d, want %d", tt.input, got, tt.expect)
+			}
+		})
+	}
+}
+
 // func Benchmark_generateRoundsOld(b *testing.B) {
 // 	players := []model.Player{
 // 		{

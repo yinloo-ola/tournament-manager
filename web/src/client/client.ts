@@ -12,8 +12,10 @@ export async function apiExportRoundRobinExcel(tournament: Tournament) {
     body: JSON.stringify(tournament)
   }).then(function (res) {
     if (!res.ok) {
-      return res.text().then(text => {
-        throw new Error(`Failed to export round robin excel: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to export round robin excel: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
       })
     }
     return res.blob()
@@ -31,8 +33,10 @@ export async function apiGenerateRounds(tournament: Tournament) {
     body: JSON.stringify(tournament)
   }).then(function (res) {
     if (!res.ok) {
-      return res.text().then(text => {
-        throw new Error(`Failed to generate rounds: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to generate rounds: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
       })
     }
     return res.json()
@@ -50,8 +54,10 @@ export async function apiExportDraftSchedule(tournament: Tournament) {
     body: JSON.stringify(tournament)
   }).then(function (res) {
     if (!res.ok) {
-      return res.text().then(text => {
-        throw new Error(`Failed to export draft schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to export draft schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
       })
     }
     return res.blob()
@@ -69,8 +75,10 @@ export async function apiImportFinalSchedule(file: File) {
     body: form
   }).then(function (res) {
     if (!res.ok) {
-      return res.text().then(text => {
-        throw new Error(`Failed to import final schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to import final schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
       })
     }
     return res.json()
@@ -92,8 +100,10 @@ export async function apiExportScoresheetWithTemplate(tournament: Tournament, fi
     body: form
   }).then(function (res) {
     if (!res.ok) {
-      return res.text().then(text => {
-        throw new Error(`Failed to export scoresheet with template: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`)
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to export scoresheet with template: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
       })
     }
     return res.blob()
@@ -120,6 +130,9 @@ function validTournament(tournament: Tournament) {
     }
     if (category.durationMinutes == 0) {
       throw new Error('Duration must be specified')
+    }
+    if (category.numQualifiedPerGroup == 0) {
+      throw new Error('Number of players qualified per group must be specified')
     }
     if (!tournament.numTables || tournament.numTables == 0) {
       throw new Error('Number of tables must be specified')
