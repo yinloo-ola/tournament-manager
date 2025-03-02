@@ -6,14 +6,14 @@ import OutlinedButton from '../widgets/OutlinedButton.vue'
 import type { Category } from '@/types/types'
 import { isGroupEmpty } from '@/calculator/groups'
 
-const isDebug = ref(false)
+const isDebug = ref(true)
 const file = ref<HTMLInputElement | null>(null)
 function onFileSelected(event: any) {
   if (event.target.files.length === 0) {
     alert('No files selected')
     return
   }
-  const out = Papa.parse(event.target.files[0], {
+  Papa.parse(event.target.files[0], {
     skipEmptyLines: true,
     header: true,
     transformHeader: (s: string) => {
@@ -82,7 +82,7 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
 
 <template>
   <div
-    class="relative flex flex-col border border-solid border-gray-200 rounded-lg shadow-sm bg-gray-100 p-3 hover:shadow-xl">
+    class="relative flex flex-col border border-gray-200 rounded-lg border-solid bg-gray-100 p-3 shadow-sm hover:shadow-xl">
     <div @click="emit('remove')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
     <div class="h-0.5"></div>
     <LabeledInput name="category" label="Category" type="text" v-model="category.name"></LabeledInput>
@@ -109,11 +109,11 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
       </OutlinedButton>
     </div>
     <div v-if="isDebug">
-      <div v-for="(grp, g) in category.groups" class="px-2 py-2">
+      <div v-for="(grp, g) in category.groups" :key="'group-' + g" class="px-2 py-2">
         Group {{ g + 1 }}
-        <div v-for="(round, r) in grp.rounds" class="px-2 py-1">
+        <div v-for="(round, r) in grp.rounds" :key="'round-' + g + '-' + r" class="px-2 py-1">
           Round {{ r + 1 }}
-          <div v-for="(match, m) in round" class="px-2">
+          <div v-for="(match, m) in round" :key="'match-' + g + '-' + r + '-' + m" class="px-2">
             M{{ m + 1 }} <p class="text-red-700">{{ match.datetime }} on {{ match.table }} </p>
             <p>
               {{ match.player1.name }} vs {{ match.player2.name }}

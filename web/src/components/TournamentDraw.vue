@@ -7,12 +7,13 @@ import {
   isPlayerChosen,
   removePlayerFromAllGroups
 } from '@/calculator/groups'
-import type { Category, Group, Player } from '@/types/types'
+import type { Category, Group } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'
 import { getPlayerDisplay } from '@/calculator/player_display'
 import { clearDraw, doDraw } from '@/calculator/draw'
+import OutlinedButton from '@/widgets/OutlinedButton.vue'
 
 let groups = ref<Array<Group>>([])
 onMounted(() => {
@@ -68,7 +69,6 @@ function choosePlayer(grp: number, pos: number) {
   isChoosingPlayer.value = true
 }
 function unselectPlayer(grp: number, pos: number) {
-  const i = props.category.players.indexOf(groups.value[grp].players[pos])
   groups.value[grp].players[pos] = getEmptyPlayer()
 }
 function playerChosen(playerIdx: number) {
@@ -81,6 +81,12 @@ function playerChosen(playerIdx: number) {
 }
 
 let sleep = ref(10)
+
+async function clearDrawClicked() {
+  const ok = confirm('This will delete all players in the draw. Continue?')
+  if (!ok) return
+  clearDraw(groups.value)
+}
 
 async function autoDraw() {
   if (!isGroupEmpty(groups.value)) {
@@ -101,66 +107,47 @@ async function autoDraw() {
 </script>
 
 <template>
-  <div class="relative w-full h-full overflow-y-auto rounded-xl">
-    <div class="outline-none border-solid border-0 flex justify-between h-12 bg-blue-300">
+  <div class="relative h-full w-full overflow-y-auto rounded-xl">
+    <div class="h-12 flex justify-between border-0 border-solid bg-blue-300 outline-none">
       <div class="flex flex-col justify-center px-4 font-black">Draw for {{ category?.name }}</div>
-      <div class="flex items-center justify-between gap-x-4 mr-14">
-        <input
-          type="number"
-          placeholder="sleep"
-          v-model="sleep"
-          class="w-13 pl-1 border-none outline-none bg-blue-200 rounded"
-        />
-        <SimpleButton class="bg-blue-700 text-white px-5" @click="autoDraw">AUTO DRAW</SimpleButton>
+      <div class="mr-14 flex items-center justify-between gap-x-4">
+        <input type="number" placeholder="sleep" v-model="sleep"
+          class="w-13 rounded border-none bg-blue-200 pl-1 outline-none" />
+        <SimpleButton class="bg-blue-700 px-5 text-white" @click="autoDraw">AUTO DRAW</SimpleButton>
+        <OutlinedButton class="border-red-700 px-5 text-red-700" @click="clearDrawClicked">
+          CLEAR DRAW</OutlinedButton>
       </div>
-      <div
-        @click="emit('close', groups)"
-        class="i-line-md-close absolute right-3 top-3 cursor-pointer"
-      />
+      <div @click="emit('close', groups)" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
     </div>
     <div class="h-17/18 flex flex-row">
-      <div
-        class="w-64 flex flex-col pb-2 border-solid border-0 border-r overflow-y-auto bg-blue-100"
-      >
-        <div class="p-3 font-black border-solid border-0 bg-blue-200">Players</div>
-        <div
-          class="py-1 mx-3 border-solid border-0 border-b border-blue-200 decoration-blue-700 decoration-2"
-          :class="{
-            'line-through': chosenPlayersIndices[i]
-          }"
-          v-for="(player, i) in players"
-        >
+      <div class="w-64 flex flex-col overflow-y-auto border-0 border-r border-solid bg-blue-100 pb-2">
+        <div class="border-0 border-solid bg-blue-200 p-3 font-black">Players</div>
+        <div class="mx-3 border-0 border-b border-blue-200 border-solid py-1 decoration-2 decoration-blue-700" :class="{
+          'line-through': chosenPlayersIndices[i]
+        }" v-for="(player, i) in players" :key="'player-' + i">
           {{ player }}
         </div>
       </div>
       <div
-        class="w-full grid gap-4 p-4 xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 overflow-y-auto bg-blue-200"
-      >
-        <div
-          v-for="(grp, i) in groups"
-          class="flex flex-col border-solid border border-blue-200 bg-blue-100 shadow-sm hover:shadow-md rounded-lg p-2"
-        >
+        class="grid w-full gap-4 overflow-y-auto bg-blue-200 p-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
+        <div v-for="(grp, i) in groups" :key="'group-' + i"
+          class="flex flex-col border border-blue-200 rounded-lg border-solid bg-blue-100 p-2 shadow-sm hover:shadow-md">
           <div class="py-2">Group {{ i + 1 }}</div>
-          <div v-for="(playerInGrp, j) in grp.players" class="py-3 flex items-center">
+          <div v-for="(playerInGrp, j) in grp.players" :key="'player-in-group-' + i + '-' + j"
+            class="flex items-center py-3">
             <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2" />
             <span> {{ j + 1 }}.</span>
             <span class="px-2">{{ getPlayerDisplay(playerInGrp) }}</span>
-            <div
-              v-if="playerInGrp.name.length > 0"
-              @click="unselectPlayer(i, j)"
-              class="i-line-md-account-delete cursor-pointer px-2"
-            />
+            <div v-if="playerInGrp.name.length > 0" @click="unselectPlayer(i, j)"
+              class="i-line-md-account-delete cursor-pointer px-2" />
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="isChoosingPlayer" class="fixed top-6 bottom-6 w-full flex justify-center">
-      <PlayersChooser
-        :players="category.players"
-        @close="isChoosingPlayer = false"
-        @player-chosen="playerChosen"
-      ></PlayersChooser>
+    <div v-if="isChoosingPlayer" class="fixed bottom-6 top-6 w-full flex justify-center">
+      <PlayersChooser :players="category.players" @close="isChoosingPlayer = false" @player-chosen="playerChosen">
+      </PlayersChooser>
     </div>
   </div>
 </template>

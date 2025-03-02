@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Transition, ref } from 'vue'
+import { ref } from 'vue'
 import CategoryCard from '../components/CategoryCard.vue'
 import TournamentInfo from '../components/TournamentInfo.vue'
-import Draw from '../components/Draw.vue'
+import TournamentDraw from '../components/TournamentDraw.vue'
 import type { Group, Player, Tournament } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
 import {
@@ -17,7 +17,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-let tournament = ref<Tournament>({
+const tournament = ref<Tournament>({
   name: '',
   numTables: 0,
   startTime: getDateStringFromNow(7, 9),
@@ -55,12 +55,12 @@ function clearGroup(categoryIdx: number) {
   tournament.value.categories[categoryIdx].groups = []
 }
 
-let drawIndex = ref(-1)
+const drawIndex = ref(-1)
 function startDraw(idx: number) {
-  let diff =
+  const diff =
     tournament.value.categories[idx].playersPerGrpMain -
     tournament.value.categories[idx].playersPerGrpRemainder
-  if (Math.abs(diff) != 1) {
+  if (Math.abs(diff) !== 1) {
     alert(
       'Difference between "Players Per Group (Main)" and "Players Per Group (Remainder)" should be 1'
     )
@@ -99,18 +99,20 @@ function exportScoresheetWithTemplateSelected(event: Event) {
 
   apiExportScoresheetWithTemplate(tournament.value, input.files[0])
     .then((blob) => {
-      var a = document.createElement('a')
-      var file = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const file = window.URL.createObjectURL(blob)
       a.href = file
       a.download = `${tournament.value.name}_scoresheet_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
       a.click()
       window.URL.revokeObjectURL(file)
     })
-    .catch((e: any) => {
+    .catch((e: Error) => {
       alert(e.message)
     })
 
-  exportScoresheetWithTemplateFile.value!.value = ''
+  if (exportScoresheetWithTemplateFile.value) {
+    exportScoresheetWithTemplateFile.value.value = ''
+  }
 }
 
 const finalScheduleFile = ref<HTMLInputElement | null>(null)
@@ -134,7 +136,7 @@ function finalScheduleFileSelected(event: Event) {
     console.log(categoriesGroupsMap)
     // replace the rounds of each group in each category with the ones from categoriesGroupsMap except for the durationMinutes in each match
     for (let categoryIdx = 0; categoryIdx < tournament.value.categories.length; categoryIdx++) {
-      let category = tournament.value.categories[categoryIdx]
+      const category = tournament.value.categories[categoryIdx]
       // Check if this category exists in the imported data
       if (categoriesGroupsMap[category.shortName]) {
         const importedGroups = categoriesGroupsMap[category.shortName]
@@ -154,44 +156,48 @@ function finalScheduleFileSelected(event: Event) {
         return
       }
     }
-    tournament.value = tournament.value
+    // Removed self-assignment
     alert('Final schedule imported successfully')
   }).catch(error => {
     console.error('Error importing final schedule:', error)
     alert('Error importing final schedule: ' + error.message)
   })
 
-  finalScheduleFile.value!.value = ''
+  if (finalScheduleFile.value) {
+    finalScheduleFile.value.value = ''
+  }
 }
 
 const tournamentFile = ref<HTMLInputElement | null>(null)
-function onTournamentFileSelected(event: any) {
-  if (event.target.files.length === 0) {
+function onTournamentFileSelected(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files?.length === 0) {
     alert('No files selected')
     return
   }
-  var reader = new FileReader()
+  const reader = new FileReader()
   reader.onload = onReaderLoad
-  reader.readAsText(event.target.files[0])
+  reader.readAsText(target.files![0])
 }
-function onReaderLoad(event: any) {
-  var obj = JSON.parse(event.target.result)
+function onReaderLoad(event: ProgressEvent<FileReader>) {
+  const result = event.target?.result as string
+  const obj = JSON.parse(result)
   tournament.value = obj
 }
 
-let showTournamentMenu = ref(false)
+const showTournamentMenu = ref(false)
 
 function exportRoundRobin() {
   apiExportRoundRobinExcel(tournament.value)
     .then((blob) => {
-      var a = document.createElement('a')
-      var file = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const file = window.URL.createObjectURL(blob)
       a.href = file
       a.download = `${tournament.value.name}_rr_chart_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
       a.click()
       window.URL.revokeObjectURL(file)
     })
-    .catch((e: any) => {
+    .catch((e: Error) => {
       alert(e.message)
     })
 }
@@ -201,19 +207,20 @@ async function exportDraftSchedule() {
     const tournamentRes = await apiGenerateRounds(tournament.value)
     console.log(tournamentRes)
     tournament.value = tournamentRes
-  } catch (e: any) {
-    alert(e.message)
+  } catch (e: unknown) {
+    const error = e as Error
+    alert(error.message)
   }
   apiExportDraftSchedule(tournament.value)
     .then((blob) => {
-      var a = document.createElement('a')
-      var file = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const file = window.URL.createObjectURL(blob)
       a.href = file
       a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
       a.click()
       window.URL.revokeObjectURL(file)
     })
-    .catch((e: any) => {
+    .catch((e: Error) => {
       alert(e.message)
     })
 }
@@ -226,37 +233,37 @@ async function exportDraftSchedule() {
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
       <div @mouseover="showTournamentMenu = true" @mouseleave="showTournamentMenu = false" class="relative px-3 py-2">
-        <button class="bg-lime-900 text-white i-line-md-menu-fold-left h-8 w-8"></button>
+        <button class="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white"></button>
         <Transition name="bounce">
           <div v-if="showTournamentMenu"
-            class="absolute z-50 right-0 rounded-lg flex flex-col w-fit gap-1 p-2 mr-4 bg-gray-200 border-solid border border-gray-300 shadow-xl">
+            class="absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 border border-gray-300 rounded-lg border-solid bg-gray-200 p-2 shadow-xl">
             <div @click.prevent="exportTournament"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white">
+              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               SAVE
             </div>
             <div @click.prevent="tournamentFile?.click()"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white">
+              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               LOAD
             </div>
-            <div class="border-solid border-0 border-b border-gray-400"></div>
+            <div class="border-0 border-b border-gray-400 border-solid"></div>
             <div @click.prevent="exportRoundRobin"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               EXPORT RR CHARTS
             </div>
             <div @click.prevent="exportDraftSchedule"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               EXPORT DRAFT SCHEDULE
             </div>
             <div @click="finalScheduleFile?.click()"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               IMPORT FINAL SCHEDULE
             </div>
             <div @click="exportScoresheetWithTemplateFile?.click()"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white w-38">
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               EXPORT SCORESHEET WITH TEMPLATE
             </div>
             <div @click="router.push('/schedule')"
-              class="py-2 px-4 rounded-md cursor-pointer hover:bg-lime-700 hover:text-white">
+              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
               SCHEDULE
             </div>
           </div>
@@ -284,8 +291,8 @@ async function exportDraftSchedule() {
     </div>
     <Transition name="bounce">
       <div v-if="drawIndex >= 0"
-        class="fixed inset-2 bg-blue-200 rounded-xl shadow-xl border border-solid border-gray-300">
-        <Draw :category="tournament.categories[drawIndex]" @close="drawDone"></Draw>
+        class="fixed inset-2 border border-gray-300 rounded-xl border-solid bg-blue-200 shadow-xl">
+        <TournamentDraw :category="tournament.categories[drawIndex]" @close="drawDone"></TournamentDraw>
       </div>
     </Transition>
   </main>
