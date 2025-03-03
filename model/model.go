@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -69,4 +70,17 @@ type Match struct {
 	CategoryShortName string
 	GroupIdx          int
 	RoundIdx          int
+	Round             int
+	MatchIdx          int
+}
+
+func (match Match) Name() string {
+	if match.IsKnockout() {
+		return fmt.Sprintf("%s R%d", match.CategoryShortName, match.Round)
+	}
+	return fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
+}
+
+func (match Match) IsKnockout() bool {
+	return match.GroupIdx < 0
 }

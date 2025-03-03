@@ -31,7 +31,9 @@ const tournament = ref<Tournament>({
       playersPerGrpRemainder: 4,
       players: [],
       groups: [],
-      durationMinutes: 0
+      durationMinutes: 0,
+      knockoutRounds: [],
+      numQualifiedPerGroup: 0
     }
   ]
 })
@@ -44,7 +46,9 @@ function addCategory() {
     playersPerGrpRemainder: 4,
     players: [],
     groups: [],
-    durationMinutes: 0
+    durationMinutes: 0,
+    knockoutRounds: [],
+    numQualifiedPerGroup: 0
   })
 }
 
@@ -58,19 +62,30 @@ function playersImported(categoryIdx: number, players: Player[]) {
     tournament.value.categories[categoryIdx].playersPerGrpRemainder
   )
 
-  if (tournament.value.categories[categoryIdx].playersPerGrpMain > tournament.value.categories[categoryIdx].playersPerGrpRemainder) {
+  if (
+    tournament.value.categories[categoryIdx].playersPerGrpMain >
+    tournament.value.categories[categoryIdx].playersPerGrpRemainder
+  ) {
     for (let i = 0; i < numGroupsRemainder; i++) {
-      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder))
+      tournament.value.categories[categoryIdx].groups.push(
+        getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder)
+      )
     }
     for (let i = 0; i < numGroupsMain; i++) {
-      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain))
+      tournament.value.categories[categoryIdx].groups.push(
+        getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain)
+      )
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
-      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain))
+      tournament.value.categories[categoryIdx].groups.push(
+        getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain)
+      )
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
-      tournament.value.categories[categoryIdx].groups.push(getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder))
+      tournament.value.categories[categoryIdx].groups.push(
+        getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder)
+      )
     }
   }
 }
@@ -93,11 +108,16 @@ function startDraw(idx: number) {
   drawIndex.value = idx
 }
 async function drawDone(groups: Array<Group>) {
-  if (tournament.value.categories[drawIndex.value].groups == null || tournament.value.categories[drawIndex.value].groups.length === 0) {
+  if (
+    tournament.value.categories[drawIndex.value].groups == null ||
+    tournament.value.categories[drawIndex.value].groups.length === 0
+  ) {
     tournament.value.categories[drawIndex.value].groups = groups
   } else {
-    tournament.value.categories[drawIndex.value].groups
-      .forEach((_g, i) => (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players))
+    tournament.value.categories[drawIndex.value].groups.forEach(
+      (_g, i) =>
+        (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players)
+    )
   }
   drawIndex.value = -1
   const tournamentRes = await apiGenerateRounds(tournament.value)
@@ -163,17 +183,19 @@ function finalScheduleFileSelected(event: Event) {
     alert('No file selected')
     return
   }
-  apiImportFinalSchedule(file).then((categoriesGroupsMap: { [category: string]: Group[] }) => {
-    console.log(categoriesGroupsMap)
-    const ok = importFinalSchedule(categoriesGroupsMap, tournament.value)
-    if (!ok) {
-      return
-    }
-    alert('Final schedule imported successfully')
-  }).catch(error => {
-    console.error('Error importing final schedule:', error)
-    alert('Error importing final schedule: ' + error.message)
-  })
+  apiImportFinalSchedule(file)
+    .then((categoriesGroupsMap: { [category: string]: Group[] }) => {
+      console.log(categoriesGroupsMap)
+      const ok = importFinalSchedule(categoriesGroupsMap, tournament.value)
+      if (!ok) {
+        return
+      }
+      alert('Final schedule imported successfully')
+    })
+    .catch((error) => {
+      console.error('Error importing final schedule:', error)
+      alert('Error importing final schedule: ' + error.message)
+    })
 
   if (finalScheduleFile.value) {
     finalScheduleFile.value.value = ''
@@ -246,67 +268,118 @@ async function exportDraftSchedule() {
       <div class="px-4 text-2xl text-lime-900 font-800">
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
-      <div @mouseover="showTournamentMenu = true" @mouseleave="showTournamentMenu = false" class="relative px-3 py-2">
+      <div
+        @mouseover="showTournamentMenu = true"
+        @mouseleave="showTournamentMenu = false"
+        class="relative px-3 py-2"
+      >
         <button class="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white"></button>
         <Transition name="bounce">
-          <div v-if="showTournamentMenu"
-            class="absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 border border-gray-300 rounded-lg border-solid bg-gray-200 p-2 shadow-xl">
-            <div @click.prevent="exportTournament"
-              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+          <div
+            v-if="showTournamentMenu"
+            class="absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 border border-gray-300 rounded-lg border-solid bg-gray-200 p-2 shadow-xl"
+          >
+            <div
+              @click.prevent="exportTournament"
+              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               SAVE
             </div>
-            <div @click.prevent="tournamentFile?.click()"
-              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+            <div
+              @click.prevent="tournamentFile?.click()"
+              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               LOAD
             </div>
             <div class="border-0 border-b border-gray-400 border-solid"></div>
-            <div @click.prevent="exportRoundRobin"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+            <div
+              @click.prevent="exportRoundRobin"
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               EXPORT RR CHARTS
             </div>
-            <div @click.prevent="exportDraftSchedule"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+            <div
+              @click.prevent="exportDraftSchedule"
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               EXPORT DRAFT SCHEDULE
             </div>
-            <div @click="finalScheduleFile?.click()"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+            <div
+              @click="finalScheduleFile?.click()"
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               IMPORT FINAL SCHEDULE
             </div>
-            <div @click="exportScoresheetWithTemplateFile?.click()"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+            <div
+              @click="exportScoresheetWithTemplateFile?.click()"
+              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               EXPORT SCORESHEET WITH TEMPLATE
             </div>
-            <div @click="router.push('/schedule')"
-              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
+            <div
+              @click="router.push('/schedule')"
+              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white"
+            >
               SCHEDULE
             </div>
           </div>
         </Transition>
       </div>
     </header>
-    <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
-      class="invisible" />
-    <input type="file" ref="exportScoresheetWithTemplateFile" @change="exportScoresheetWithTemplateSelected"
-      accept=".xlsx" class="invisible" />
-    <input type="file" name="finalScheduleFile" id="finalScheduleFile" class="hidden" ref="finalScheduleFile"
-      accept=".xlsx" @change="finalScheduleFileSelected" />
+    <input
+      type="file"
+      name=""
+      id=""
+      ref="tournamentFile"
+      @change="onTournamentFileSelected"
+      accept=".json"
+      class="invisible"
+    />
+    <input
+      type="file"
+      ref="exportScoresheetWithTemplateFile"
+      @change="exportScoresheetWithTemplateSelected"
+      accept=".xlsx"
+      class="invisible"
+    />
+    <input
+      type="file"
+      name="finalScheduleFile"
+      id="finalScheduleFile"
+      class="hidden"
+      ref="finalScheduleFile"
+      accept=".xlsx"
+      @change="finalScheduleFileSelected"
+    />
     <div class="flex flex-col">
       <div class="flex flex-col gap-3 p-4">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>
 
-      <div class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
+      <div
+        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
+      >
         <template v-for="(category, i) in tournament.categories" :key="i">
-          <CategoryCard v-model="tournament.categories[i]" @remove="tournament.categories.splice(i, 1)"
-            @players-imported="(players) => playersImported(i, players)" @startDraw="startDraw(i)" @error="showAlert"
-            @player-count-changed="clearGroup(i)"></CategoryCard>
+          <CategoryCard
+            v-model="tournament.categories[i]"
+            @remove="tournament.categories.splice(i, 1)"
+            @players-imported="(players) => playersImported(i, players)"
+            @startDraw="startDraw(i)"
+            @error="showAlert"
+            @player-count-changed="clearGroup(i)"
+          ></CategoryCard>
         </template>
       </div>
     </div>
     <Transition name="bounce">
-      <div v-if="drawIndex >= 0"
-        class="fixed inset-2 border border-gray-300 rounded-xl border-solid bg-blue-200 shadow-xl">
-        <TournamentDraw :category="tournament.categories[drawIndex]" @close="drawDone"></TournamentDraw>
+      <div
+        v-if="drawIndex >= 0"
+        class="fixed inset-2 border border-gray-300 rounded-xl border-solid bg-blue-200 shadow-xl"
+      >
+        <TournamentDraw
+          :category="tournament.categories[drawIndex]"
+          @close="drawDone"
+        ></TournamentDraw>
       </div>
     </Transition>
   </main>

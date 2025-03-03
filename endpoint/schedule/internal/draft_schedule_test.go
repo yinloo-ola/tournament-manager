@@ -189,7 +189,7 @@ func Test_getSlotsForCategory(t *testing.T) {
 			},
 		},
 	}
-	slots := getSlotsForCategory(category, 3, time.Date(2024, 8, 10, 9, 0, 0, 0, time.Local))
+	slots := getSlotsForCategoryGroup(category, 3, time.Date(2024, 8, 10, 9, 0, 0, 0, time.Local))
 	b, _ := json.Marshal(slots)
 	t.Log(string(b))
 }
