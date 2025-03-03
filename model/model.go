@@ -76,6 +76,14 @@ type Match struct {
 
 func (match Match) Name() string {
 	if match.IsKnockout() {
+		switch match.Round {
+		case 2:
+			return fmt.Sprintf("%s F", match.CategoryShortName)
+		case 4:
+			return fmt.Sprintf("%s SF", match.CategoryShortName)
+		case 8:
+			return fmt.Sprintf("%s QF", match.CategoryShortName)
+		}
 		return fmt.Sprintf("%s R%d", match.CategoryShortName, match.Round)
 	}
 	return fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
