@@ -344,7 +344,7 @@ func getSlotsForCategoryKnockout(category model.Category, numOfTable int, startT
 		for m, match := range round.Matches {
 			// Find or create slot for match
 			var slotIdx int
-			slots, slotIdx = getOrCreateSlot(slots, tableIdx, numOfTable)
+			slots, slotIdx = getOrCreateNextSlot(slots, tableIdx, numOfTable)
 			matchStartTime := startTime.Add(time.Duration(category.DurationMinutes*slotIdx) * time.Minute)
 			// Schedule match
 			slots[slotIdx].Tables[tableIdx] = &model.Match{
@@ -422,6 +422,24 @@ func getOrCreateSlot(slots []model.TimeSlot, table int, numOfTables int) (slotsU
 			return slots, s
 		}
 	}
+	slots = append(slots, model.TimeSlot{
+		Tables: make([]*model.Match, numOfTables),
+	})
+	return slots, len(slots) - 1
+}
+
+func getOrCreateNextSlot(slots []model.TimeSlot, table int, numOfTables int) (slotsUpdated []model.TimeSlot, slotIdx int) {
+	if len(slots) == 0 {
+		slots = append(slots, model.TimeSlot{
+			Tables: make([]*model.Match, numOfTables),
+		})
+		return slots, 0
+	}
+
+	if slots[len(slots)-1].Tables[table] == nil {
+		return slots, len(slots) - 1
+	}
+
 	slots = append(slots, model.TimeSlot{
 		Tables: make([]*model.Match, numOfTables),
 	})

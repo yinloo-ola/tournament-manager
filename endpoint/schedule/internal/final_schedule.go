@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -13,10 +14,10 @@ import (
 	"github.com/yinloo-ola/tournament-manager/utils/pointer"
 )
 
-func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (map[string][]model.Group, error) {
+func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (map[string][]model.Group, map[string][]model.KnockoutRound, error) {
 	file, err := excelize.OpenReader(tournamentXlsxReader)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	slog.DebugContext(ctx, "sheets", slog.Any("sheets", file.GetSheetList()))
 	// TODO: read the excel file
@@ -24,7 +25,7 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 		RawCellValue: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// read first row and store table header into a map for later use
@@ -85,10 +86,91 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 		}
 	}
 
+	// grp matches into group matches and knockout matches.
+	// if match.GroupIdx == -1, it's a knockout match.
+	var knockoutMatches []model.Match = make([]model.Match, 0, len(matches))
+	var groupMatches []model.Match = make([]model.Match, 0, len(matches))
+	for _, match := range matches {
+		if match.GroupIdx == -1 {
+			knockoutMatches = append(knockoutMatches, match)
+		} else {
+			groupMatches = append(groupMatches, match)
+		}
+	}
+
 	// Convert matches to a map of category shortName to groups
-	categoryGroups := formCategoriesGroupsMap(matches)
-	slog.InfoContext(ctx, "matches", slog.Any("count", len(matches)), slog.Any("categoryGroups", categoryGroups))
-	return categoryGroups, nil
+	categoryGroups := formCategoriesGroupsMap(groupMatches)
+	slog.InfoContext(ctx, "group matches", slog.Any("count", len(matches)), slog.Any("categoryGroups", categoryGroups))
+
+	// Convert matches to a map of category shortName to knockout rounds
+	categoryKnockoutRounds := formCategoriesKnockoutRoundsMap(knockoutMatches)
+	slog.InfoContext(ctx, "knockout matches", slog.Any("count", len(matches)), slog.Any("categoryKnockoutRounds", categoryKnockoutRounds))
+
+	return categoryGroups, categoryKnockoutRounds, nil
+}
+
+func formCategoriesKnockoutRoundsMap(matches []model.Match) map[string][]model.KnockoutRound {
+	// Create a map to organize matches by category and round
+	categoryMap := make(map[string]map[int][]model.Match)
+
+	// Group matches by category and round
+	for _, match := range matches {
+		// Initialize category map if it doesn't exist
+		if _, ok := categoryMap[match.CategoryShortName]; !ok {
+			categoryMap[match.CategoryShortName] = make(map[int][]model.Match)
+		}
+
+		// Initialize round slice if it doesn't exist
+		if _, ok := categoryMap[match.CategoryShortName][match.Round]; !ok {
+			categoryMap[match.CategoryShortName][match.Round] = []model.Match{}
+		}
+
+		// Add match to the appropriate category and round
+		categoryMap[match.CategoryShortName][match.Round] = append(
+			categoryMap[match.CategoryShortName][match.Round], match)
+	}
+
+	// Create the result map with category shortName as key and slice of knockout rounds as value
+	result := make(map[string][]model.KnockoutRound)
+
+	for categoryName, roundMap := range categoryMap {
+		// Find all the rounds for this category
+		rounds := make([]int, 0, len(roundMap))
+		for round := range roundMap {
+			rounds = append(rounds, round)
+		}
+
+		// Sort rounds in descending order (biggest round first)
+		sort.Sort(sort.Reverse(sort.IntSlice(rounds)))
+
+		// Create knockout rounds for this category
+		knockoutRounds := make([]model.KnockoutRound, 0, len(rounds))
+
+		// Process each round
+		for _, round := range rounds {
+			// Get matches for this round
+			matchesInRound := roundMap[round]
+
+			// Sort matches by matchIdx
+			sort.Slice(matchesInRound, func(i, j int) bool {
+				return matchesInRound[i].MatchIdx < matchesInRound[j].MatchIdx
+			})
+
+			// Create a knockout round
+			knockoutRound := model.KnockoutRound{
+				Round:   round,
+				Matches: matchesInRound,
+			}
+
+			// Add the knockout round to the slice
+			knockoutRounds = append(knockoutRounds, knockoutRound)
+		}
+
+		// Add the knockout rounds to the result map
+		result[categoryName] = knockoutRounds
+	}
+
+	return result
 }
 
 func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
@@ -200,28 +282,57 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get round: %w", err)
 	}
-	round, err := strconv.Atoi(roundStr)
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to convert round to int: %w", err)
+	var round int
+	if len(roundStr) > 0 {
+		round, err = strconv.Atoi(roundStr)
+		if err != nil {
+			return model.Match{}, fmt.Errorf("fail to convert round to int: %w", err)
+		}
 	}
 	grpStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("D%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get group: %w", err)
 	}
-	grp, err := strconv.Atoi(grpStr)
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to convert group to int: %w", err)
+	var grp int
+	if len(grpStr) > 0 {
+		grp, err = strconv.Atoi(grpStr)
+		if err != nil {
+			return model.Match{}, fmt.Errorf("fail to convert group to int: %w", err)
+		}
 	}
-	player1, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("G%d", row))
+	koRoundStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("E%d", row))
+	if err != nil {
+		return model.Match{}, fmt.Errorf("fail to get koRound: %w", err)
+	}
+	var koRound int
+	if len(koRoundStr) > 0 {
+		koRound, err = strconv.Atoi(koRoundStr)
+		if err != nil {
+			return model.Match{}, fmt.Errorf("fail to convert koRound to int: %w", err)
+		}
+	}
+	koMatchStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("F%d", row))
+	if err != nil {
+		return model.Match{}, fmt.Errorf("fail to get koMatch: %w", err)
+	}
+	var koMatch int
+	if len(koMatchStr) > 0 {
+		koMatch, err = strconv.Atoi(koMatchStr)
+		if err != nil {
+			return model.Match{}, fmt.Errorf("fail to convert koMatch to int: %w", err)
+		}
+	}
+
+	player1, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("I%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
 	}
-	player1Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("H%d", row))
+	player1Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("J%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
 	}
 	var player1Seeding int
-	player1SeedingStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("I%d", row))
+	player1SeedingStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("K%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
 	}
@@ -231,15 +342,15 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 			return model.Match{}, fmt.Errorf("fail to convert player1 seeding: %w", err)
 		}
 	}
-	player2, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("J%d", row))
+	player2, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("L%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
 	}
-	player2Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("K%d", row))
+	player2Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("M%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
 	}
-	player2SeedingStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("L%d", row))
+	player2SeedingStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("N%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
 	}
@@ -264,5 +375,7 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 			Club:    pointer.OrNil(player2Club),
 			Seeding: pointer.OrNil(player2Seeding),
 		},
+		Round:    koRound,
+		MatchIdx: koMatch,
 	}, nil
 }

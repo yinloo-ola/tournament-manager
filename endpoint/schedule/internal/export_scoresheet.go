@@ -12,13 +12,29 @@ import (
 // ExportScoresheet exports the scoresheet with the given tournament and template file
 func ExportScoresheet(ctx context.Context, tournament model.Tournament, templateFile *excelize.File) (*excelize.File, error) {
 	for _, category := range tournament.Categories {
-		for _, grp := range category.Groups {
-			for _, round := range grp.Rounds {
+		for grpIdx, grp := range category.Groups {
+			for rdIdx, round := range grp.Rounds {
 				for _, match := range round {
 					match.CategoryShortName = category.ShortName
+					match.GroupIdx = grpIdx
+					match.RoundIdx = rdIdx
+					match.Round = -1
+					match.MatchIdx = -1
 					if err := AddMatchScoresheet(ctx, tournament.Name, match, templateFile); err != nil {
 						return nil, err
 					}
+				}
+			}
+		}
+		for _, koRound := range category.KnockoutRounds {
+			for m, match := range koRound.Matches {
+				match.CategoryShortName = category.ShortName
+				match.GroupIdx = -1
+				match.RoundIdx = -1
+				match.Round = koRound.Round
+				match.MatchIdx = m
+				if err := AddMatchScoresheet(ctx, tournament.Name, match, templateFile); err != nil {
+					return nil, err
 				}
 			}
 		}
@@ -51,7 +67,15 @@ func AddMatchScoresheet(ctx context.Context, tournamentName string, match model.
 		match.CategoryShortName,
 		match.GroupIdx+1,
 		match.RoundIdx+1,
-		match.Table)
+		match.Table,
+	)
+	if match.IsKnockout() {
+		newSheetName = fmt.Sprintf("%s-KO-Rd%d-%d",
+			match.CategoryShortName,
+			match.Round,
+			match.MatchIdx+1,
+		)
+	}
 
 	// Check if the sheet already exists (avoid duplicates)
 	for _, sheet := range sheets {
