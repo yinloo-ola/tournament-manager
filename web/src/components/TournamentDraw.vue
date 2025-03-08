@@ -45,7 +45,7 @@ onMounted(() => {
 })
 
 const props = defineProps<{ category: Category }>()
-const emit = defineEmits(['close'])
+
 let players = computed(() => {
   return props.category.players.map(getPlayerDisplay)
 })
@@ -117,7 +117,6 @@ async function autoDraw() {
         <OutlinedButton class="border-red-700 px-5 text-red-700" @click="clearDrawClicked">
           CLEAR DRAW</OutlinedButton>
       </div>
-      <div @click="emit('close', groups)" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
     </div>
     <div class="h-17/18 flex flex-row">
       <div class="w-64 flex flex-col overflow-y-auto border-0 border-r border-solid bg-blue-100 pb-2">

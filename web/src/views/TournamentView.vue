@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import CategoryCard from '../components/CategoryCard.vue'
 import TournamentInfo from '../components/TournamentInfo.vue'
 import TournamentDraw from '../components/TournamentDraw.vue'
+import DropdownMenu from '../widgets/DropdownMenu.vue'
+import MenuItem from '../widgets/MenuItem.vue'
+import ModalDialog from '../widgets/ModalDialog.vue'
 import type { Group, KnockoutRound, Player, Tournament } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
 import {
@@ -95,6 +98,19 @@ function clearGroup(categoryIdx: number) {
 }
 
 const drawIndex = ref(-1)
+const showDrawModal = computed({
+  get: () => drawIndex.value >= 0,
+  set: (value: boolean) => {
+    if (!value) {
+      // If the modal is being closed, save the current groups data
+      if (drawIndex.value >= 0 && tournament.value.categories[drawIndex.value].groups.length > 0) {
+        drawDone(tournament.value.categories[drawIndex.value].groups);
+      } else {
+        drawIndex.value = -1
+      }
+    }
+  }
+})
 function startDraw(idx: number) {
   const diff =
     tournament.value.categories[idx].playersPerGrpMain -
@@ -227,7 +243,7 @@ function onReaderLoad(event: ProgressEvent<FileReader>) {
   tournament.value = obj
 }
 
-const showTournamentMenu = ref(false)
+// We're now using direct function calls in the template
 
 function exportRoundRobin() {
   apiExportRoundRobinExcel(tournament.value)
@@ -275,42 +291,17 @@ async function exportDraftSchedule() {
       <div class="px-4 text-2xl text-lime-900 font-800">
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
-      <div @mouseover="showTournamentMenu = true" @mouseleave="showTournamentMenu = false" class="relative px-3 py-2">
-        <button class="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white"></button>
-        <Transition name="bounce">
-          <div v-if="showTournamentMenu"
-            class="absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 border border-gray-300 rounded-lg border-solid bg-gray-200 p-2 shadow-xl">
-            <div @click.prevent="exportTournament"
-              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              SAVE
-            </div>
-            <div @click.prevent="tournamentFile?.click()"
-              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              LOAD
-            </div>
-            <div class="border-0 border-b border-gray-400 border-solid"></div>
-            <div @click.prevent="exportRoundRobin"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              EXPORT RR CHARTS
-            </div>
-            <div @click.prevent="exportDraftSchedule"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              EXPORT DRAFT SCHEDULE
-            </div>
-            <div @click="finalScheduleFile?.click()"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              IMPORT FINAL SCHEDULE
-            </div>
-            <div @click="exportScoresheetWithTemplateFile?.click()"
-              class="w-38 cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              EXPORT SCORESHEET WITH TEMPLATE
-            </div>
-            <div @click="router.push('/schedule')"
-              class="cursor-pointer rounded-md px-4 py-2 hover:bg-lime-700 hover:text-white">
-              SCHEDULE
-            </div>
-          </div>
-        </Transition>
+      <div class="px-3 py-2">
+        <DropdownMenu>
+          <MenuItem label="SAVE" @click="exportTournament()" />
+          <MenuItem label="LOAD" @click="tournamentFile?.click()" />
+          <MenuItem divider />
+          <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />
+          <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
+          <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
+          <MenuItem label="EXPORT SCORESHEET WITH TEMPLATE" wide @click="exportScoresheetWithTemplateFile?.click()" />
+          <MenuItem label="SCHEDULE" @click="router.push('/schedule')" />
+        </DropdownMenu>
       </div>
     </header>
     <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
@@ -332,12 +323,10 @@ async function exportDraftSchedule() {
         </template>
       </div>
     </div>
-    <Transition name="bounce">
-      <div v-if="drawIndex >= 0"
-        class="fixed inset-2 border border-gray-300 rounded-xl border-solid bg-blue-200 shadow-xl">
-        <TournamentDraw :category="tournament.categories[drawIndex]" @close="drawDone"></TournamentDraw>
-      </div>
-    </Transition>
+    <ModalDialog v-model="showDrawModal" content-class="bg-blue-200">
+      <TournamentDraw v-if="drawIndex >= 0" :category="tournament.categories[drawIndex]">
+      </TournamentDraw>
+    </ModalDialog>
   </main>
 </template>
 
