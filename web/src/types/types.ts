@@ -11,7 +11,9 @@ export type Category = {
   playersPerGrpRemainder: number
   players: Array<Player>
   groups: Array<Group>
+  knockoutRounds: Array<KnockoutRound>
   durationMinutes: number
+  numQualifiedPerGroup: number
 }
 export type Player = {
   name: string
@@ -28,4 +30,8 @@ export type Match = {
 export type Group = {
   players: Array<Player>
   rounds: Array<Array<Match>>
+}
+export type KnockoutRound = {
+  round: number
+  matches: Array<Match>
 }

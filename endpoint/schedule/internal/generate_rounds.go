@@ -11,11 +11,6 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 	for i, category := range tournament.Categories {
 		for g, grp := range category.Groups {
 			rounds := generateRounds(grp.Players, category.DurationMinutes)
-			for i := range rounds {
-				for j := range rounds[i] {
-					rounds[i][j].CategoryShortName = category.ShortName
-				}
-			}
 			if len(category.Groups[g].Rounds) == 0 {
 				category.Groups[g].Rounds = rounds
 			} else {
@@ -30,6 +25,15 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 				}
 			}
 		}
+
+		if len(category.KnockoutRounds) == 0 {
+			koRounds, err := generateKnockoutRounds(category.Groups, category.NumQualifiedPerGroup)
+			if err != nil {
+				return tournament, fmt.Errorf("generate knock out rounds for category %s failed: %w", category.ShortName, err)
+			}
+			category.KnockoutRounds = koRounds
+		}
+
 		tournament.Categories[i] = category
 	}
 	return tournament, nil
@@ -74,7 +78,55 @@ func isRoundValid(rounds [][]model.Match, numMatches int, numMatchesPerRound int
 	return totalMatchCount == numMatches
 }
 
-const playerByeName = "{BYE}"
+func nextPowerOfTwo(x int) int {
+	if x <= 1 {
+		return 1
+	}
+	x--
+	x |= x >> 1
+	x |= x >> 2
+	x |= x >> 4
+	x |= x >> 8
+	x |= x >> 16
+	x |= x >> 32
+	x++
+	return x
+}
+
+func generateKnockoutRounds(groups []model.Group, numQualifiedPerGroup int) ([]model.KnockoutRound, error) {
+	for _, group := range groups {
+		if len(group.Players) < numQualifiedPerGroup {
+			return nil, fmt.Errorf("not enough players")
+		}
+	}
+
+	qualifiedPlayersNum := len(groups) * numQualifiedPerGroup
+	firstRound := nextPowerOfTwo(qualifiedPlayersNum)
+	numByes := firstRound - qualifiedPlayersNum
+	numMatches := (firstRound / 2) - numByes
+
+	koRounds := make([]model.KnockoutRound, 0)
+
+	round := firstRound
+	for ; round >= 2; round = round / 2 {
+		if round == firstRound {
+			koRound := model.KnockoutRound{
+				Round:   round,
+				Matches: make([]model.Match, numMatches),
+			}
+			koRounds = append(koRounds, koRound)
+			continue
+		}
+
+		koRound := model.KnockoutRound{
+			Round:   round,
+			Matches: make([]model.Match, round/2),
+		}
+		koRounds = append(koRounds, koRound)
+	}
+
+	return koRounds, nil
+}
 
 func generateRounds(players []model.Player, matchDurationMinutes int) [][]model.Match {
 	if len(players) < 2 {
@@ -235,3 +287,5 @@ func reverse(s []int, start, end int) {
 		s[i], s[j] = s[j], s[i]
 	}
 }
+
+const playerByeName = "{BYE}"

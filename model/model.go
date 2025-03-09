@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -33,13 +34,20 @@ type Tournament struct {
 }
 
 type Category struct {
-	Name                   string   `json:"name"`
-	ShortName              string   `json:"shortName"`
-	PlayersPerGrpMain      int      `json:"playersPerGrpMain"`
-	PlayersPerGrpRemainder int      `json:"playersPerGrpRemainder"`
-	Players                []Player `json:"players"`
-	Groups                 []Group  `json:"groups"`
-	DurationMinutes        int      `json:"durationMinutes"`
+	Name                   string          `json:"name"`
+	ShortName              string          `json:"shortName"`
+	PlayersPerGrpMain      int             `json:"playersPerGrpMain"`
+	PlayersPerGrpRemainder int             `json:"playersPerGrpRemainder"`
+	Players                []Player        `json:"players"`
+	Groups                 []Group         `json:"groups"`
+	KnockoutRounds         []KnockoutRound `json:"knockoutRounds"`
+	DurationMinutes        int             `json:"durationMinutes"`
+	NumQualifiedPerGroup   int             `json:"numQualifiedPerGroup"`
+}
+
+type KnockoutRound struct {
+	Round   int     `json:"round"`
+	Matches []Match `json:"matches"`
 }
 
 type Group struct {
@@ -62,4 +70,25 @@ type Match struct {
 	CategoryShortName string
 	GroupIdx          int
 	RoundIdx          int
+	Round             int
+	MatchIdx          int
+}
+
+func (match Match) Name() string {
+	if match.IsKnockout() {
+		switch match.Round {
+		case 2:
+			return fmt.Sprintf("%s F", match.CategoryShortName)
+		case 4:
+			return fmt.Sprintf("%s SF", match.CategoryShortName)
+		case 8:
+			return fmt.Sprintf("%s QF", match.CategoryShortName)
+		}
+		return fmt.Sprintf("%s R%d", match.CategoryShortName, match.Round)
+	}
+	return fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
+}
+
+func (match Match) IsKnockout() bool {
+	return match.GroupIdx < 0
 }

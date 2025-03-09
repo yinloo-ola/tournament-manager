@@ -89,6 +89,8 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
     <LabeledInput name="categoryShort" label="Short Form" type="text" v-model="category.shortName"></LabeledInput>
     <LabeledInput name="durationMinutes" label="Match Duration (minutes)" type="number"
       v-model.number="category.durationMinutes"></LabeledInput>
+    <LabeledInput name="numQualifiedPerGroup" label="Qualifying Players Per Group" type="number"
+      v-model.number="category.numQualifiedPerGroup"></LabeledInput>
     <LabeledInput name="players" label="Players Per Group (Main)" type="number" v-model="category.playersPerGrpMain"
       @change="() => playerCountChanged('main')" :readonly="!canChangePlayersPerGrp"></LabeledInput>
     <LabeledInput name="players" label="Players Per Group (Remainder)" type="number"

@@ -29,18 +29,13 @@ func currentCell(row int, col rune) string {
 }
 
 func generateCategoryGroupColorMap(tournament model.Tournament) map[string]string {
-	totalNumOfColors := 0
-	for _, category := range tournament.Categories {
-		totalNumOfColors += len(category.Groups)
-	}
+	totalNumOfColors := len(tournament.Categories)
 	colours := color.GenerateColors(totalNumOfColors, color.Light)
 	colorMap := make(map[string]string)
 	c := 0
 	for _, category := range tournament.Categories {
-		for grpIdx := range category.Groups {
-			colorMap[fmt.Sprintf("%s-%d", category.ShortName, grpIdx)] = colours[c]
-			c++
-		}
+		colorMap[category.ShortName] = colours[c]
+		c++
 	}
 	return colorMap
 }
@@ -84,6 +79,10 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 	cell++
 	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Group")
 	cell++
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "KO Round")
+	cell++
+	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Match")
+	cell++
 	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Date Time")
 	cell++
 	book.SetCellStr(matchesSheetName, currentCell(row, cell), "Table")
@@ -118,30 +117,35 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'A'), sn)
 			sn++
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'B'), match.CategoryShortName)
-			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'C'), match.RoundIdx+1)
-			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'D'), match.GroupIdx+1)
-			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'E'), match.DateTime)
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'F'), match.Table)
+			if !match.IsKnockout() {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'C'), match.RoundIdx+1)
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'D'), match.GroupIdx+1)
+			} else {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'E'), match.Round)
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'F'), match.MatchIdx+1)
+			}
+			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'G'), match.DateTime)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Table)
 
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'G'), match.Player1.Name)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'I'), match.Player1.Name)
 			if match.Player1.Club != nil && *match.Player1.Club != "" {
-				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), *match.Player1.Club)
+				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'J'), *match.Player1.Club)
 			}
 			if match.Player1.Seeding != nil && *match.Player1.Seeding != 0 {
-				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'I'), *match.Player1.Seeding)
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'K'), *match.Player1.Seeding)
 			}
 
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'J'), match.Player2.Name)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'L'), match.Player2.Name)
 			if match.Player2.Club != nil && *match.Player2.Club != "" {
-				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'K'), *match.Player2.Club)
+				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'M'), *match.Player2.Club)
 			}
 			if match.Player2.Seeding != nil && *match.Player2.Seeding != 0 {
-				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'L'), *match.Player2.Seeding)
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'N'), *match.Player2.Seeding)
 			}
 
 			matchesRow++
 
-			displayText := fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
+			displayText := match.Name()
 			toolTip := fmt.Sprintf("%s vs %s", match.Player1.Name, match.Player2.Name)
 			matchLink := fmt.Sprintf("matches!A%d", sn)
 			matchStyle, err := getMatchStyle(book, match, colorMap)
@@ -174,15 +178,15 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
 
-	err = book.SetColWidth(matchesSheetName, "E", "E", 16.0)
+	err = book.SetColWidth(matchesSheetName, "G", "G", 16.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
-	err = book.SetColWidth(matchesSheetName, "G", "G", 25.0)
+	err = book.SetColWidth(matchesSheetName, "I", "I", 25.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
-	err = book.SetColWidth(matchesSheetName, "J", "J", 25.0)
+	err = book.SetColWidth(matchesSheetName, "L", "L", 25.0)
 	if err != nil {
 		return fmt.Errorf("fail to set col width: %w", err)
 	}
@@ -236,7 +240,7 @@ func getHeaderStyle(book *excelize.File) (int, error) {
 }
 
 func getMatchStyle(book *excelize.File, match *model.Match, colorMap map[string]string) (int, error) {
-	color := colorMap[fmt.Sprintf("%s-%d", match.CategoryShortName, match.GroupIdx)]
+	color := colorMap[match.CategoryShortName]
 	id, err := book.NewStyle(&excelize.Style{
 		Fill: excelize.Fill{
 			Type:    "pattern",
@@ -316,7 +320,13 @@ func scheduleMatches(tournament model.Tournament) model.Schedule {
 	}
 	nextStartTime := time.Time(tournament.StartTime)
 	for _, category := range tournament.Categories {
-		slots := getSlotsForCategory(category, tournament.NumTables, nextStartTime)
+		slots := getSlotsForCategoryGroup(category, tournament.NumTables, nextStartTime)
+		schedule.TimeSlots = append(schedule.TimeSlots, slots...)
+		lastStartTime, _ := slots[len(slots)-1].StartTimeAndDuration()
+		nextStartTime = lastStartTime.Add(time.Duration(category.DurationMinutes) * time.Minute)
+	}
+	for _, category := range tournament.Categories {
+		slots := getSlotsForCategoryKnockout(category, tournament.NumTables, nextStartTime)
 		schedule.TimeSlots = append(schedule.TimeSlots, slots...)
 		lastStartTime, _ := slots[len(slots)-1].StartTimeAndDuration()
 		nextStartTime = lastStartTime.Add(time.Duration(category.DurationMinutes) * time.Minute)
@@ -324,7 +334,42 @@ func scheduleMatches(tournament model.Tournament) model.Schedule {
 	return schedule
 }
 
-func getSlotsForCategory(category model.Category, numOfTable int, startTime time.Time) []model.TimeSlot {
+// getSlotsForCategoryKnockout iterates through the knockout rounds of each category, schedule each match on a table.
+// if the timeslot is full, continue scheduling on the next timeslot
+func getSlotsForCategoryKnockout(category model.Category, numOfTable int, startTime time.Time) []model.TimeSlot {
+	slots := make([]model.TimeSlot, 0)
+
+	for _, round := range category.KnockoutRounds {
+		tableIdx := 0 // Start with first table for each round
+		for m, match := range round.Matches {
+			// Find or create slot for match
+			var slotIdx int
+			slots, slotIdx = getOrCreateNextSlot(slots, tableIdx, numOfTable)
+			matchStartTime := startTime.Add(time.Duration(category.DurationMinutes*slotIdx) * time.Minute)
+			// Schedule match
+			slots[slotIdx].Tables[tableIdx] = &model.Match{
+				Player1:           match.Player1,
+				Player2:           match.Player2,
+				DateTime:          matchStartTime,
+				DurationMinutes:   category.DurationMinutes,
+				Table:             fmt.Sprintf("T%d", tableIdx+1),
+				CategoryShortName: category.ShortName,
+				GroupIdx:          -1, // No group in knockout
+				RoundIdx:          -1,
+				Round:             round.Round,
+				MatchIdx:          m,
+			}
+			tableIdx++
+			if tableIdx == numOfTable {
+				tableIdx = 0
+			}
+		}
+	}
+
+	return slots
+}
+
+func getSlotsForCategoryGroup(category model.Category, numOfTable int, startTime time.Time) []model.TimeSlot {
 	slots := make([]model.TimeSlot, 0, 6)
 
 	grpMatchTable := map[int]map[int]int{}
@@ -377,6 +422,24 @@ func getOrCreateSlot(slots []model.TimeSlot, table int, numOfTables int) (slotsU
 			return slots, s
 		}
 	}
+	slots = append(slots, model.TimeSlot{
+		Tables: make([]*model.Match, numOfTables),
+	})
+	return slots, len(slots) - 1
+}
+
+func getOrCreateNextSlot(slots []model.TimeSlot, table int, numOfTables int) (slotsUpdated []model.TimeSlot, slotIdx int) {
+	if len(slots) == 0 {
+		slots = append(slots, model.TimeSlot{
+			Tables: make([]*model.Match, numOfTables),
+		})
+		return slots, 0
+	}
+
+	if slots[len(slots)-1].Tables[table] == nil {
+		return slots, len(slots) - 1
+	}
+
 	slots = append(slots, model.TimeSlot{
 		Tables: make([]*model.Match, numOfTables),
 	})

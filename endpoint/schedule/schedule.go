@@ -75,14 +75,22 @@ func (z *Service) ExportScoresheetWithTemplate(c *gin.Context) {
 	}
 }
 
+type ImportFinalScheduleResponse struct {
+	CategoriesGroupsMap         map[string][]model.Group         `json:"categoriesGroupsMap"`
+	CategoriesKnockoutRoundsMap map[string][]model.KnockoutRound `json:"categoriesKnockoutRoundsMap"`
+}
+
 func (z *Service) ImportFinalSchedule(c *gin.Context) {
 	ctx := c.Request.Context()
-	categoriesGroupsMap, err := internal.ImportFinalSchedule(ctx, c.Request.Body)
+	var response ImportFinalScheduleResponse
+	categoriesGroupsMap, categoriesKnockoutRoundsMap, err := internal.ImportFinalSchedule(ctx, c.Request.Body)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("ImportFinalSchedule failed: %w", err))
 		return
 	}
-	c.JSON(200, categoriesGroupsMap)
+	response.CategoriesGroupsMap = categoriesGroupsMap
+	response.CategoriesKnockoutRoundsMap = categoriesKnockoutRoundsMap
+	c.JSON(200, response)
 }
 
 func (z *Service) ExportDraftSchedule(c *gin.Context) {

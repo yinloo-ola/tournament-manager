@@ -45,7 +45,7 @@ onMounted(() => {
 })
 
 const props = defineProps<{ category: Category }>()
-const emit = defineEmits(['close'])
+
 let players = computed(() => {
   return props.category.players.map(getPlayerDisplay)
 })
@@ -117,10 +117,10 @@ async function autoDraw() {
         <OutlinedButton class="border-red-700 px-5 text-red-700" @click="clearDrawClicked">
           CLEAR DRAW</OutlinedButton>
       </div>
-      <div @click="emit('close', groups)" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
     </div>
     <div class="h-17/18 flex flex-row">
-      <div class="w-64 flex flex-col overflow-y-auto border-0 border-r border-solid bg-blue-100 pb-2">
+      <div
+        class="max-h-[calc(100vh-6rem)] w-64 flex flex-col overflow-y-auto border-0 border-r border-solid bg-blue-100 pb-2">
         <div class="border-0 border-solid bg-blue-200 p-3 font-black">Players</div>
         <div class="mx-3 border-0 border-b border-blue-200 border-solid py-1 decoration-2 decoration-blue-700" :class="{
           'line-through': chosenPlayersIndices[i]
@@ -129,7 +129,7 @@ async function autoDraw() {
         </div>
       </div>
       <div
-        class="grid w-full gap-4 overflow-y-auto bg-blue-200 p-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
+        class="grid max-h-[calc(100vh-6rem)] w-full gap-4 overflow-y-auto bg-blue-200 p-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
         <div v-for="(grp, i) in groups" :key="'group-' + i"
           class="flex flex-col border border-blue-200 rounded-lg border-solid bg-blue-100 p-2 shadow-sm hover:shadow-md">
           <div class="py-2">Group {{ i + 1 }}</div>
