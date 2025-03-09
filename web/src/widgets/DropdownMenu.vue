@@ -55,20 +55,13 @@ onUnmounted(() => {
 
 <template>
   <div class="relative">
-    <button
-      ref="buttonRef"
-      @click="toggleMenu"
-      :class="buttonClass || 'i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white'"
-    >
+    <button ref="buttonRef" @click="toggleMenu" :class="buttonClass">
       <slot name="button-content"></slot>
     </button>
     <Transition name="bounce">
-      <div
-        v-if="showMenu"
-        ref="menuRef"
+      <div v-if="showMenu" ref="menuRef"
         :class="menuClass || 'absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 border border-gray-300 rounded-lg border-solid bg-gray-200 p-2 shadow-xl'"
-        @click="closeMenuOnItemClick"
-      >
+        @click="closeMenuOnItemClick">
         <slot></slot>
       </div>
     </Transition>

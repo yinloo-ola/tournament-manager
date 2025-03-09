@@ -292,7 +292,9 @@ async function exportDraftSchedule() {
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
       <div class="px-3 py-2">
-        <DropdownMenu>
+        <DropdownMenu buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white 
+          transition-all duration-200 
+          hover:cursor-pointer active:scale-90">
           <MenuItem label="SAVE" @click="exportTournament()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
           <MenuItem divider />
@@ -323,7 +325,7 @@ async function exportDraftSchedule() {
         </template>
       </div>
     </div>
-    <ModalDialog v-model="showDrawModal" content-class="bg-blue-200">
+    <ModalDialog v-model="showDrawModal" content-class="bg-blue-200 max-h-[95vh] max-w-[95vw]">
       <TournamentDraw v-if="drawIndex >= 0" :category="tournament.categories[drawIndex]">
       </TournamentDraw>
     </ModalDialog>
