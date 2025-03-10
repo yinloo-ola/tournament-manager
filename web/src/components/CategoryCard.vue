@@ -5,6 +5,8 @@ import LabeledInput from '../widgets/LabeledInput.vue'
 import OutlinedButton from '../widgets/OutlinedButton.vue'
 import type { Category } from '@/types/types'
 import { isGroupEmpty } from '@/calculator/groups'
+import SimpleButton from '@/widgets/SimpleButton.vue'
+import router from '@/router'
 
 const isDebug = ref(true)
 const file = ref<HTMLInputElement | null>(null)
@@ -109,6 +111,12 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
       <OutlinedButton @click="file?.click()" class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white">
         IMPORT PLAYERS
       </OutlinedButton>
+    </div>
+    <div class="pb-1 pt-4">
+      <SimpleButton @click="router.push(`/tournament/matches/${category.shortName}`)"
+        class="h-10 w-full rounded-lg bg-blue-600 text-center text-white">
+        Matches
+      </SimpleButton>
     </div>
     <div v-if="isDebug">
       <div v-for="(grp, g) in category.groups" :key="'group-' + g" class="px-2 py-2">

@@ -6,7 +6,7 @@ import TournamentDraw from '../components/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import type { Group, KnockoutRound, Player, Tournament } from '@/types/types'
+import type { Group, KnockoutRound, Player } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
 import {
   apiExportDraftSchedule,
@@ -15,31 +15,9 @@ import {
   apiGenerateRounds,
   apiImportFinalSchedule
 } from '@/client/client'
-import { getDateStringFromNow } from '@/calculator/date'
-import { useRouter } from 'vue-router'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/calculator/groups'
-
-const router = useRouter()
-
-const tournament = ref<Tournament>({
-  name: '',
-  numTables: 0,
-  startTime: getDateStringFromNow(7, 9),
-  categories: [
-    {
-      name: '',
-      shortName: '',
-      playersPerGrpMain: 3,
-      playersPerGrpRemainder: 4,
-      players: [],
-      groups: [],
-      durationMinutes: 0,
-      knockoutRounds: [],
-      numQualifiedPerGroup: 0
-    }
-  ]
-})
+import { tournament } from '@/store/state'
 
 function addCategory() {
   tournament.value.categories.push({
@@ -302,7 +280,6 @@ async function exportDraftSchedule() {
           <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
           <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
           <MenuItem label="EXPORT SCORESHEET WITH TEMPLATE" wide @click="exportScoresheetWithTemplateFile?.click()" />
-          <MenuItem label="SCHEDULE" @click="router.push('/schedule')" />
         </DropdownMenu>
       </div>
     </header>

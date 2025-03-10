@@ -1,13 +1,9 @@
+import { tournament } from '@/store/state'
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: () => import('../views/HomeView.vue')
-    },
     {
       path: '/tournament',
       name: 'tournament',
@@ -17,9 +13,19 @@ const router = createRouter({
       component: () => import('../views/TournamentView.vue')
     },
     {
-      path: '/schedule',
-      name: 'schedule',
-      component: () => import('../views/ScheduleView.vue')
+      path: '/tournament/matches/:shortName',
+      name: 'matches',
+      component: () => import('../views/MatchesView.vue'),
+      props: true,
+      beforeEnter: (to, _, next) => {
+        const shortName = to.params.shortName
+        const category = tournament.value.categories.find((c) => c.shortName === shortName)
+        if (!category) {
+          next('/tournament')
+        } else {
+          next()
+        }
+      }
     }
   ]
 })

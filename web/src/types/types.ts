@@ -26,6 +26,7 @@ export type Match = {
   datetime: string
   table: string
   durationMinutes: number
+  round?: number
 }
 export type Group = {
   players: Array<Player>
