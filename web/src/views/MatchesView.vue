@@ -114,6 +114,12 @@ const knockoutMatches = computed(() => {
   })
 })
 
+const tabs = [
+  { name: 'table', label: 'Group Matches' },
+  { name: 'groups', label: 'Groups' },
+  { name: 'knockouts', label: 'Knockout Matches' },
+]
+
 onMounted(() => {
   if (!category.value) {
     router.push('/tournament')
@@ -126,7 +132,7 @@ onMounted(() => {
     <header class="flex items-center justify-between bg-lime-200 shadow-xl">
       <div class="flex items-center gap-x-4 px-4 py-2">
         <RouterLink :to="`/tournament`" class="flex items-center py-2">
-          <div class="i-line-md-arrow-left text-xl"></div>
+          <div class="i-line-md-arrow-left text-xl text-gray-500 hover:text-gray-600"></div>
         </RouterLink>
 
         <div class="text-2xl text-lime-900 font-800">
@@ -137,37 +143,15 @@ onMounted(() => {
     <div class="flex flex-1 flex-col overflow-hidden p-4">
       <!-- Tab navigation -->
       <div class="mb-0">
-        <div
-          class="flex overflow-hidden border border-b-0 border-gray-200 rounded-t-lg bg-transparent shadow-sm divide-x divide-gray-200">
-          <button @click="activeTab = 'table'"
-            class="flex-1 border-b-0 rounded-t-lg px-6 py-4 text-center font-medium transition-all duration-200 focus:outline-none"
-            :class="activeTab === 'table'
-              ? 'border-lime-500 bg-lime-50 text-lime-700'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'">
-            <div class="flex items-center justify-center gap-2">
-              <div class="i-mdi-table-clock text-xl"></div>
-              <span>Group Matches</span>
-            </div>
-          </button>
-          <button @click="activeTab = 'groups'"
-            class="flex-1 border-b-0 rounded-t-lg px-6 py-4 text-center font-medium transition-all duration-200 focus:outline-none"
-            :class="activeTab === 'groups'
-              ? 'border-lime-500 bg-lime-50 text-lime-700'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'">
-            <div class="flex items-center justify-center gap-2">
-              <div class="i-mdi-account-group text-xl"></div>
-              <span>Groups</span>
-            </div>
-          </button>
-          <button @click="activeTab = 'knockouts'"
-            class="flex-1 border-b-0 rounded-t-lg px-6 py-4 text-center font-medium transition-all duration-200 focus:outline-none"
-            :class="activeTab === 'knockouts'
-              ? 'border-lime-500 bg-lime-50 text-lime-700'
-              : 'border-transparent text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700'">
-            <div class="flex items-center justify-center gap-2">
-              <div class="i-mdi-tournament text-xl"></div>
-              <span>Knockout Matches</span>
-            </div>
+        <div class="w-full flex overflow-hidden rounded-t-lg bg-transparent shadow-sm">
+          <button v-for="(tab, index) in tabs" :key="index"
+            class="flex flex-auto justify-center border-b-0 rounded-t-2 border-solid px-1 py-2 text-sm font-medium"
+            :class="[
+              activeTab === tab.name
+                ? 'border-lime-500 bg-lime-50 text-lime-700'
+                : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700 hover:border-lime-400'
+            ]" @click="activeTab = tab.name">
+            <span>{{ tab.label }}</span>
           </button>
         </div>
       </div>
