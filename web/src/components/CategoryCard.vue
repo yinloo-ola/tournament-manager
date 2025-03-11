@@ -8,7 +8,7 @@ import { isGroupEmpty } from '@/calculator/groups'
 import SimpleButton from '@/widgets/SimpleButton.vue'
 import router from '@/router'
 
-const isDebug = ref(true)
+const isDebug = ref(false)
 const file = ref<HTMLInputElement | null>(null)
 function onFileSelected(event: any) {
   if (event.target.files.length === 0) {

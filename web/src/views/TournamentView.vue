@@ -284,12 +284,12 @@ async function exportDraftSchedule() {
       </div>
     </header>
     <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
-      class="invisible" />
+      class="hidden" />
     <input type="file" ref="exportScoresheetWithTemplateFile" @change="exportScoresheetWithTemplateSelected"
-      accept=".xlsx" class="invisible" />
+      accept=".xlsx" class="hidden" />
     <input type="file" name="finalScheduleFile" id="finalScheduleFile" class="hidden" ref="finalScheduleFile"
       accept=".xlsx" @change="finalScheduleFileSelected" />
-    <div class="flex flex-col">
+    <div class="flex flex-col pb-4">
       <div class="flex flex-col gap-3 p-4">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>

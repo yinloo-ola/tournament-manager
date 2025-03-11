@@ -135,8 +135,8 @@ onMounted(() => {
           <div class="i-line-md-arrow-left text-xl text-gray-500 hover:text-gray-600"></div>
         </RouterLink>
 
-        <div class="text-2xl text-lime-900 font-800">
-          <span class="font-black">{{ tournament.name }} - {{ category?.shortName }}</span>
+        <div class="h-full flex items-center pb-1 text-2xl text-lime-900 font-800 font-black">
+          {{ tournament.name }} - {{ category?.name }}
         </div>
       </div>
     </header>
