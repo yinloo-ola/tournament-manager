@@ -15,11 +15,22 @@ export type Category = {
   durationMinutes: number
   numQualifiedPerGroup: number
 }
+/**
+ * Represents the type of tournament entry
+ */
+export enum EntryType {
+  Singles = 'Singles',
+  Doubles = 'Doubles',
+  Team = 'Team',
+}
+
 export type Entry = {
+  entryType: EntryType
   name: string
   seeding: number | undefined
   club: string | undefined
 }
+
 export type Match = {
   entry1: Entry
   entry2: Entry

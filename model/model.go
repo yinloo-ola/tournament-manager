@@ -55,10 +55,20 @@ type Group struct {
 	Rounds  [][]Match `json:"rounds"`
 }
 
+// EntryType represents the type of tournament entry
+type EntryType string
+
+const (
+	Singles EntryType = "Singles"
+	Doubles EntryType = "Doubles"
+	Team    EntryType = "Team"
+)
+
 type Entry struct {
-	Name    string  `json:"name"`
-	Seeding *int    `json:"seeding,omitempty"`
-	Club    *string `json:"club,omitempty"`
+	Name      string    `json:"name"`
+	EntryType EntryType `json:"entryType"`
+	Seeding   *int      `json:"seeding,omitempty"`
+	Club      *string   `json:"club,omitempty"`
 }
 
 type Match struct {
