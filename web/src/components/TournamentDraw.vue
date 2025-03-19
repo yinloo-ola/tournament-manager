@@ -22,24 +22,24 @@ onMounted(() => {
     return
   }
   const { numGroupsMain, numGroupsRemainder } = calculatorGroups(
-    props.category.players.length,
-    props.category.playersPerGrpMain,
-    props.category.playersPerGrpRemainder
+    props.category.entries.length,
+    props.category.entriesPerGrpMain,
+    props.category.entriesPerGrpRemainder
   )
 
-  if (props.category.playersPerGrpMain > props.category.playersPerGrpRemainder) {
+  if (props.category.entriesPerGrpMain > props.category.entriesPerGrpRemainder) {
     for (let i = 0; i < numGroupsRemainder; i++) {
-      groups.value.push(getGroup(props.category.playersPerGrpRemainder))
+      groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
     }
     for (let i = 0; i < numGroupsMain; i++) {
-      groups.value.push(getGroup(props.category.playersPerGrpMain))
+      groups.value.push(getGroup(props.category.entriesPerGrpMain))
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
-      groups.value.push(getGroup(props.category.playersPerGrpMain))
+      groups.value.push(getGroup(props.category.entriesPerGrpMain))
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
-      groups.value.push(getGroup(props.category.playersPerGrpRemainder))
+      groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
     }
   }
 })
@@ -47,11 +47,11 @@ onMounted(() => {
 const props = defineProps<{ category: Category }>()
 
 let players = computed(() => {
-  return props.category.players.map(getPlayerDisplay)
+  return props.category.entries.map(getPlayerDisplay)
 })
 let chosenPlayersIndices = computed<{ [key: number]: boolean }>(() => {
   let out: { [key: number]: boolean } = {}
-  props.category.players.forEach((player, i) => {
+  props.category.entries.forEach((player, i) => {
     if (isPlayerChosen(player, groups.value)) {
       out[i] = true
     }
@@ -69,12 +69,12 @@ function choosePlayer(grp: number, pos: number) {
   isChoosingPlayer.value = true
 }
 function unselectPlayer(grp: number, pos: number) {
-  groups.value[grp].players[pos] = getEmptyPlayer()
+  groups.value[grp].entries[pos] = getEmptyPlayer()
 }
 function playerChosen(playerIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
-  removePlayerFromAllGroups(groups.value, props.category.players[playerIdx])
-  groups.value[grpOnChoosing].players[posOnChoosing] = props.category.players[playerIdx]
+  removePlayerFromAllGroups(groups.value, props.category.entries[playerIdx])
+  groups.value[grpOnChoosing].entries[posOnChoosing] = props.category.entries[playerIdx]
   grpOnChoosing = -1
   posOnChoosing = -1
   isChoosingPlayer.value = false
@@ -93,11 +93,11 @@ async function autoDraw() {
     const ok = confirm('Auto draw will overwrite existing players. Continue?')
     if (!ok) return
   }
-  const seededPlayers = props.category.players.filter(
+  const seededPlayers = props.category.entries.filter(
     (player) => player.seeding && player.seeding > 0
   )
-  const otherPlayers = props.category.players.filter((player) => !player.seeding)
-  if (seededPlayers.length + otherPlayers.length !== props.category.players.length) {
+  const otherPlayers = props.category.entries.filter((player) => !player.seeding)
+  if (seededPlayers.length + otherPlayers.length !== props.category.entries.length) {
     alert("Something's wrong. Please check player list")
   }
   clearDraw(groups.value)
@@ -133,7 +133,7 @@ async function autoDraw() {
         <div v-for="(grp, i) in groups" :key="'group-' + i"
           class="flex flex-col border border-blue-200 rounded-lg border-solid bg-blue-100 p-2 shadow-sm hover:shadow-md">
           <div class="py-2">Group {{ i + 1 }}</div>
-          <div v-for="(playerInGrp, j) in grp.players" :key="'player-in-group-' + i + '-' + j"
+          <div v-for="(playerInGrp, j) in grp.entries" :key="'player-in-group-' + i + '-' + j"
             class="flex items-center py-3">
             <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2" />
             <span> {{ j + 1 }}.</span>
@@ -146,7 +146,7 @@ async function autoDraw() {
     </div>
 
     <div v-if="isChoosingPlayer" class="fixed bottom-6 top-6 w-full flex justify-center">
-      <PlayersChooser :players="category.players" @close="isChoosingPlayer = false" @player-chosen="playerChosen">
+      <PlayersChooser :players="category.entries" @close="isChoosingPlayer = false" @player-chosen="playerChosen">
       </PlayersChooser>
     </div>
   </div>

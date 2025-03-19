@@ -1,6 +1,6 @@
-import type { Player } from '@/types/types'
+import type { Entry } from '@/types/types'
 
-export function getPlayerDisplay(player: Player) {
+export function getPlayerDisplay(player: Entry) {
   let s = player.name
   if (player.seeding) {
     s = '#' + player.seeding + ' ' + s

@@ -51,8 +51,8 @@ export function importFinalSchedule(
         // Add each match from the imported round
         for (const importedMatch of importedRound.matches) {
           const match: Match = {
-            player1: importedMatch.player1,
-            player2: importedMatch.player2,
+            entry1: importedMatch.entry1,
+            entry2: importedMatch.entry2,
             datetime: importedMatch.datetime,
             table: importedMatch.table,
             durationMinutes: category.durationMinutes

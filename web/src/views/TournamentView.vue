@@ -6,7 +6,7 @@ import TournamentDraw from '../components/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import type { Group, KnockoutRound, Player } from '@/types/types'
+import type { Group, KnockoutRound, Entry } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
 import {
   apiExportDraftSchedule,
@@ -23,9 +23,9 @@ function addCategory() {
   tournament.value.categories.push({
     name: '',
     shortName: '',
-    playersPerGrpMain: 3,
-    playersPerGrpRemainder: 4,
-    players: [],
+    entriesPerGrpMain: 3,
+    entriesPerGrpRemainder: 4,
+    entries: [],
     groups: [],
     durationMinutes: 0,
     knockoutRounds: [],
@@ -33,39 +33,39 @@ function addCategory() {
   })
 }
 
-function playersImported(categoryIdx: number, players: Player[]) {
+function playersImported(categoryIdx: number, players: Entry[]) {
   clearGroup(categoryIdx)
-  tournament.value.categories[categoryIdx].players = players
+  tournament.value.categories[categoryIdx].entries = players
 
   const { numGroupsMain, numGroupsRemainder } = calculatorGroups(
-    tournament.value.categories[categoryIdx].players.length,
-    tournament.value.categories[categoryIdx].playersPerGrpMain,
-    tournament.value.categories[categoryIdx].playersPerGrpRemainder
+    tournament.value.categories[categoryIdx].entries.length,
+    tournament.value.categories[categoryIdx].entriesPerGrpMain,
+    tournament.value.categories[categoryIdx].entriesPerGrpRemainder
   )
 
   if (
-    tournament.value.categories[categoryIdx].playersPerGrpMain >
-    tournament.value.categories[categoryIdx].playersPerGrpRemainder
+    tournament.value.categories[categoryIdx].entriesPerGrpMain >
+    tournament.value.categories[categoryIdx].entriesPerGrpRemainder
   ) {
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
       )
     }
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpMain)
       )
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpMain)
       )
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
       )
     }
   }
@@ -91,8 +91,8 @@ const showDrawModal = computed({
 })
 function startDraw(idx: number) {
   const diff =
-    tournament.value.categories[idx].playersPerGrpMain -
-    tournament.value.categories[idx].playersPerGrpRemainder
+    tournament.value.categories[idx].entriesPerGrpMain -
+    tournament.value.categories[idx].entriesPerGrpRemainder
   if (Math.abs(diff) !== 1) {
     alert(
       'Difference between "Players Per Group (Main)" and "Players Per Group (Remainder)" should be 1'
@@ -110,7 +110,7 @@ async function drawDone(groups: Array<Group>) {
   } else {
     tournament.value.categories[drawIndex.value].groups.forEach(
       (_g, i) =>
-        (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players)
+        (tournament.value.categories[drawIndex.value].groups[i].entries = groups[i].entries)
     )
   }
   drawIndex.value = -1

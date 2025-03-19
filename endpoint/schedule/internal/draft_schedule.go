@@ -127,26 +127,26 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'G'), match.DateTime)
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Table)
 
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'I'), match.Player1.Name)
-			if match.Player1.Club != nil && *match.Player1.Club != "" {
-				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'J'), *match.Player1.Club)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1.Name)
+			if match.Entry1.Club != nil && *match.Entry1.Club != "" {
+				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'J'), *match.Entry1.Club)
 			}
-			if match.Player1.Seeding != nil && *match.Player1.Seeding != 0 {
-				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'K'), *match.Player1.Seeding)
+			if match.Entry1.Seeding != nil && *match.Entry1.Seeding != 0 {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'K'), *match.Entry1.Seeding)
 			}
 
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'L'), match.Player2.Name)
-			if match.Player2.Club != nil && *match.Player2.Club != "" {
-				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'M'), *match.Player2.Club)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'L'), match.Entry2.Name)
+			if match.Entry2.Club != nil && *match.Entry2.Club != "" {
+				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'M'), *match.Entry2.Club)
 			}
-			if match.Player2.Seeding != nil && *match.Player2.Seeding != 0 {
-				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'N'), *match.Player2.Seeding)
+			if match.Entry2.Seeding != nil && *match.Entry2.Seeding != 0 {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'N'), *match.Entry2.Seeding)
 			}
 
 			matchesRow++
 
 			displayText := match.Name()
-			toolTip := fmt.Sprintf("%s vs %s", match.Player1.Name, match.Player2.Name)
+			toolTip := fmt.Sprintf("%s vs %s", match.Entry1.Name, match.Entry2.Name)
 			matchLink := fmt.Sprintf("matches!A%d", sn)
 			matchStyle, err := getMatchStyle(book, match, colorMap)
 			if err != nil {
@@ -348,8 +348,8 @@ func getSlotsForCategoryKnockout(category model.Category, numOfTable int, startT
 			matchStartTime := startTime.Add(time.Duration(category.DurationMinutes*slotIdx) * time.Minute)
 			// Schedule match
 			slots[slotIdx].Tables[tableIdx] = &model.Match{
-				Player1:           match.Player1,
-				Player2:           match.Player2,
+				Entry1:            match.Entry1,
+				Entry2:            match.Entry2,
 				DateTime:          matchStartTime,
 				DurationMinutes:   category.DurationMinutes,
 				Table:             fmt.Sprintf("T%d", tableIdx+1),
@@ -394,8 +394,8 @@ func getSlotsForCategoryGroup(category model.Category, numOfTable int, startTime
 				slots, slotIdx = getOrCreateSlot(slots, tableIdx, numOfTable)
 				matchStartTime := startTime.Add(time.Duration(category.DurationMinutes*slotIdx) * time.Minute)
 				slots[slotIdx].Tables[tableIdx] = &model.Match{
-					Player1:           match.Player1,
-					Player2:           match.Player2,
+					Entry1:            match.Entry1,
+					Entry2:            match.Entry2,
 					DurationMinutes:   category.DurationMinutes,
 					DateTime:          matchStartTime,
 					Table:             fmt.Sprintf("T%d", tableIdx+1),

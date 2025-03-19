@@ -47,7 +47,7 @@ func Benchmark_getRoundPlayersIndicesWithRotation(b *testing.B) {
 }
 
 func Test_getRoundMatches(t *testing.T) {
-	players := []model.Player{
+	players := []model.Entry{
 		{
 			Name: "A",
 		},
@@ -63,7 +63,7 @@ func Test_getRoundMatches(t *testing.T) {
 	}
 	type args struct {
 		round   int
-		players []model.Player
+		players []model.Entry
 	}
 	tests := []struct {
 		args args
@@ -76,19 +76,19 @@ func Test_getRoundMatches(t *testing.T) {
 			},
 			want: []model.Match{
 				{
-					Player1: model.Player{
+					Entry1: model.Entry{
 						Name: "A",
 					},
-					Player2: model.Player{
+					Entry2: model.Entry{
 						Name: "B",
 					},
 					DurationMinutes: 30,
 				},
 				{
-					Player1: model.Player{
+					Entry1: model.Entry{
 						Name: "C",
 					},
-					Player2: model.Player{
+					Entry2: model.Entry{
 						Name: "D",
 					},
 					DurationMinutes: 30,
@@ -102,19 +102,19 @@ func Test_getRoundMatches(t *testing.T) {
 			},
 			want: []model.Match{
 				{
-					Player1: model.Player{
+					Entry1: model.Entry{
 						Name: "A",
 					},
-					Player2: model.Player{
+					Entry2: model.Entry{
 						Name: "C",
 					},
 					DurationMinutes: 30,
 				},
 				{
-					Player1: model.Player{
+					Entry1: model.Entry{
 						Name: "B",
 					},
-					Player2: model.Player{
+					Entry2: model.Entry{
 						Name: "D",
 					},
 					DurationMinutes: 30,
@@ -128,19 +128,19 @@ func Test_getRoundMatches(t *testing.T) {
 			},
 			want: []model.Match{
 				{
-					Player1: model.Player{
+					Entry1: model.Entry{
 						Name: "A",
 					},
-					Player2: model.Player{
+					Entry2: model.Entry{
 						Name: "D",
 					},
 					DurationMinutes: 30,
 				},
 				{
-					Player1: model.Player{
+					Entry1: model.Entry{
 						Name: "B",
 					},
-					Player2: model.Player{
+					Entry2: model.Entry{
 						Name: "C",
 					},
 					DurationMinutes: 30,
@@ -160,7 +160,7 @@ func Test_getRoundMatches(t *testing.T) {
 }
 
 func Benchmark_getRoundMatches(b *testing.B) {
-	players := []model.Player{
+	players := []model.Entry{
 		{
 			Name: "A",
 		},
@@ -195,7 +195,7 @@ func Benchmark_getRoundMatches(b *testing.B) {
 }
 
 func Test_generateRounds(t *testing.T) {
-	players := []model.Player{
+	players := []model.Entry{
 		{
 			Name: "A",
 		},
@@ -216,7 +216,7 @@ func Test_generateRounds(t *testing.T) {
 		},
 	}
 	type args struct {
-		players              []model.Player
+		players              []model.Entry
 		matchDurationMinutes int
 	}
 	tests := []struct {
@@ -233,28 +233,28 @@ func Test_generateRounds(t *testing.T) {
 			want: [][]model.Match{
 				{
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "A",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "B",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "C",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "D",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "E",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "F",
 						},
 						DurationMinutes: 30,
@@ -262,28 +262,28 @@ func Test_generateRounds(t *testing.T) {
 				},
 				{
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "A",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "C",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "B",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "E",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "D",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "F",
 						},
 						DurationMinutes: 30,
@@ -291,28 +291,28 @@ func Test_generateRounds(t *testing.T) {
 				},
 				{
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "A",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "E",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "C",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "F",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "B",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "D",
 						},
 						DurationMinutes: 30,
@@ -320,28 +320,28 @@ func Test_generateRounds(t *testing.T) {
 				},
 				{
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "A",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "D",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "B",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "F",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "C",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "E",
 						},
 						DurationMinutes: 30,
@@ -349,28 +349,28 @@ func Test_generateRounds(t *testing.T) {
 				},
 				{
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "A",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "F",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "D",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "E",
 						},
 						DurationMinutes: 30,
 					},
 					{
-						Player1: model.Player{
+						Entry1: model.Entry{
 							Name: "B",
 						},
-						Player2: model.Player{
+						Entry2: model.Entry{
 							Name: "C",
 						},
 						DurationMinutes: 30,
@@ -393,7 +393,7 @@ func Test_generateRounds(t *testing.T) {
 var out [][]model.Match
 
 func Benchmark_generateRounds(b *testing.B) {
-	players := []model.Player{
+	players := []model.Entry{
 		{
 			Name: "A",
 		},
@@ -432,7 +432,7 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			name: "not enough players",
 			groups: []model.Group{
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Player1"},
 					},
 				},
@@ -445,14 +445,14 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			name: "2 groups, 2 qualified per group",
 			groups: []model.Group{
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group2Player1"},
 						{Name: "Group2Player2"},
 						{Name: "Group2Player3"},
@@ -476,25 +476,25 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			name: "4 groups, 1 qualified per group",
 			groups: []model.Group{
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group2Player1"},
 						{Name: "Group2Player2"},
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group3Player1"},
 						{Name: "Group3Player2"},
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group4Player1"},
 						{Name: "Group4Player2"},
 					},
@@ -517,21 +517,21 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			name: "3 groups, 2 qualified per group",
 			groups: []model.Group{
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group2Player1"},
 						{Name: "Group2Player2"},
 						{Name: "Group2Player3"},
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group3Player1"},
 						{Name: "Group3Player2"},
 						{Name: "Group3Player3"},
@@ -559,7 +559,7 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			name: "5 groups, 5 qualified per group",
 			groups: []model.Group{
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},
@@ -568,7 +568,7 @@ func Test_generateKnockoutRounds(t *testing.T) {
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},
@@ -577,7 +577,7 @@ func Test_generateKnockoutRounds(t *testing.T) {
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},
@@ -586,7 +586,7 @@ func Test_generateKnockoutRounds(t *testing.T) {
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},
@@ -595,7 +595,7 @@ func Test_generateKnockoutRounds(t *testing.T) {
 					},
 				},
 				{
-					Players: []model.Player{
+					Entries: []model.Entry{
 						{Name: "Group1Player1"},
 						{Name: "Group1Player2"},
 						{Name: "Group1Player3"},

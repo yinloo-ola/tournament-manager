@@ -1,4 +1,4 @@
-import type { Group, Player } from '@/types/types'
+import type { Group, Entry } from '@/types/types'
 
 export function calculatorGroups(
   playersCount: number,
@@ -22,16 +22,16 @@ export function calculatorGroups(
   }
 }
 
-export function removePlayerFromAllGroups(groups: Array<Group>, player: Player) {
+export function removePlayerFromAllGroups(groups: Array<Group>, player: Entry) {
   for (let i = 0; i < groups.length; i++) {
     const grp = groups[i]
-    if (!grp || !grp.players) {
+    if (!grp || !grp.entries) {
       continue
     }
-    for (let j = 0; j < grp.players.length; j++) {
-      const p = grp.players[j]
+    for (let j = 0; j < grp.entries.length; j++) {
+      const p = grp.entries[j]
       if (isSamePlayer(p, player)) {
-        grp.players[j] = getEmptyPlayer()
+        grp.entries[j] = getEmptyPlayer()
       }
     }
   }
@@ -40,18 +40,18 @@ export function removePlayerFromAllGroups(groups: Array<Group>, player: Player) 
 export function getGroup(numPlayers: number): Group {
   const group: Group = {
     rounds: [],
-    players: []
+    entries: []
   }
-  const players: Array<Player> = []
+  const players: Array<Entry> = []
   for (let j = 0; j < numPlayers; j++) {
     players.push(getEmptyPlayer())
-    group.players = players
+    group.entries = players
     group.rounds = []
   }
   return group
 }
 
-export function getEmptyPlayer(): Player {
+export function getEmptyPlayer(): Entry {
   return {
     name: '',
     club: undefined,
@@ -59,21 +59,21 @@ export function getEmptyPlayer(): Player {
   }
 }
 
-export function isSamePlayer(p1: Player, p2: Player): boolean {
+export function isSamePlayer(p1: Entry, p2: Entry): boolean {
   if (p1.name === p2.name && p1.club === p2.club && p1.seeding === p2.seeding) {
     return true
   }
   return false
 }
 
-export function isPlayerChosen(p: Player, groups: Array<Group>): boolean {
+export function isPlayerChosen(p: Entry, groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
-    if (!grp || !grp.players) {
+    if (!grp || !grp.entries) {
       continue
     }
-    for (let j = 0; j < grp.players.length; j++) {
-      const player = grp.players[j]
+    for (let j = 0; j < grp.entries.length; j++) {
+      const player = grp.entries[j]
       if (isSamePlayer(player, p)) {
         return true
       }
@@ -85,11 +85,11 @@ export function isPlayerChosen(p: Player, groups: Array<Group>): boolean {
 export function hasEmptyPlayer(groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
-    if (!grp || !grp.players) {
+    if (!grp || !grp.entries) {
       continue
     }
-    for (let j = 0; j < grp.players.length; j++) {
-      const player = grp.players[j]
+    for (let j = 0; j < grp.entries.length; j++) {
+      const player = grp.entries[j]
       if (player.name.length === 0) {
         return true
       }
@@ -101,11 +101,11 @@ export function hasEmptyPlayer(groups: Array<Group>): boolean {
 export function isGroupEmpty(groups: Array<Group>): boolean {
   for (let idx = 0; idx < groups.length; idx++) {
     const grp = groups[idx]
-    if (!grp || !grp.players) {
+    if (!grp || !grp.entries) {
       continue
     }
-    for (let j = 0; j < grp.players.length; j++) {
-      const player = grp.players[j]
+    for (let j = 0; j < grp.entries.length; j++) {
+      const player = grp.entries[j]
       if (player.name.length > 0) {
         return false
       }

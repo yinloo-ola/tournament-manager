@@ -91,25 +91,25 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
     <LabeledInput name="categoryShort" label="Short Form" type="text" v-model="category.shortName"></LabeledInput>
     <LabeledInput name="durationMinutes" label="Match Duration (minutes)" type="number"
       v-model.number="category.durationMinutes"></LabeledInput>
-    <LabeledInput name="numQualifiedPerGroup" label="Qualifying Players Per Group" type="number"
+    <LabeledInput name="numQualifiedPerGroup" label="Qualifying Entries Per Group" type="number"
       v-model.number="category.numQualifiedPerGroup"></LabeledInput>
-    <LabeledInput name="players" label="Players Per Group (Main)" type="number" v-model="category.playersPerGrpMain"
+    <LabeledInput name="players" label="Entries Per Group (Main)" type="number" v-model="category.entriesPerGrpMain"
       @change="() => playerCountChanged('main')" :readonly="!canChangePlayersPerGrp"></LabeledInput>
-    <LabeledInput name="players" label="Players Per Group (Remainder)" type="number"
-      v-model="category.playersPerGrpRemainder" @change="() => playerCountChanged('remainder')"
+    <LabeledInput name="players" label="Entries Per Group (Remainder)" type="number"
+      v-model="category.entriesPerGrpRemainder" @change="() => playerCountChanged('remainder')"
       :readonly="!canChangePlayersPerGrp"></LabeledInput>
-    <LabeledInput name="playerCount" label="Players Count" type="number" readonly v-model="category.players.length">
+    <LabeledInput name="playerCount" label="Entries Count" type="number" readonly v-model="category.entries.length">
     </LabeledInput>
     <div class="flex flex-row justify-between gap-4 pb-1 pt-4">
       <input type="file" name="inputfile" id="inputfile" class="hidden" ref="file" accept=".csv"
         @change="onFileSelected" />
       <OutlinedButton @click="emit('startDraw')"
         class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white"
-        :disabled="category.players.length === 0">
+        :disabled="category.entries.length === 0">
         DO DRAW
       </OutlinedButton>
       <OutlinedButton @click="file?.click()" class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white">
-        IMPORT PLAYERS
+        IMPORT ENTRIES
       </OutlinedButton>
     </div>
     <div class="pb-1 pt-4">
@@ -126,7 +126,7 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
           <div v-for="(match, m) in round" :key="'match-' + g + '-' + r + '-' + m" class="px-2">
             M{{ m + 1 }} <p class="text-red-700">{{ match.datetime }} on {{ match.table }} </p>
             <p>
-              {{ match.player1.name }} vs {{ match.player2.name }}
+              {{ match.entry1.name }} vs {{ match.entry2.name }}
             </p>
           </div>
         </div>

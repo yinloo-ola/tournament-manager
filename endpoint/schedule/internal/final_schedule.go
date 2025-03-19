@@ -210,7 +210,7 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 		groups := make([]model.Group, len(groupMap))
 
 		// Create a map to track all players in this category
-		categoryPlayerMap := make(map[string]model.Player)
+		categoryPlayerMap := make(map[string]model.Entry)
 
 		// Process each group
 		for groupIdx, roundMap := range groupMap {
@@ -226,7 +226,7 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 			rounds := make([][]model.Match, maxRoundIdx+1)
 
 			// Create a map to track players in this group
-			groupPlayerMap := make(map[string]model.Player)
+			groupPlayerMap := make(map[string]model.Entry)
 
 			// Fill in the rounds
 			for roundIdx, matchesInRound := range roundMap {
@@ -234,15 +234,15 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 
 				// Add players to both maps
 				for _, match := range matchesInRound {
-					categoryPlayerMap[match.Player1.Name] = match.Player1
-					categoryPlayerMap[match.Player2.Name] = match.Player2
-					groupPlayerMap[match.Player1.Name] = match.Player1
-					groupPlayerMap[match.Player2.Name] = match.Player2
+					categoryPlayerMap[match.Entry1.Name] = match.Entry1
+					categoryPlayerMap[match.Entry2.Name] = match.Entry2
+					groupPlayerMap[match.Entry1.Name] = match.Entry1
+					groupPlayerMap[match.Entry2.Name] = match.Entry2
 				}
 			}
 
 			// Convert group player map to slice
-			groupPlayers := make([]model.Player, 0, len(groupPlayerMap))
+			groupPlayers := make([]model.Entry, 0, len(groupPlayerMap))
 			for _, player := range groupPlayerMap {
 				groupPlayers = append(groupPlayers, player)
 			}
@@ -250,7 +250,7 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 			// Create a group
 			group := model.Group{
 				Rounds:  rounds,
-				Players: groupPlayers,
+				Entries: groupPlayers,
 			}
 
 			// Add the group to the slice
@@ -365,12 +365,12 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 		CategoryShortName: category,
 		RoundIdx:          round - 1,
 		GroupIdx:          grp - 1,
-		Player1: model.Player{
+		Entry1: model.Entry{
 			Name:    player1,
 			Club:    pointer.OrNil(player1Club),
 			Seeding: pointer.OrNil(player1Seeding),
 		},
-		Player2: model.Player{
+		Entry2: model.Entry{
 			Name:    player2,
 			Club:    pointer.OrNil(player2Club),
 			Seeding: pointer.OrNil(player2Seeding),

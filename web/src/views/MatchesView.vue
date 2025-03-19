@@ -2,7 +2,7 @@
 import { tournament } from '@/store/state';
 import { computed, onMounted, ref } from 'vue';
 import router from '@/router'
-import type { Match, Group, Player } from '@/types/types';
+import type { Match, Group, Entry } from '@/types/types';
 
 const props = defineProps({
   shortName: {
@@ -48,8 +48,8 @@ const getGroupForMatch = (match: Match): string => {
     for (const group of category.value.groups) {
       for (const round of group.rounds) {
         if (round.some(m => m.datetime === match.datetime &&
-          m.player1.name === match.player1.name &&
-          m.player2.name === match.player2.name)) {
+          m.entry1.name === match.entry1.name &&
+          m.entry2.name === match.entry2.name)) {
           // Find the group index
           const groupIndex = category.value.groups.indexOf(group) + 1;
           return `Group ${groupIndex}`;
@@ -85,13 +85,13 @@ const categoryGroups = computed(() => {
 });
 
 // Helper function to get player position in a group
-const getPlayerPosition = (group: Group, player: Player): number => {
+const getPlayerPosition = (group: Group, player: Entry): number => {
   // This is a placeholder - in a real app you would calculate position based on points
   return 0
 };
 
 // Helper function to get player points in a group
-const getPlayerPoints = (group: Group, player: Player): number => {
+const getPlayerPoints = (group: Group, player: Entry): number => {
   // This is a placeholder - in a real app you would calculate points based on match results
   return 0; // Placeholder value
 };
@@ -199,10 +199,10 @@ onMounted(() => {
                   {{ formatTime(match.datetime) }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.player1.name }}
+                  {{ match.entry1.name }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.player2.name }}
+                  {{ match.entry2.name }}
                 </td>
               </tr>
             </tbody>
@@ -248,10 +248,10 @@ onMounted(() => {
                   {{ formatTime(match.datetime) }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.player1.name }}
+                  {{ match.entry1.name }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.player2.name }}
+                  {{ match.entry2.name }}
                 </td>
               </tr>
             </tbody>
@@ -275,7 +275,7 @@ onMounted(() => {
                     class="border-b border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase">
                     Player</th>
                   <!-- Generate columns for each player in the group -->
-                  <th v-for="(_, playerIndex) in group.players" :key="playerIndex"
+                  <th v-for="(_, playerIndex) in group.entries" :key="playerIndex"
                     class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase">
                     {{ playerIndex + 1 }}
                   </th>
@@ -289,7 +289,7 @@ onMounted(() => {
               </thead>
               <tbody class="bg-white divide-y divide-gray-200 divide-solid">
                 <!-- Row for each player in the group -->
-                <tr v-for="(player, playerIndex) in group.players" :key="player.name"
+                <tr v-for="(player, playerIndex) in group.entries" :key="player.name"
                   class="transition-colors duration-150 divide-x divide-gray-200 hover:bg-lime-50">
                   <td class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900 font-medium">
                     {{ playerIndex + 1 }}
@@ -298,7 +298,7 @@ onMounted(() => {
                     {{ player.name }} {{ player.club ? `(${player.club})` : '' }}
                   </td>
                   <!-- Cell for each player matchup -->
-                  <td v-for="(opponent, opponentIndex) in group.players" :key="opponent.name"
+                  <td v-for="(opponent, opponentIndex) in group.entries" :key="opponent.name"
                     class="border-r border-gray-200 px-4 py-2 text-center text-sm text-gray-500"
                     :class="{ 'bg-gray-900': playerIndex === opponentIndex }">
                     <!-- Display match result if not the same player -->

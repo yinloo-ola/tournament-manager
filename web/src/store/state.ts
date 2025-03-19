@@ -10,9 +10,9 @@ export const tournament = ref<Tournament>({
     {
       name: '',
       shortName: '',
-      playersPerGrpMain: 3,
-      playersPerGrpRemainder: 4,
-      players: [],
+      entriesPerGrpMain: 3,
+      entriesPerGrpRemainder: 4,
+      entries: [],
       groups: [],
       durationMinutes: 0,
       knockoutRounds: [],

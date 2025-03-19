@@ -28,8 +28,8 @@ func CreateRobinCharts(tournament model.Tournament) (endpoint.IoWriter, error) {
 func createCategorySheet(tournamentName string, category model.Category, sheet *xlsx.Sheet) error {
 	maxPlayer := 0
 	for _, grp := range category.Groups {
-		if len(grp.Players) > maxPlayer {
-			maxPlayer = len(grp.Players)
+		if len(grp.Entries) > maxPlayer {
+			maxPlayer = len(grp.Entries)
 		}
 	}
 
@@ -39,7 +39,7 @@ func createCategorySheet(tournamentName string, category model.Category, sheet *
 		c := sheet.AddRow().AddCell()
 		c.SetString(fmt.Sprintf("Group %d", g+1))
 		c.Merge(1, 0)
-		createTableForGroup(grp.Players, sheet)
+		createTableForGroup(grp.Entries, sheet)
 	}
 
 	sheet.SetColWidth(1, 1, 4.0)
@@ -54,7 +54,7 @@ func createCategorySheet(tournamentName string, category model.Category, sheet *
 	return nil
 }
 
-func createTableForGroup(grp []model.Player, sheet *xlsx.Sheet) {
+func createTableForGroup(grp []model.Entry, sheet *xlsx.Sheet) {
 	allBorderStyle := xlsx.NewStyle()
 	allBorderStyle.Alignment.Vertical = "center"
 	allBorderStyle.ApplyFill = true
