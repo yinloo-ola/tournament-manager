@@ -24,12 +24,31 @@ export enum EntryType {
   Team = 'Team',
 }
 
-export type Entry = {
+interface BaseEntry {
   entryType: EntryType
   name: string
-  seeding: number | undefined
-  club: string | undefined
+  seeding?: number
+  club?: string
 }
+
+export interface SinglesEntry extends BaseEntry {
+  entryType: EntryType.Singles
+  player: Player
+}
+
+export interface DoublesEntry extends BaseEntry {
+  entryType: EntryType.Doubles
+  players: [Player, Player]
+}
+
+export interface TeamEntry extends BaseEntry {
+  entryType: EntryType.Team
+  players: Player[]
+  minPlayers: number
+  maxPlayers: number
+}
+
+export type Entry = SinglesEntry | DoublesEntry | TeamEntry
 
 export type Match = {
   entry1: Entry
@@ -46,4 +65,9 @@ export type Group = {
 export type KnockoutRound = {
   round: number
   matches: Array<Match>
+}
+export type Player = {
+  name: string
+  dateOfBirth: string // yyyy-mm-dd
+  gender: string // M or F
 }

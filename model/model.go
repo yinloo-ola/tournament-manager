@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -64,11 +65,83 @@ const (
 	Team    EntryType = "Team"
 )
 
-type Entry struct {
+type Player struct {
+	Name        string `json:"name"`
+	DateOfBirth string `json:"dateOfBirth"` // yyyy-mm-dd
+	Gender      string `json:"gender"`      // M or F
+}
+
+type BaseEntry struct {
 	Name      string    `json:"name"`
 	EntryType EntryType `json:"entryType"`
 	Seeding   *int      `json:"seeding,omitempty"`
 	Club      *string   `json:"club,omitempty"`
+}
+
+type SinglesEntry struct {
+	BaseEntry
+	Player Player `json:"player"`
+}
+
+type DoublesEntry struct {
+	BaseEntry
+	Players [2]Player `json:"players"`
+}
+
+type TeamEntry struct {
+	BaseEntry
+	Players    []Player `json:"players"`
+	MinPlayers int      `json:"minPlayers"`
+	MaxPlayers int      `json:"maxPlayers"`
+}
+
+// Entry represents a polymorphic tournament entry
+type Entry struct {
+	EntryType EntryType   `json:"entryType"`
+	Entry     interface{} `json:"entry"`
+}
+
+// MarshalJSON customizes JSON serialization for Entry
+func (e Entry) MarshalJSON() ([]byte, error) {
+	base := map[string]interface{}{
+		"entryType": e.EntryType,
+	}
+
+	switch e.EntryType {
+	case Singles:
+		base["player"] = e.Entry.(SinglesEntry).Player
+	case Doubles:
+		base["players"] = e.Entry.(DoublesEntry).Players
+	case Team:
+		team := e.Entry.(TeamEntry)
+		base["players"] = team.Players
+		base["minPlayers"] = team.MinPlayers
+		base["maxPlayers"] = team.MaxPlayers
+	}
+
+	return json.Marshal(base)
+}
+
+// UnmarshalJSON customizes JSON deserialization for Entry
+func (e *Entry) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(raw["entryType"], &e.EntryType); err != nil {
+		return err
+	}
+
+	switch e.EntryType {
+	case Singles:
+		return json.Unmarshal(data, &e.Entry)
+	case Doubles:
+		return json.Unmarshal(data, &e.Entry)
+	case Team:
+		return json.Unmarshal(data, &e.Entry)
+	}
+	return nil
 }
 
 type Match struct {
