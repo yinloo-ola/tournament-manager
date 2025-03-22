@@ -1,4 +1,4 @@
-import type { Entry } from '@/types/types'
+import { Entry } from '@/types/types'
 
 export function getPlayerDisplay(player: Entry) {
   let s = player.name

@@ -4,8 +4,10 @@ export type Tournament = {
   startTime: string
   categories: Array<Category>
 }
+
 export type Category = {
   name: string
+  entryType: EntryType
   shortName: string
   entriesPerGrpMain: number
   entriesPerGrpRemainder: number
@@ -15,40 +17,51 @@ export type Category = {
   durationMinutes: number
   numQualifiedPerGroup: number
 }
-/**
- * Represents the type of tournament entry
- */
+
 export enum EntryType {
+  Unknown = 'Unknown',
   Singles = 'Singles',
   Doubles = 'Doubles',
-  Team = 'Team',
+  Team = 'Team'
 }
-
-interface BaseEntry {
-  entryType: EntryType
-  name: string
-  seeding?: number
-  club?: string
-}
-
-export interface SinglesEntry extends BaseEntry {
-  entryType: EntryType.Singles
+export interface SinglesEntry {
   player: Player
 }
 
-export interface DoublesEntry extends BaseEntry {
-  entryType: EntryType.Doubles
+export interface DoublesEntry {
   players: [Player, Player]
 }
 
-export interface TeamEntry extends BaseEntry {
-  entryType: EntryType.Team
+export interface TeamEntry {
+  teamName: string
   players: Player[]
   minPlayers: number
   maxPlayers: number
 }
 
-export type Entry = SinglesEntry | DoublesEntry | TeamEntry
+export class Entry {
+  constructor(
+    public entryType: EntryType,
+    public seeding?: number,
+    public club?: string,
+    public singleEntry?: SinglesEntry,
+    public doubleEntry?: DoublesEntry,
+    public teamEntry?: TeamEntry
+  ) {}
+
+  get name(): string {
+    switch (this.entryType) {
+      case EntryType.Singles:
+        return this.singleEntry!.player.name
+      case EntryType.Doubles:
+        return `${this.doubleEntry!.players[0].name} / ${this.doubleEntry!.players[1].name}`
+      case EntryType.Team:
+        return this.teamEntry!.teamName
+      default:
+        throw new Error(`Invalid entry type: ${this.entryType}`)
+    }
+  }
+}
 
 export type Match = {
   entry1: Entry
@@ -58,14 +71,17 @@ export type Match = {
   durationMinutes: number
   round?: number
 }
+
 export type Group = {
   entries: Array<Entry>
   rounds: Array<Array<Match>>
 }
+
 export type KnockoutRound = {
   round: number
   matches: Array<Match>
 }
+
 export type Player = {
   name: string
   dateOfBirth: string // yyyy-mm-dd

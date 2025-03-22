@@ -7,7 +7,7 @@ import {
   isPlayerChosen,
   removePlayerFromAllGroups
 } from '@/calculator/groups'
-import type { Category, Group } from '@/types/types'
+import { type Category, type Group } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'

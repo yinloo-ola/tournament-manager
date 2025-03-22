@@ -1,4 +1,4 @@
-import type { Group, Entry } from '@/types/types'
+import { type Group, Entry, EntryType } from '@/types/types'
 
 export function calculatorGroups(
   playersCount: number,
@@ -22,7 +22,7 @@ export function calculatorGroups(
   }
 }
 
-export function removePlayerFromAllGroups(groups: Array<Group>, player: Entry) {
+export function removePlayerFromAllGroups(groups: Array<Group>, entry: Entry) {
   for (let i = 0; i < groups.length; i++) {
     const grp = groups[i]
     if (!grp || !grp.entries) {
@@ -30,7 +30,7 @@ export function removePlayerFromAllGroups(groups: Array<Group>, player: Entry) {
     }
     for (let j = 0; j < grp.entries.length; j++) {
       const p = grp.entries[j]
-      if (isSamePlayer(p, player)) {
+      if (isSameEntry(p, entry)) {
         grp.entries[j] = getEmptyPlayer()
       }
     }
@@ -42,24 +42,20 @@ export function getGroup(numPlayers: number): Group {
     rounds: [],
     entries: []
   }
-  const players: Array<Entry> = []
+  const entries: Array<Entry> = []
   for (let j = 0; j < numPlayers; j++) {
-    players.push(getEmptyPlayer())
-    group.entries = players
+    entries.push(getEmptyPlayer())
+    group.entries = entries
     group.rounds = []
   }
   return group
 }
 
-export function getEmptyPlayer(): Entry {
-  return {
-    name: '',
-    club: undefined,
-    seeding: undefined
-  }
+export function getEmptyPlayer(entryType: EntryType = EntryType.Unknown): Entry {
+  return new Entry(entryType)
 }
 
-export function isSamePlayer(p1: Entry, p2: Entry): boolean {
+export function isSameEntry(p1: Entry, p2: Entry): boolean {
   if (p1.name === p2.name && p1.club === p2.club && p1.seeding === p2.seeding) {
     return true
   }
@@ -74,7 +70,7 @@ export function isPlayerChosen(p: Entry, groups: Array<Group>): boolean {
     }
     for (let j = 0; j < grp.entries.length; j++) {
       const player = grp.entries[j]
-      if (isSamePlayer(player, p)) {
+      if (isSameEntry(player, p)) {
         return true
       }
     }

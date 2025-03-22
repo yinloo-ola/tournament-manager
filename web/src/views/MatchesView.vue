@@ -2,7 +2,7 @@
 import { tournament } from '@/store/state';
 import { computed, onMounted, ref } from 'vue';
 import router from '@/router'
-import type { Match, Group, Entry } from '@/types/types';
+import { type Match, type Group, type Entry } from '@/types/types';
 
 const props = defineProps({
   shortName: {

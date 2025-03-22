@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { getDateStringFromNow } from '@/calculator/date'
-import type { Tournament } from '@/types/types'
+import { EntryType, type Tournament } from '@/types/types'
 
 export const tournament = ref<Tournament>({
   name: '',
@@ -9,6 +9,7 @@ export const tournament = ref<Tournament>({
   categories: [
     {
       name: '',
+      entryType: EntryType.Singles,
       shortName: '',
       entriesPerGrpMain: 3,
       entriesPerGrpRemainder: 4,

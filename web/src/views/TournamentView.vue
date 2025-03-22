@@ -6,7 +6,7 @@ import TournamentDraw from '../components/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import type { Group, KnockoutRound, Entry } from '@/types/types'
+import { type Group, type KnockoutRound, type Entry, EntryType } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
 import {
   apiExportDraftSchedule,
@@ -22,6 +22,7 @@ import { tournament } from '@/store/state'
 function addCategory() {
   tournament.value.categories.push({
     name: '',
+    entryType: EntryType.Singles,
     shortName: '',
     entriesPerGrpMain: 3,
     entriesPerGrpRemainder: 4,
@@ -82,7 +83,7 @@ const showDrawModal = computed({
     if (!value) {
       // If the modal is being closed, save the current groups data
       if (drawIndex.value >= 0 && tournament.value.categories[drawIndex.value].groups.length > 0) {
-        drawDone(tournament.value.categories[drawIndex.value].groups);
+        drawDone(tournament.value.categories[drawIndex.value].groups)
       } else {
         drawIndex.value = -1
       }
@@ -178,21 +179,23 @@ function finalScheduleFileSelected(event: Event) {
     return
   }
   apiImportFinalSchedule(file)
-    .then((response: {
-      categoriesGroupsMap: { [category: string]: Group[] },
-      categoriesKnockoutRoundsMap: { [category: string]: KnockoutRound[] }
-    }) => {
-      console.log(response)
-      const ok = importFinalSchedule(
-        response.categoriesGroupsMap,
-        response.categoriesKnockoutRoundsMap,
-        tournament.value
-      )
-      if (!ok) {
-        return
+    .then(
+      (response: {
+        categoriesGroupsMap: { [category: string]: Group[] }
+        categoriesKnockoutRoundsMap: { [category: string]: KnockoutRound[] }
+      }) => {
+        console.log(response)
+        const ok = importFinalSchedule(
+          response.categoriesGroupsMap,
+          response.categoriesKnockoutRoundsMap,
+          tournament.value
+        )
+        if (!ok) {
+          return
+        }
+        alert('Final schedule imported successfully')
       }
-      alert('Final schedule imported successfully')
-    })
+    )
     .catch((error) => {
       console.error('Error importing final schedule:', error)
       alert('Error importing final schedule: ' + error.message)
@@ -270,16 +273,22 @@ async function exportDraftSchedule() {
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
       <div class="px-3 py-2">
-        <DropdownMenu buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white 
+        <DropdownMenu
+          buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white 
           transition-all duration-200 
-          hover:cursor-pointer active:scale-90">
+          hover:cursor-pointer active:scale-90"
+        >
           <MenuItem label="SAVE" @click="exportTournament()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
           <MenuItem divider />
           <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />
           <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
           <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
-          <MenuItem label="EXPORT SCORESHEET WITH TEMPLATE" wide @click="exportScoresheetWithTemplateFile?.click()" />
+          <MenuItem
+            label="EXPORT SCORESHEET WITH TEMPLATE"
+            wide
+            @click="exportScoresheetWithTemplateFile?.click()"
+          />
         </DropdownMenu>
       </div>
     </header>
@@ -294,11 +303,18 @@ async function exportDraftSchedule() {
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>
 
-      <div class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
+      <div
+        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
+      >
         <template v-for="(category, i) in tournament.categories" :key="i">
-          <CategoryCard v-model="tournament.categories[i]" @remove="tournament.categories.splice(i, 1)"
-            @players-imported="(players) => playersImported(i, players)" @startDraw="startDraw(i)" @error="showAlert"
-            @player-count-changed="clearGroup(i)"></CategoryCard>
+          <CategoryCard
+            v-model="tournament.categories[i]"
+            @remove="tournament.categories.splice(i, 1)"
+            @players-imported="(players) => playersImported(i, players)"
+            @startDraw="startDraw(i)"
+            @error="showAlert"
+            @player-count-changed="clearGroup(i)"
+          ></CategoryCard>
         </template>
       </div>
     </div>
