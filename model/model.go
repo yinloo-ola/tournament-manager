@@ -94,6 +94,47 @@ type Entry struct {
 	TeamEntry   *TeamEntry    `json:"teamEntry"`
 }
 
+type SinglesEntry struct {
+	Player Player `json:"player"`
+	BaseEntry
+}
+
+type DoublesEntry struct {
+	Players [2]Player `json:"players"`
+	BaseEntry
+}
+
+type TeamEntry struct {
+	Players    []Player `json:"players"`
+	MaxPlayers int      `json:"maxPlayers"`
+	MinPlayers int      `json:"minPlayers"`
+	BaseEntry
+}
+
+type EntryType string
+
+const (
+	EntryTypeSingles EntryType = "Singles"
+	EntryTypeDoubles EntryType = "Doubles"
+	EntryTypeTeam    EntryType = "Team"
+)
+
+type Entry struct {
+	EntryType EntryType
+	*SinglesEntry
+	*DoublesEntry
+	*TeamEntry
+}
+
+type Player struct {
+	Name   string `json:"name"`
+	DOB    string `json:"dob"`
+	Gender string `json:"gender"`
+
+	Seeding *int    `json:"seeding,omitempty"` // for backwards compatibility
+	Club    *string `json:"club,omitempty"`    // for backwards compatibility
+}
+
 type Match struct {
 	Entry1            Entry     `json:"entry1"`
 	Entry2            Entry     `json:"entry2"`

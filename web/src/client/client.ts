@@ -64,6 +64,27 @@ export async function apiExportDraftSchedule(tournament: Tournament) {
   })
 }
 
+export async function apiImportSinglesEntry(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return fetch('/api/importSinglesEntry', {
+    headers: {
+      Accept: 'application/json'
+    },
+    method: 'POST',
+    body: form
+  }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to import singles entry: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
+      })
+    }
+    return res.json()
+  })
+}
+
 export async function apiImportFinalSchedule(file: File) {
   const form = new FormData()
   form.append('file', file)

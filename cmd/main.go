@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	static "github.com/soulteary/gin-static"
+	"github.com/yinloo-ola/tournament-manager/endpoint/entry"
 	"github.com/yinloo-ola/tournament-manager/endpoint/roundrobin"
 	"github.com/yinloo-ola/tournament-manager/endpoint/schedule"
 	"github.com/yinloo-ola/tournament-manager/web"
@@ -24,6 +25,10 @@ func main() {
 	router.NoRoute(static.ServeEmbed("dist", web.WebStatic))
 	apiRouters := router.Group("/api")
 	{
+		entrySvr := &entry.Service{}
+		apiRouters.POST("/importSinglesEntry", entrySvr.ImportSinglesEntry)
+		apiRouters.POST("/importTeamEntry", entrySvr.ImportTeamEntry)
+		apiRouters.POST("/importDoublesEntry", entrySvr.ImportDoublesEntry)
 		roundRobinSvc := &roundrobin.Service{}
 		apiRouters.POST("/exportRoundRobinExcel", roundRobinSvc.ExportRoundRobinExcel)
 		scheduleSvc := &schedule.Service{}
