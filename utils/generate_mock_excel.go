@@ -13,13 +13,13 @@ func GenerateMockSinglesExcel() (*bytes.Buffer, error) {
 	// Create sheet and headers
 	index, _ := f.NewSheet("entries")
 	f.SetActiveSheet(index)
-	f.SetSheetRow("entries", "A1", &[]interface{}{"SN", "Player", "Seeding", "Club", "Date Of Birth", "Gender"})
+	f.SetSheetRow("entries", "A1", &[]interface{}{"SN", "Name", "Club", "Seeding", "Date Of Birth", "Gender"})
 
 	// Add mock entries
 	mockEntries := [][]interface{}{
-		{1, "Player One", 1, "Club A", "2000-01-01", "M"},
-		{2, "Player Two", 2, "Club B", "2001-02-02", "F"},
-		{3, "Player Three", 3, "Club C", "2002-03-03", "M"},
+		{1, "Player One", "Club A", 1, "2000-01-01", "M"},
+		{2, "Player Two", "Club B", 2, "2001-02-02", "F"},
+		{3, "Player Three", "Club C", 3, "2002-03-03", "M"},
 	}
 
 	for rowIdx, entry := range mockEntries {

@@ -12,7 +12,7 @@ import (
 	"github.com/yinloo-ola/tournament-manager/utils/pointer"
 )
 
-var header = []string{"SN", "Player", "Seeding", "Club", "Date Of Birth", "Gender"}
+var header = []string{"SN", "Name", "Club", "Seeding", "Date Of Birth", "Gender"}
 
 const sheetName = "entries"
 
@@ -35,8 +35,8 @@ func ImportSinglesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.En
 			continue
 		}
 		name := strings.TrimSpace(row[1])
-		seedingStr := row[2]
-		club := row[3]
+		club := row[2]
+		seedingStr := row[3]
 		dobStr := strings.TrimSpace(row[4])
 		gender := strings.TrimSpace(row[5])
 		seeding := 0
