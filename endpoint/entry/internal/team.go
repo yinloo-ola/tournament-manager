@@ -43,9 +43,9 @@ func ImportTeamEntries(ctx context.Context, xlsxReader io.Reader, minPlayers, ma
 		team := strings.TrimSpace(row[4])
 
 		playerMap[team] = append(playerMap[team], model.Player{
-			Name:   name,
-			DOB:    dob,
-			Gender: gender,
+			Name:        name,
+			DateOfBirth: dob,
+			Gender:      gender,
 		})
 	}
 
@@ -88,15 +88,13 @@ func ImportTeamEntries(ctx context.Context, xlsxReader io.Reader, minPlayers, ma
 
 		// Create team entry
 		entry := model.Entry{
-			EntryType: model.EntryTypeTeam,
+			EntryType: model.Team,
+			Club:      pointer.OrNil(club),
+			Seeding:   pointer.OrNil(seeding),
 			TeamEntry: &model.TeamEntry{
 				Players:    players,
 				MaxPlayers: maxPlayers,
 				MinPlayers: minPlayers,
-				BaseEntry: model.BaseEntry{
-					Club:    pointer.OrNil(club),
-					Seeding: pointer.OrNil(seeding),
-				},
 			},
 		}
 		entries = append(entries, entry)

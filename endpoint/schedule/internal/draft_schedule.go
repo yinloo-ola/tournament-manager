@@ -69,6 +69,7 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 		book.SetCellStr(scheduleSheetName, currentCell(row, cell), fmt.Sprintf("T%d", i+1))
 	}
 
+	// TODO: matches sheet need to take care of different event types (singles, doubles, team)
 	row = 1
 	cell = 'A'
 	book.SetCellStr(matchesSheetName, currentCell(row, cell), "SN")
@@ -127,7 +128,7 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'G'), match.DateTime)
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Table)
 
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1.Name)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1.Name())
 			if match.Entry1.Club != nil && *match.Entry1.Club != "" {
 				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'J'), *match.Entry1.Club)
 			}
@@ -135,7 +136,7 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'K'), *match.Entry1.Seeding)
 			}
 
-			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'L'), match.Entry2.Name)
+			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'L'), match.Entry2.Name())
 			if match.Entry2.Club != nil && *match.Entry2.Club != "" {
 				book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'M'), *match.Entry2.Club)
 			}
@@ -146,7 +147,7 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			matchesRow++
 
 			displayText := match.Name()
-			toolTip := fmt.Sprintf("%s vs %s", match.Entry1.Name, match.Entry2.Name)
+			toolTip := fmt.Sprintf("%s vs %s", match.Entry1.Name(), match.Entry2.Name())
 			matchLink := fmt.Sprintf("matches!A%d", sn)
 			matchStyle, err := getMatchStyle(book, match, colorMap)
 			if err != nil {

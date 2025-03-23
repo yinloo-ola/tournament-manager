@@ -42,9 +42,9 @@ func ImportDoublesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.En
 		gender := strings.TrimSpace(row[3])
 
 		playerMap[name] = model.Player{
-			Name:   name,
-			DOB:    dob,
-			Gender: gender,
+			Name:        name,
+			DateOfBirth: dob,
+			Gender:      gender,
 		}
 	}
 
@@ -89,13 +89,11 @@ func ImportDoublesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.En
 
 		// Create doubles entry
 		entry := model.Entry{
-			EntryType: model.EntryTypeDoubles,
+			EntryType: model.Doubles,
+			Club:      pointer.OrNil(club),
+			Seeding:   pointer.OrNil(seeding),
 			DoublesEntry: &model.DoublesEntry{
 				Players: [2]model.Player{player1, player2},
-				BaseEntry: model.BaseEntry{
-					Club:    pointer.OrNil(club),
-					Seeding: pointer.OrNil(seeding),
-				},
 			},
 		}
 		entries = append(entries, entry)

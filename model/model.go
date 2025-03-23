@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -79,6 +80,7 @@ type DoublesEntry struct {
 }
 
 type TeamEntry struct {
+	TeamName   string   `json:"teamName"`
 	Players    []Player `json:"players"`
 	MinPlayers int      `json:"minPlayers"`
 	MaxPlayers int      `json:"maxPlayers"`
@@ -86,53 +88,26 @@ type TeamEntry struct {
 
 // Entry represents a polymorphic tournament entry
 type Entry struct {
-	EntryType   EntryType     `json:"entryType"`
-	Seeding     *int          `json:"seeding,omitempty"`
-	Club        *string       `json:"club,omitempty"`
-	SingleEntry *SinglesEntry `json:"singleEntry"`
-	DoubleEntry *DoublesEntry `json:"doubleEntry"`
-	TeamEntry   *TeamEntry    `json:"teamEntry"`
+	EntryType    EntryType     `json:"entryType"`
+	Seeding      *int          `json:"seeding,omitempty"`
+	Club         *string       `json:"club,omitempty"`
+	SinglesEntry *SinglesEntry `json:"singlesEntry"`
+	DoublesEntry *DoublesEntry `json:"doublesEntry"`
+	TeamEntry    *TeamEntry    `json:"teamEntry"`
 }
 
-type SinglesEntry struct {
-	Player Player `json:"player"`
-	BaseEntry
-}
-
-type DoublesEntry struct {
-	Players [2]Player `json:"players"`
-	BaseEntry
-}
-
-type TeamEntry struct {
-	Players    []Player `json:"players"`
-	MaxPlayers int      `json:"maxPlayers"`
-	MinPlayers int      `json:"minPlayers"`
-	BaseEntry
-}
-
-type EntryType string
-
-const (
-	EntryTypeSingles EntryType = "Singles"
-	EntryTypeDoubles EntryType = "Doubles"
-	EntryTypeTeam    EntryType = "Team"
-)
-
-type Entry struct {
-	EntryType EntryType
-	*SinglesEntry
-	*DoublesEntry
-	*TeamEntry
-}
-
-type Player struct {
-	Name   string `json:"name"`
-	DOB    string `json:"dob"`
-	Gender string `json:"gender"`
-
-	Seeding *int    `json:"seeding,omitempty"` // for backwards compatibility
-	Club    *string `json:"club,omitempty"`    // for backwards compatibility
+func (e Entry) Name() string {
+	switch e.EntryType {
+	case Singles:
+		return e.SinglesEntry.Player.Name
+	case Doubles:
+		return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
+	case Team:
+		return e.TeamEntry.TeamName
+	default:
+		slog.Error("invalid entry type", "type", e.EntryType)
+		return ""
+	}
 }
 
 type Match struct {

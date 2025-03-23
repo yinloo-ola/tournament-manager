@@ -140,7 +140,11 @@ func generateRounds(players []model.Entry, matchDurationMinutes int) [][]model.M
 
 	if numPlayers%2 == 1 {
 		players = append(players, model.Entry{
-			Name: playerByeName,
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: playerByeName,
+				},
+			},
 		})
 		numPlayers++
 	}
@@ -171,7 +175,7 @@ func getRoundMatches(round int, players []model.Entry, matchDurationMinutes int,
 		}
 		p1 := players[ind1]
 		p2 := players[ind2]
-		if p1.Name == playerByeName || p2.Name == playerByeName {
+		if p1.Name() == playerByeName || p2.Name() == playerByeName {
 			continue
 		}
 		match := model.Match{

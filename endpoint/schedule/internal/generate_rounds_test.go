@@ -49,16 +49,36 @@ func Benchmark_getRoundPlayersIndicesWithRotation(b *testing.B) {
 func Test_getRoundMatches(t *testing.T) {
 	players := []model.Entry{
 		{
-			Name: "A",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "A",
+				},
+			},
 		},
 		{
-			Name: "B",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "B",
+				},
+			},
 		},
 		{
-			Name: "C",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "C",
+				},
+			},
 		},
 		{
-			Name: "D",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "D",
+				},
+			},
 		},
 	}
 	type args struct {
@@ -77,19 +97,39 @@ func Test_getRoundMatches(t *testing.T) {
 			want: []model.Match{
 				{
 					Entry1: model.Entry{
-						Name: "A",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "A",
+							},
+						},
 					},
 					Entry2: model.Entry{
-						Name: "B",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "B",
+							},
+						},
 					},
 					DurationMinutes: 30,
 				},
 				{
 					Entry1: model.Entry{
-						Name: "C",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "C",
+							},
+						},
 					},
 					Entry2: model.Entry{
-						Name: "D",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "D",
+							},
+						},
 					},
 					DurationMinutes: 30,
 				},
@@ -103,19 +143,39 @@ func Test_getRoundMatches(t *testing.T) {
 			want: []model.Match{
 				{
 					Entry1: model.Entry{
-						Name: "A",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "A",
+							},
+						},
 					},
 					Entry2: model.Entry{
-						Name: "C",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "C",
+							},
+						},
 					},
 					DurationMinutes: 30,
 				},
 				{
 					Entry1: model.Entry{
-						Name: "B",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "B",
+							},
+						},
 					},
 					Entry2: model.Entry{
-						Name: "D",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "D",
+							},
+						},
 					},
 					DurationMinutes: 30,
 				},
@@ -129,19 +189,39 @@ func Test_getRoundMatches(t *testing.T) {
 			want: []model.Match{
 				{
 					Entry1: model.Entry{
-						Name: "A",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "A",
+							},
+						},
 					},
 					Entry2: model.Entry{
-						Name: "D",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "D",
+							},
+						},
 					},
 					DurationMinutes: 30,
 				},
 				{
 					Entry1: model.Entry{
-						Name: "B",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "B",
+							},
+						},
 					},
 					Entry2: model.Entry{
-						Name: "C",
+
+						SinglesEntry: &model.SinglesEntry{
+							Player: model.Player{
+								Name: "C",
+							},
+						},
 					},
 					DurationMinutes: 30,
 				},
@@ -162,22 +242,52 @@ func Test_getRoundMatches(t *testing.T) {
 func Benchmark_getRoundMatches(b *testing.B) {
 	players := []model.Entry{
 		{
-			Name: "A",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "A",
+				},
+			},
 		},
 		{
-			Name: "B",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "B",
+				},
+			},
 		},
 		{
-			Name: "C",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "C",
+				},
+			},
 		},
 		{
-			Name: "D",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "D",
+				},
+			},
 		},
 		{
-			Name: "E",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "E",
+				},
+			},
 		},
 		{
-			Name: "F",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "F",
+				},
+			},
 		},
 	}
 	var res []model.Match
@@ -197,22 +307,52 @@ func Benchmark_getRoundMatches(b *testing.B) {
 func Test_generateRounds(t *testing.T) {
 	players := []model.Entry{
 		{
-			Name: "A",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "A",
+				},
+			},
 		},
 		{
-			Name: "B",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "B",
+				},
+			},
 		},
 		{
-			Name: "C",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "C",
+				},
+			},
 		},
 		{
-			Name: "D",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "D",
+				},
+			},
 		},
 		{
-			Name: "E",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "E",
+				},
+			},
 		},
 		{
-			Name: "F",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "F",
+				},
+			},
 		},
 	}
 	type args struct {
@@ -234,86 +374,58 @@ func Test_generateRounds(t *testing.T) {
 				{
 					{
 						Entry1: model.Entry{
-							Name: "A",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "A",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "B",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "B",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
 					{
 						Entry1: model.Entry{
-							Name: "C",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "C",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "D",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "D",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
 					{
 						Entry1: model.Entry{
-							Name: "E",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "E",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "F",
-						},
-						DurationMinutes: 30,
-					},
-				},
-				{
-					{
-						Entry1: model.Entry{
-							Name: "A",
-						},
-						Entry2: model.Entry{
-							Name: "C",
-						},
-						DurationMinutes: 30,
-					},
-					{
-						Entry1: model.Entry{
-							Name: "B",
-						},
-						Entry2: model.Entry{
-							Name: "E",
-						},
-						DurationMinutes: 30,
-					},
-					{
-						Entry1: model.Entry{
-							Name: "D",
-						},
-						Entry2: model.Entry{
-							Name: "F",
-						},
-						DurationMinutes: 30,
-					},
-				},
-				{
-					{
-						Entry1: model.Entry{
-							Name: "A",
-						},
-						Entry2: model.Entry{
-							Name: "E",
-						},
-						DurationMinutes: 30,
-					},
-					{
-						Entry1: model.Entry{
-							Name: "C",
-						},
-						Entry2: model.Entry{
-							Name: "F",
-						},
-						DurationMinutes: 30,
-					},
-					{
-						Entry1: model.Entry{
-							Name: "B",
-						},
-						Entry2: model.Entry{
-							Name: "D",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "F",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
@@ -321,28 +433,58 @@ func Test_generateRounds(t *testing.T) {
 				{
 					{
 						Entry1: model.Entry{
-							Name: "A",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "A",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "D",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "C",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
 					{
 						Entry1: model.Entry{
-							Name: "B",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "B",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "F",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "E",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
 					{
 						Entry1: model.Entry{
-							Name: "C",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "D",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "E",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "F",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
@@ -350,28 +492,176 @@ func Test_generateRounds(t *testing.T) {
 				{
 					{
 						Entry1: model.Entry{
-							Name: "A",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "A",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "F",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "E",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
 					{
 						Entry1: model.Entry{
-							Name: "D",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "C",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "E",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "F",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
 					{
 						Entry1: model.Entry{
-							Name: "B",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "B",
+								},
+							},
 						},
 						Entry2: model.Entry{
-							Name: "C",
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "D",
+								},
+							},
+						},
+						DurationMinutes: 30,
+					},
+				},
+				{
+					{
+						Entry1: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "A",
+								},
+							},
+						},
+						Entry2: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "D",
+								},
+							},
+						},
+						DurationMinutes: 30,
+					},
+					{
+						Entry1: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "B",
+								},
+							},
+						},
+						Entry2: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "F",
+								},
+							},
+						},
+						DurationMinutes: 30,
+					},
+					{
+						Entry1: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "C",
+								},
+							},
+						},
+						Entry2: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "E",
+								},
+							},
+						},
+						DurationMinutes: 30,
+					},
+				},
+				{
+					{
+						Entry1: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "A",
+								},
+							},
+						},
+						Entry2: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "F",
+								},
+							},
+						},
+						DurationMinutes: 30,
+					},
+					{
+						Entry1: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "D",
+								},
+							},
+						},
+						Entry2: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "E",
+								},
+							},
+						},
+						DurationMinutes: 30,
+					},
+					{
+						Entry1: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "B",
+								},
+							},
+						},
+						Entry2: model.Entry{
+
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "C",
+								},
+							},
 						},
 						DurationMinutes: 30,
 					},
@@ -395,22 +685,52 @@ var out [][]model.Match
 func Benchmark_generateRounds(b *testing.B) {
 	players := []model.Entry{
 		{
-			Name: "A",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "A",
+				},
+			},
 		},
 		{
-			Name: "B",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "B",
+				},
+			},
 		},
 		{
-			Name: "C",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "C",
+				},
+			},
 		},
 		{
-			Name: "D",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "D",
+				},
+			},
 		},
 		{
-			Name: "E",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "E",
+				},
+			},
 		},
 		{
-			Name: "F",
+
+			SinglesEntry: &model.SinglesEntry{
+				Player: model.Player{
+					Name: "F",
+				},
+			},
 		},
 	}
 
@@ -433,7 +753,12 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			groups: []model.Group{
 				{
 					Entries: []model.Entry{
-						{Name: "Player1"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Player1"},
+							},
+						},
 					},
 				},
 			},
@@ -446,16 +771,46 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			groups: []model.Group{
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group2Player1"},
-						{Name: "Group2Player2"},
-						{Name: "Group2Player3"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player3"},
+							},
+						},
 					},
 				},
 			},
@@ -477,26 +832,66 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			groups: []model.Group{
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group2Player1"},
-						{Name: "Group2Player2"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player2"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group3Player1"},
-						{Name: "Group3Player2"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group3Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group3Player2"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group4Player1"},
-						{Name: "Group4Player2"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group4Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group4Player2"},
+							},
+						},
 					},
 				},
 			},
@@ -518,23 +913,68 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			groups: []model.Group{
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group2Player1"},
-						{Name: "Group2Player2"},
-						{Name: "Group2Player3"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group2Player3"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group3Player1"},
-						{Name: "Group3Player2"},
-						{Name: "Group3Player3"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group3Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group3Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group3Player3"},
+							},
+						},
 					},
 				},
 			},
@@ -560,47 +1000,172 @@ func Test_generateKnockoutRounds(t *testing.T) {
 			groups: []model.Group{
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
-						{Name: "Group1Player4"},
-						{Name: "Group1Player5"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player4"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player5"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
-						{Name: "Group1Player4"},
-						{Name: "Group1Player5"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player4"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player5"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
-						{Name: "Group1Player4"},
-						{Name: "Group1Player5"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player4"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player5"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
-						{Name: "Group1Player4"},
-						{Name: "Group1Player5"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player4"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player5"},
+							},
+						},
 					},
 				},
 				{
 					Entries: []model.Entry{
-						{Name: "Group1Player1"},
-						{Name: "Group1Player2"},
-						{Name: "Group1Player3"},
-						{Name: "Group1Player4"},
-						{Name: "Group1Player5"},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player1"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player2"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player3"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player4"},
+							},
+						},
+						{
+							SinglesEntry: &model.SinglesEntry{
+								Player: model.Player{
+									Name: "Group1Player5"},
+							},
+						},
 					},
 				},
 			},
@@ -688,29 +1253,3 @@ func TestNextPowerOfTwo(t *testing.T) {
 		})
 	}
 }
-
-// func Benchmark_generateRoundsOld(b *testing.B) {
-// 	players := []model.Player{
-// 		{
-// 			Name: "A",
-// 		},
-// 		{
-// 			Name: "B",
-// 		},
-// 		{
-// 			Name: "C",
-// 		},
-// 		{
-// 			Name: "D",
-// 		},
-// 		{
-// 			Name: "E",
-// 		},
-// 		{
-// 			Name: "F",
-// 		},
-// 	}
-// 	for i := 0; i < b.N; i++ {
-// 		out = generateRoundsOld(players, 30)
-// 	}
-// }

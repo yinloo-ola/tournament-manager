@@ -234,10 +234,10 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 
 				// Add players to both maps
 				for _, match := range matchesInRound {
-					categoryPlayerMap[match.Entry1.Name] = match.Entry1
-					categoryPlayerMap[match.Entry2.Name] = match.Entry2
-					groupPlayerMap[match.Entry1.Name] = match.Entry1
-					groupPlayerMap[match.Entry2.Name] = match.Entry2
+					categoryPlayerMap[match.Entry1.Name()] = match.Entry1
+					categoryPlayerMap[match.Entry2.Name()] = match.Entry2
+					groupPlayerMap[match.Entry1.Name()] = match.Entry1
+					groupPlayerMap[match.Entry2.Name()] = match.Entry2
 				}
 			}
 
@@ -327,6 +327,7 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
 	}
+	slog.Debug("player1", "player1", player1)
 	player1Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("J%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
@@ -346,6 +347,7 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
 	}
+	slog.Debug("player2", "player2", player2)
 	player2Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("M%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
@@ -361,17 +363,16 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 			return model.Match{}, fmt.Errorf("fail to convert player2 seeding: %w", err)
 		}
 	}
+	// TODO: support matches of different event types (singles, doubles, team)
 	return model.Match{
 		CategoryShortName: category,
 		RoundIdx:          round - 1,
 		GroupIdx:          grp - 1,
 		Entry1: model.Entry{
-			Name:    player1,
 			Club:    pointer.OrNil(player1Club),
 			Seeding: pointer.OrNil(player1Seeding),
 		},
 		Entry2: model.Entry{
-			Name:    player2,
 			Club:    pointer.OrNil(player2Club),
 			Seeding: pointer.OrNil(player2Seeding),
 		},

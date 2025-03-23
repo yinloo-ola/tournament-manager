@@ -43,11 +43,11 @@ func TestTournamentUnmarshal(t *testing.T) {
 				if entry.EntryType != Singles {
 					t.Errorf("expected Singles entry type, got %v", entry.EntryType)
 				}
-				if entry.SingleEntry == nil {
+				if entry.SinglesEntry == nil {
 					t.Fatal("expected SingleEntry to be present")
 				}
-				if entry.SingleEntry.Player.Name != "John Doe" {
-					t.Errorf("expected player name 'John Doe', got %q", entry.SingleEntry.Player.Name)
+				if entry.SinglesEntry.Player.Name != "John Doe" {
+					t.Errorf("expected player name 'John Doe', got %q", entry.SinglesEntry.Player.Name)
 				}
 
 				// Validate Doubles category
@@ -59,11 +59,11 @@ func TestTournamentUnmarshal(t *testing.T) {
 				if entry.EntryType != Doubles {
 					t.Errorf("expected Doubles entry type, got %v", entry.EntryType)
 				}
-				if entry.DoubleEntry == nil {
+				if entry.DoublesEntry == nil {
 					t.Fatal("expected DoubleEntry to be present")
 				}
-				if len(entry.DoubleEntry.Players) != 2 {
-					t.Errorf("expected 2 players, got %d", len(entry.DoubleEntry.Players))
+				if len(entry.DoublesEntry.Players) != 2 {
+					t.Errorf("expected 2 players, got %d", len(entry.DoublesEntry.Players))
 				}
 
 				// Validate Team category

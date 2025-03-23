@@ -18,112 +18,102 @@ func Test_getSlotsForCategory(t *testing.T) {
 					{
 						{
 							Entry1: model.Entry{
-								Name: "A",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "B",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B",
+									},
+								},
 							},
 						},
 						{
 							Entry1: model.Entry{
-								Name: "C",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "D",
-							},
-						},
-					},
-					{
-						{
-							Entry1: model.Entry{
-								Name: "A",
-							},
-							Entry2: model.Entry{
-								Name: "C",
-							},
-						},
-						{
-							Entry1: model.Entry{
-								Name: "B",
-							},
-							Entry2: model.Entry{
-								Name: "D",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D",
+									},
+								},
 							},
 						},
 					},
 					{
 						{
 							Entry1: model.Entry{
-								Name: "B",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "C",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C",
+									},
+								},
 							},
 						},
 						{
 							Entry1: model.Entry{
-								Name: "A",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "D",
-							},
-						},
-					},
-				},
-			},
-			{
-				Rounds: [][]model.Match{
-					{
-						{
-							Entry1: model.Entry{
-								Name: "A2",
-							},
-							Entry2: model.Entry{
-								Name: "B2",
-							},
-						},
-						{
-							Entry1: model.Entry{
-								Name: "C2",
-							},
-							Entry2: model.Entry{
-								Name: "D2",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D",
+									},
+								},
 							},
 						},
 					},
 					{
 						{
 							Entry1: model.Entry{
-								Name: "A2",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "C2",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C",
+									},
+								},
 							},
 						},
 						{
 							Entry1: model.Entry{
-								Name: "B2",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "D2",
-							},
-						},
-					},
-					{
-						{
-							Entry1: model.Entry{
-								Name: "B2",
-							},
-							Entry2: model.Entry{
-								Name: "C2",
-							},
-						},
-						{
-							Entry1: model.Entry{
-								Name: "A2",
-							},
-							Entry2: model.Entry{
-								Name: "D2",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D",
+									},
+								},
 							},
 						},
 					},
@@ -134,54 +124,208 @@ func Test_getSlotsForCategory(t *testing.T) {
 					{
 						{
 							Entry1: model.Entry{
-								Name: "A3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A2",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "B3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B2",
+									},
+								},
 							},
 						},
 						{
 							Entry1: model.Entry{
-								Name: "C3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C2",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "D3",
-							},
-						},
-					},
-					{
-						{
-							Entry1: model.Entry{
-								Name: "A3",
-							},
-							Entry2: model.Entry{
-								Name: "C3",
-							},
-						},
-						{
-							Entry1: model.Entry{
-								Name: "B3",
-							},
-							Entry2: model.Entry{
-								Name: "D3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D2",
+									},
+								},
 							},
 						},
 					},
 					{
 						{
 							Entry1: model.Entry{
-								Name: "B3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A2",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "C3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C2",
+									},
+								},
 							},
 						},
 						{
 							Entry1: model.Entry{
-								Name: "A3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B2",
+									},
+								},
 							},
 							Entry2: model.Entry{
-								Name: "D3",
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D2",
+									},
+								},
+							},
+						},
+					},
+					{
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B2",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C2",
+									},
+								},
+							},
+						},
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A2",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D2",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Rounds: [][]model.Match{
+					{
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A3",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B3",
+									},
+								},
+							},
+						},
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C3",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D3",
+									},
+								},
+							},
+						},
+					},
+					{
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A3",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C3",
+									},
+								},
+							},
+						},
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B3",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D3",
+									},
+								},
+							},
+						},
+					},
+					{
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "B3",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "C3",
+									},
+								},
+							},
+						},
+						{
+							Entry1: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "A3",
+									},
+								},
+							},
+							Entry2: model.Entry{
+								SinglesEntry: &model.SinglesEntry{
+									Player: model.Player{
+										Name: "D3",
+									},
+								},
 							},
 						},
 					},

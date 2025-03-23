@@ -100,7 +100,7 @@ func createTableForGroup(grp []model.Entry, sheet *xlsx.Sheet) {
 		cell := playerRow.AddCell()
 		cell.SetString(strconv.Itoa(p + 1))
 		cell.SetStyle(allBorderStyle)
-		playerStr := player.Name
+		playerStr := player.Name()
 		if len(*player.Club) > 0 {
 			playerStr += fmt.Sprintf(" (%s)", *player.Club)
 		}
