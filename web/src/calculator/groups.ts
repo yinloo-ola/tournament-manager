@@ -31,27 +31,27 @@ export function removePlayerFromAllGroups(groups: Array<Group>, entry: Entry) {
     for (let j = 0; j < grp.entries.length; j++) {
       const p = grp.entries[j]
       if (isSameEntry(p, entry)) {
-        grp.entries[j] = getEmptyPlayer()
+        grp.entries[j] = getEmptyPlayer(entry.entryType)
       }
     }
   }
 }
 
-export function getGroup(numPlayers: number): Group {
+export function getGroup(entryType: EntryType, numPlayers: number): Group {
   const group: Group = {
     rounds: [],
     entries: []
   }
   const entries: Array<Entry> = []
   for (let j = 0; j < numPlayers; j++) {
-    entries.push(getEmptyPlayer())
+    entries.push(getEmptyPlayer(entryType))
     group.entries = entries
     group.rounds = []
   }
   return group
 }
 
-export function getEmptyPlayer(entryType: EntryType = EntryType.Unknown): Entry {
+export function getEmptyPlayer(entryType: EntryType): Entry {
   return new Entry(entryType)
 }
 
