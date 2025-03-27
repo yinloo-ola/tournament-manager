@@ -29,17 +29,17 @@ onMounted(() => {
 
   if (props.category.entriesPerGrpMain > props.category.entriesPerGrpRemainder) {
     for (let i = 0; i < numGroupsRemainder; i++) {
-      groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
+      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpRemainder))
     }
     for (let i = 0; i < numGroupsMain; i++) {
-      groups.value.push(getGroup(props.category.entriesPerGrpMain))
+      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpMain))
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
-      groups.value.push(getGroup(props.category.entriesPerGrpMain))
+      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpMain))
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
-      groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
+      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpRemainder))
     }
   }
 })
@@ -47,6 +47,7 @@ onMounted(() => {
 const props = defineProps<{ category: Category }>()
 
 let players = computed(() => {
+  console.log(props.category.entries)
   return props.category.entries.map(getPlayerDisplay)
 })
 let chosenPlayersIndices = computed<{ [key: number]: boolean }>(() => {
@@ -69,7 +70,7 @@ function choosePlayer(grp: number, pos: number) {
   isChoosingPlayer.value = true
 }
 function unselectPlayer(grp: number, pos: number) {
-  groups.value[grp].entries[pos] = getEmptyPlayer()
+  groups.value[grp].entries[pos] = getEmptyPlayer(props.category.entryType)
 }
 function playerChosen(playerIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
@@ -85,7 +86,7 @@ let sleep = ref(10)
 async function clearDrawClicked() {
   const ok = confirm('This will delete all players in the draw. Continue?')
   if (!ok) return
-  clearDraw(groups.value)
+  clearDraw(props.category.entryType, groups.value)
 }
 
 async function autoDraw() {
@@ -100,7 +101,7 @@ async function autoDraw() {
   if (seededPlayers.length + otherPlayers.length !== props.category.entries.length) {
     alert("Something's wrong. Please check player list")
   }
-  clearDraw(groups.value)
+  clearDraw(props.category.entryType, groups.value)
   await new Promise((r) => setTimeout(r, sleep.value))
   doDraw(groups.value, seededPlayers, otherPlayers, sleep.value).catch((e: any) => alert(e.message))
 }

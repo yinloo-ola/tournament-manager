@@ -40,25 +40,37 @@ export interface TeamEntry {
 }
 
 export class Entry {
+  static from(json: any): Entry {
+    return Object.assign(new Entry(json.entryType), json)
+  }
   constructor(
     public entryType: EntryType,
     public seeding?: number,
     public club?: string,
-    public singleEntry?: SinglesEntry,
-    public doubleEntry?: DoublesEntry,
+    public singlesEntry?: SinglesEntry,
+    public doublesEntry?: DoublesEntry,
     public teamEntry?: TeamEntry
-  ) {}
+  ) { }
 
   get name(): string {
     switch (this.entryType) {
       case EntryType.Singles:
-        return this.singleEntry!.player.name
+        if (!this.singlesEntry) {
+          return ''
+        }
+        return this.singlesEntry!.player.name
       case EntryType.Doubles:
-        return `${this.doubleEntry!.players[0].name} / ${this.doubleEntry!.players[1].name}`
+        if (!this.doublesEntry) {
+          return ''
+        }
+        return `${this.doublesEntry!.players[0].name} / ${this.doublesEntry!.players[1].name}`
       case EntryType.Team:
+        if (!this.teamEntry) {
+          return ''
+        }
         return this.teamEntry!.teamName
       default:
-        throw new Error(`Invalid entry type: ${this.entryType}`)
+        return ''
     }
   }
 }
