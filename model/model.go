@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const PlayerByeName = "{BYE}"
+
 type Date time.Time
 
 func (c *Date) UnmarshalJSON(b []byte) error {
@@ -36,6 +38,7 @@ type Tournament struct {
 
 type Category struct {
 	Name                   string          `json:"name"`
+	EntryType              EntryType       `json:"entryType"`
 	ShortName              string          `json:"shortName"`
 	EntriesPerGrpMain      int             `json:"entriesPerGrpMain"`
 	EntriesPerGrpRemainder int             `json:"entriesPerGrpRemainder"`
@@ -101,6 +104,9 @@ func (e Entry) Name() string {
 	case Singles:
 		return e.SinglesEntry.Player.Name
 	case Doubles:
+		if e.DoublesEntry.Players[0].Name == PlayerByeName {
+			return PlayerByeName
+		}
 		return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
 	case Team:
 		return e.TeamEntry.TeamName

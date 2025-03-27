@@ -128,6 +128,36 @@ func generateKnockoutRounds(groups []model.Group, numQualifiedPerGroup int) ([]m
 	return koRounds, nil
 }
 
+func getByeEntry(typ model.EntryType) model.Entry {
+	entry := model.Entry{
+		EntryType: typ,
+	}
+	switch typ {
+	case model.Doubles:
+		entry.DoublesEntry = &model.DoublesEntry{
+			Players: [2]model.Player{
+				{
+					Name: model.PlayerByeName,
+				},
+				{
+					Name: model.PlayerByeName,
+				},
+			},
+		}
+	case model.Singles:
+		entry.SinglesEntry = &model.SinglesEntry{
+			Player: model.Player{
+				Name: model.PlayerByeName,
+			},
+		}
+	case model.Team:
+		entry.TeamEntry = &model.TeamEntry{
+			TeamName: model.PlayerByeName,
+		}
+	}
+	return entry
+}
+
 func generateRounds(players []model.Entry, matchDurationMinutes int) [][]model.Match {
 	if len(players) < 2 {
 		return nil
@@ -139,13 +169,7 @@ func generateRounds(players []model.Entry, matchDurationMinutes int) [][]model.M
 	numRounds := numMatches / numMatchesPerRound
 
 	if numPlayers%2 == 1 {
-		players = append(players, model.Entry{
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: playerByeName,
-				},
-			},
-		})
+		players = append(players, getByeEntry(players[0].EntryType))
 		numPlayers++
 	}
 
@@ -175,7 +199,7 @@ func getRoundMatches(round int, players []model.Entry, matchDurationMinutes int,
 		}
 		p1 := players[ind1]
 		p2 := players[ind2]
-		if p1.Name() == playerByeName || p2.Name() == playerByeName {
+		if p1.Name() == model.PlayerByeName || p2.Name() == model.PlayerByeName {
 			continue
 		}
 		match := model.Match{
@@ -291,5 +315,3 @@ func reverse(s []int, start, end int) {
 		s[i], s[j] = s[j], s[i]
 	}
 }
-
-const playerByeName = "{BYE}"

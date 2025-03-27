@@ -6,8 +6,12 @@ import TournamentDraw from '../components/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import { type Group, type KnockoutRound, Entry, EntryType } from '@/types/types'
-import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
+import { type Group, type KnockoutRound, type Tournament, Entry, EntryType } from '@/types/types'
+import {
+  dateInYyyyMmDdHhMmSs,
+  exportTournamentJson,
+  injectEntriesTournament
+} from '@/calculator/tournament'
 import {
   apiExportDraftSchedule,
   apiExportRoundRobinExcel,
@@ -53,23 +57,35 @@ function playersImported(categoryIdx: number, players: Entry[]) {
   ) {
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].entryType, tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
+        getGroup(
+          tournament.value.categories[categoryIdx].entryType,
+          tournament.value.categories[categoryIdx].entriesPerGrpRemainder
+        )
       )
     }
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].entryType, tournament.value.categories[categoryIdx].entriesPerGrpMain)
+        getGroup(
+          tournament.value.categories[categoryIdx].entryType,
+          tournament.value.categories[categoryIdx].entriesPerGrpMain
+        )
       )
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].entryType, tournament.value.categories[categoryIdx].entriesPerGrpMain)
+        getGroup(
+          tournament.value.categories[categoryIdx].entryType,
+          tournament.value.categories[categoryIdx].entriesPerGrpMain
+        )
       )
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].entryType, tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
+        getGroup(
+          tournament.value.categories[categoryIdx].entryType,
+          tournament.value.categories[categoryIdx].entriesPerGrpRemainder
+        )
       )
     }
   }
@@ -119,6 +135,7 @@ async function drawDone(groups: Array<Group>) {
   }
   drawIndex.value = -1
   const tournamentRes = await apiGenerateRounds(tournament.value)
+  injectEntriesTournament(tournamentRes)
   tournament.value = tournamentRes
 }
 
@@ -223,7 +240,10 @@ function onTournamentFileSelected(event: Event) {
 }
 function onReaderLoad(event: ProgressEvent<FileReader>) {
   const result = event.target?.result as string
-  const obj = JSON.parse(result)
+  const obj = JSON.parse(result) as Tournament
+
+  injectEntriesTournament(obj)
+
   tournament.value = obj
 }
 
@@ -247,7 +267,7 @@ function exportRoundRobin() {
 async function exportDraftSchedule() {
   try {
     const tournamentRes = await apiGenerateRounds(tournament.value)
-    console.log(tournamentRes)
+    injectEntriesTournament(tournamentRes)
     tournament.value = tournamentRes
   } catch (e: unknown) {
     const error = e as Error
@@ -276,39 +296,74 @@ async function exportDraftSchedule() {
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
       <div class="px-3 py-2">
-        <DropdownMenu buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white
+        <DropdownMenu
+          buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white
           transition-all duration-200
-          hover:cursor-pointer active:scale-90">
+          hover:cursor-pointer active:scale-90"
+        >
           <MenuItem label="SAVE" @click="exportTournament()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
           <MenuItem divider />
           <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />
           <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
           <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
-          <MenuItem label="EXPORT SCORESHEET WITH TEMPLATE" wide @click="exportScoresheetWithTemplateFile?.click()" />
+          <MenuItem
+            label="EXPORT SCORESHEET WITH TEMPLATE"
+            wide
+            @click="exportScoresheetWithTemplateFile?.click()"
+          />
         </DropdownMenu>
       </div>
     </header>
-    <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
-      class="hidden" />
-    <input type="file" ref="exportScoresheetWithTemplateFile" @change="exportScoresheetWithTemplateSelected"
-      accept=".xlsx" class="hidden" />
-    <input type="file" name="finalScheduleFile" id="finalScheduleFile" class="hidden" ref="finalScheduleFile"
-      accept=".xlsx" @change="finalScheduleFileSelected" />
+    <input
+      type="file"
+      name=""
+      id=""
+      ref="tournamentFile"
+      @change="onTournamentFileSelected"
+      accept=".json"
+      class="hidden"
+    />
+    <input
+      type="file"
+      ref="exportScoresheetWithTemplateFile"
+      @change="exportScoresheetWithTemplateSelected"
+      accept=".xlsx"
+      class="hidden"
+    />
+    <input
+      type="file"
+      name="finalScheduleFile"
+      id="finalScheduleFile"
+      class="hidden"
+      ref="finalScheduleFile"
+      accept=".xlsx"
+      @change="finalScheduleFileSelected"
+    />
     <div class="flex flex-col pb-4">
       <div class="flex flex-col gap-3 p-4">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>
 
-      <div class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
+      <div
+        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
+      >
         <template v-for="(category, i) in tournament.categories" :key="i">
-          <CategoryCard v-model="tournament.categories[i]" @remove="tournament.categories.splice(i, 1)"
-            @players-imported="(players) => playersImported(i, players)" @startDraw="startDraw(i)" @error="showAlert"
-            @player-count-changed="clearGroup(i)"></CategoryCard>
+          <CategoryCard
+            v-model="tournament.categories[i]"
+            @remove="tournament.categories.splice(i, 1)"
+            @players-imported="(players) => playersImported(i, players)"
+            @startDraw="startDraw(i)"
+            @error="showAlert"
+            @player-count-changed="clearGroup(i)"
+          ></CategoryCard>
         </template>
       </div>
     </div>
-    <ModalDialog v-model="showDrawModal" content-class="bg-blue-200 max-h-[95vh] max-w-[95vw]">
+    <ModalDialog
+      v-model="showDrawModal"
+      content-class="bg-blue-200 max-h-[95vh] max-w-[95vw] min-w-4/5"
+    >
       <TournamentDraw v-if="drawIndex >= 0" :category="tournament.categories[drawIndex]">
       </TournamentDraw>
     </ModalDialog>
