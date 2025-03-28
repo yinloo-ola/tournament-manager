@@ -17,7 +17,7 @@ function onFileSelected(event: any) {
     alert('No files selected')
     return
   }
-  
+
   // Check the category entryType and call the appropriate API function
   switch (category.value.entryType) {
     case EntryType.Singles:
@@ -39,7 +39,19 @@ function onFileSelected(event: any) {
         })
       break
     case EntryType.Team:
-      apiImportTeamEntry(event.target.files[0])
+      if (!category.value.minPlayers || !category.value.maxPlayers) {
+        alert('Please set minimum and maximum players for team')
+        return
+      }
+      if (category.value.minPlayers < 1 || category.value.maxPlayers < 1) {
+        alert('Minimum and maximum players must be greater than 0')
+        return
+      }
+      if (category.value.minPlayers > category.value.maxPlayers) {
+        alert('Minimum players must be less than maximum players')
+        return
+      }
+      apiImportTeamEntry(event.target.files[0], category.value.minPlayers, category.value.maxPlayers)
         .then((data) => {
           emit('playersImported', data)
         })
@@ -51,7 +63,7 @@ function onFileSelected(event: any) {
       alert('Please select an entry type before importing')
       return
   }
-  
+
   file.value!.value = ''
 }
 
@@ -62,6 +74,14 @@ function playerCountChanged(countType: string) {
 const category = defineModel<Category>({
   required: true
 })
+
+// Initialize minPlayers and maxPlayers if they don't exist
+if (category.value.entryType === EntryType.Team && !category.value.minPlayers) {
+  category.value.minPlayers = 3
+}
+if (category.value.entryType === EntryType.Team && !category.value.maxPlayers) {
+  category.value.maxPlayers = 5
+}
 
 let canChangePlayersPerGrp = computed(() => isGroupEmpty(category.value.groups))
 
@@ -86,6 +106,10 @@ const isEntryTypeSelected = computed(() => {
     <LabeledInput name="categoryShort" label="Short Form" type="text" v-model="category.shortName"></LabeledInput>
     <LabeledInput name="durationMinutes" label="Match Duration (minutes)" type="number"
       v-model.number="category.durationMinutes"></LabeledInput>
+    <LabeledInput v-if="category.entryType === EntryType.Team" name="minPlayers" label="Min Players Per Team" type="number"
+      v-model.number="category.minPlayers"></LabeledInput>
+    <LabeledInput v-if="category.entryType === EntryType.Team" name="maxPlayers" label="Max Players Per Team" type="number"
+      v-model.number="category.maxPlayers"></LabeledInput>
     <LabeledInput name="numQualifiedPerGroup" label="Qualifying Entries Per Group" type="number"
       v-model.number="category.numQualifiedPerGroup"></LabeledInput>
     <LabeledInput name="players" label="Entries Per Group (Main)" type="number" v-model="category.entriesPerGrpMain"

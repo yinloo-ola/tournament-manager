@@ -106,9 +106,11 @@ export async function apiImportDoublesEntry(file: File) {
   })
 }
 
-export async function apiImportTeamEntry(file: File) {
+export async function apiImportTeamEntry(file: File, minPlayers: number, maxPlayers: number) {
   const form = new FormData()
   form.append('file', file)
+  form.append('minPlayers', minPlayers.toString())
+  form.append('maxPlayers', maxPlayers.toString())
   return fetch('/api/importTeamEntry', {
     headers: {
       Accept: 'application/json'

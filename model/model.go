@@ -47,6 +47,8 @@ type Category struct {
 	KnockoutRounds         []KnockoutRound `json:"knockoutRounds"`
 	DurationMinutes        int             `json:"durationMinutes"`
 	NumQualifiedPerGroup   int             `json:"numQualifiedPerGroup"`
+	MinPlayers             *int            `json:"minPlayers,omitempty"`
+	MaxPlayers             *int            `json:"maxPlayers,omitempty"`
 }
 
 type KnockoutRound struct {

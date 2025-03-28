@@ -16,6 +16,8 @@ export type Category = {
   knockoutRounds: Array<KnockoutRound>
   durationMinutes: number
   numQualifiedPerGroup: number
+  minPlayers?: number
+  maxPlayers?: number
 }
 
 export enum EntryType {

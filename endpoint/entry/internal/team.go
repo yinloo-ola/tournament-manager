@@ -12,8 +12,10 @@ import (
 	"github.com/yinloo-ola/tournament-manager/utils/pointer"
 )
 
-const entrySheetName = "entries"
-const playersSheetName = "players"
+const (
+	entrySheetName   = "entries"
+	playersSheetName = "players"
+)
 
 func ImportTeamEntries(ctx context.Context, xlsxReader io.Reader, minPlayers, maxPlayers int) ([]model.Entry, error) {
 	file, err := excelize.OpenReader(xlsxReader)
@@ -59,26 +61,29 @@ func ImportTeamEntries(ctx context.Context, xlsxReader io.Reader, minPlayers, ma
 
 	entries := make([]model.Entry, 0, len(entryRows)-1)
 	for _, row := range entryRows[1:] { // Skip header row
-		if len(row) < len(doublesHeader) {
+		if len(row) < 3 { // club and seeding are optional
 			continue
 		}
 		teamName := strings.TrimSpace(row[1])
-		seedingStr := strings.TrimSpace(row[2])
-		club := strings.TrimSpace(row[3])
+		var club string
+		var seeding int
+		if len(row) > 2 {
+			club = strings.TrimSpace(row[2])
+		}
+		if len(row) > 3 {
+			seedingStr := strings.TrimSpace(row[3])
+			if seedingStr != "" {
+				seeding, err = strconv.Atoi(seedingStr)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse seeding: %w", err)
+				}
+			}
+		}
 
 		// Get team players
 		players, ok := playerMap[teamName]
 		if !ok {
 			return nil, fmt.Errorf("team %s not found in players sheet", teamName)
-		}
-
-		// Parse seeding if provided
-		seeding := 0
-		if seedingStr != "" {
-			seeding, err = strconv.Atoi(seedingStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse seeding: %w", err)
-			}
 		}
 
 		// if number of players for any team is not between minPlayers and maxPlayers, return error
