@@ -12,16 +12,16 @@ const PlayerByeName = "{BYE}"
 type Date time.Time
 
 func (c *Date) UnmarshalJSON(b []byte) error {
-	value := strings.Trim(string(b), `"`) //get rid of "
+	value := strings.Trim(string(b), `"`) // get rid of "
 	if value == "" || value == "null" {
 		return nil
 	}
 
-	t, err := time.Parse("2006-01-02T15:04", value) //parse time
+	t, err := time.Parse("2006-01-02T15:04", value) // parse time
 	if err != nil {
 		return err
 	}
-	*c = Date(t) //set result using the pointer
+	*c = Date(t) // set result using the pointer
 	return nil
 }
 
@@ -102,13 +102,25 @@ type Entry struct {
 func (e Entry) Name() string {
 	switch e.EntryType {
 	case Singles:
+		if e.SinglesEntry == nil {
+			slog.Warn("singles entry is nil")
+			return ""
+		}
 		return e.SinglesEntry.Player.Name
 	case Doubles:
+		if e.DoublesEntry == nil {
+			slog.Warn("doubles entry is nil")
+			return ""
+		}
 		if e.DoublesEntry.Players[0].Name == PlayerByeName {
 			return PlayerByeName
 		}
 		return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
 	case Team:
+		if e.TeamEntry == nil {
+			slog.Warn("team entry is nil")
+			return ""
+		}
 		return e.TeamEntry.TeamName
 	default:
 		slog.Error("invalid entry type", "type", e.EntryType)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { apiImportSinglesEntry } from '@/client/client'
+import { apiImportSinglesEntry, apiImportDoublesEntry, apiImportTeamEntry } from '@/client/client'
 import LabeledInput from '../widgets/LabeledInput.vue'
 import { EntryType } from '@/types/types'
 import OutlinedButton from '../widgets/OutlinedButton.vue'
@@ -17,13 +17,41 @@ function onFileSelected(event: any) {
     alert('No files selected')
     return
   }
-  apiImportSinglesEntry(event.target.files[0])
-    .then((data) => {
-      emit('playersImported', data)
-    })
-    .catch((error) => {
-      alert(error.message)
-    })
+  
+  // Check the category entryType and call the appropriate API function
+  switch (category.value.entryType) {
+    case EntryType.Singles:
+      apiImportSinglesEntry(event.target.files[0])
+        .then((data) => {
+          emit('playersImported', data)
+        })
+        .catch((error) => {
+          alert(error.message)
+        })
+      break
+    case EntryType.Doubles:
+      apiImportDoublesEntry(event.target.files[0])
+        .then((data) => {
+          emit('playersImported', data)
+        })
+        .catch((error) => {
+          alert(error.message)
+        })
+      break
+    case EntryType.Team:
+      apiImportTeamEntry(event.target.files[0])
+        .then((data) => {
+          emit('playersImported', data)
+        })
+        .catch((error) => {
+          alert(error.message)
+        })
+      break
+    default:
+      alert('Please select an entry type before importing')
+      return
+  }
+  
   file.value!.value = ''
 }
 

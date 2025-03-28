@@ -12,8 +12,10 @@ import (
 	"github.com/yinloo-ola/tournament-manager/utils/pointer"
 )
 
-var doublesHeader = []string{"SN", "Player1", "Player2", "Seeding", "Club"}
-var playersHeader = []string{"SN", "Name", "Date Of Birth", "Gender"}
+var (
+	doublesHeader = []string{"SN", "Player1", "Player2", "Club", "Seeding"}
+	playersHeader = []string{"SN", "Name", "Date Of Birth", "Gender"}
+)
 
 func ImportDoublesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.Entry, error) {
 	file, err := excelize.OpenReader(xlsxReader)
@@ -58,14 +60,26 @@ func ImportDoublesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.En
 
 	entries := make([]model.Entry, 0, len(entryRows)-1)
 	for _, row := range entryRows[1:] { // Skip header row
-		if len(row) < len(doublesHeader) {
+		if len(row) < 3 { // club and seeding are optional
 			continue
 		}
 
 		player1Name := strings.TrimSpace(row[1])
 		player2Name := strings.TrimSpace(row[2])
-		seedingStr := strings.TrimSpace(row[3])
-		club := strings.TrimSpace(row[4])
+		var club string
+		var seeding int
+		if len(row) > 3 {
+			club = strings.TrimSpace(row[3])
+		}
+		if len(row) > 4 {
+			seedingStr := strings.TrimSpace(row[4])
+			if seedingStr != "" {
+				seeding, err = strconv.Atoi(seedingStr)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse seeding: %w", err)
+				}
+			}
+		}
 
 		// Get player details from the map
 		player1, ok1 := playerMap[player1Name]
@@ -76,15 +90,6 @@ func ImportDoublesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.En
 		player2, ok2 := playerMap[player2Name]
 		if !ok2 {
 			return nil, fmt.Errorf("player with SN %s not found in players sheet", player2Name)
-		}
-
-		// Parse seeding if provided
-		seeding := 0
-		if seedingStr != "" {
-			seeding, err = strconv.Atoi(seedingStr)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse seeding: %w", err)
-			}
 		}
 
 		// Create doubles entry
