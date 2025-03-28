@@ -50,7 +50,19 @@ export class Entry {
     public singlesEntry?: SinglesEntry,
     public doublesEntry?: DoublesEntry,
     public teamEntry?: TeamEntry
-  ) { }
+  ) {
+    switch (this.entryType) {
+      case EntryType.Singles:
+        this.singlesEntry = { player: { name: '', dateOfBirth: '', gender: '' } }
+        break
+      case EntryType.Doubles:
+        this.doublesEntry = { players: [{ name: '', dateOfBirth: '', gender: '' }, { name: '', dateOfBirth: '', gender: '' }] }
+        break
+      case EntryType.Team:
+        this.teamEntry = { teamName: '', players: [{ name: '', dateOfBirth: '', gender: '' }], minPlayers: 0, maxPlayers: 0 }
+        break
+    }
+  }
 
   get name(): string {
     switch (this.entryType) {
