@@ -58,10 +58,20 @@ export class Entry {
         this.singlesEntry = { player: { name: '', dateOfBirth: '', gender: '' } }
         break
       case EntryType.Doubles:
-        this.doublesEntry = { players: [{ name: '', dateOfBirth: '', gender: '' }, { name: '', dateOfBirth: '', gender: '' }] }
+        this.doublesEntry = {
+          players: [
+            { name: '', dateOfBirth: '', gender: '' },
+            { name: '', dateOfBirth: '', gender: '' }
+          ]
+        }
         break
       case EntryType.Team:
-        this.teamEntry = { teamName: '', players: [{ name: '', dateOfBirth: '', gender: '' }], minPlayers: 0, maxPlayers: 0 }
+        this.teamEntry = {
+          teamName: '',
+          players: [{ name: '', dateOfBirth: '', gender: '' }],
+          minPlayers: 0,
+          maxPlayers: 0
+        }
         break
     }
   }
@@ -75,6 +85,9 @@ export class Entry {
         return this.singlesEntry!.player.name
       case EntryType.Doubles:
         if (!this.doublesEntry) {
+          return ''
+        }
+        if (this.doublesEntry.players[0].name === '' && this.doublesEntry.players[1].name === '') {
           return ''
         }
         return `${this.doublesEntry!.players[0].name} / ${this.doublesEntry!.players[1].name}`

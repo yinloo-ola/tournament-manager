@@ -97,6 +97,7 @@ func ImportTeamEntries(ctx context.Context, xlsxReader io.Reader, minPlayers, ma
 			Club:      pointer.OrNil(club),
 			Seeding:   pointer.OrNil(seeding),
 			TeamEntry: &model.TeamEntry{
+				TeamName:   teamName,
 				Players:    players,
 				MaxPlayers: maxPlayers,
 				MinPlayers: minPlayers,

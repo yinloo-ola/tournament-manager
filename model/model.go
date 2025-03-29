@@ -131,8 +131,11 @@ func (e Entry) Name() string {
 }
 
 type Match struct {
-	Entry1            Entry     `json:"entry1"`
-	Entry2            Entry     `json:"entry2"`
+	Entry1 Entry `json:"entry1"`
+	Entry2 Entry `json:"entry2"`
+	// Add IDs calculated during scheduling
+	Entry1ID          int       `json:"-"`
+	Entry2ID          int       `json:"-"`
 	DateTime          time.Time `json:"datetime"`
 	DurationMinutes   int       `json:"durationMinutes"`
 	Table             string    `json:"table"`

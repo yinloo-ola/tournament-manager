@@ -26,13 +26,12 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 			}
 		}
 
-		if len(category.KnockoutRounds) == 0 {
-			koRounds, err := generateKnockoutRounds(category.Groups, category.NumQualifiedPerGroup)
-			if err != nil {
-				return tournament, fmt.Errorf("generate knock out rounds for category %s failed: %w", category.ShortName, err)
-			}
-			category.KnockoutRounds = koRounds
+		// Always generate knockout rounds based on the current NumQualifiedPerGroup
+		koRounds, err := generateKnockoutRounds(category.Groups, category.NumQualifiedPerGroup)
+		if err != nil {
+			return tournament, fmt.Errorf("generate knock out rounds for category %s failed: %w", category.ShortName, err)
 		}
+		category.KnockoutRounds = koRounds
 
 		tournament.Categories[i] = category
 	}
@@ -184,7 +183,9 @@ func generateRounds(players []model.Entry, matchDurationMinutes int) [][]model.M
 		panic("generateRounds encounter error")
 	}
 
-	swapRoundWithPlayersToEnd(rounds, players[1], players[2])
+	if len(players) > 2 {
+		swapRoundWithPlayersToEnd(rounds, players[1], players[2])
+	}
 	return rounds
 }
 
