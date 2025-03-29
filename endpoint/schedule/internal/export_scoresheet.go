@@ -134,11 +134,13 @@ func AddMatchScoresheet(ctx context.Context, tournamentName string, match model.
 				isReplaced = true
 			}
 			if strings.Contains(cellValue, "{{player1}}") {
-				cellValue = strings.ReplaceAll(cellValue, "{{player1}}", match.Entry1.Name())
+				// TODO: Need to get the actual entry from the index
+				cellValue = strings.ReplaceAll(cellValue, "{{player1}}", fmt.Sprintf("Player %d", match.Entry1Idx+1))
 				isReplaced = true
 			}
 			if strings.Contains(cellValue, "{{player2}}") {
-				cellValue = strings.ReplaceAll(cellValue, "{{player2}}", match.Entry2.Name())
+				// TODO: Need to get the actual entry from the index
+				cellValue = strings.ReplaceAll(cellValue, "{{player2}}", fmt.Sprintf("Player %d", match.Entry2Idx+1))
 				isReplaced = true
 			}
 			if !isReplaced {

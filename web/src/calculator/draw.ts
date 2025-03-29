@@ -1,5 +1,6 @@
 import type { Group, Match, Entry, EntryType } from '@/types/types'
-import { getEmptyPlayer, hasEmptyPlayer } from './groups'
+import { EntryEmptyIdx } from '@/types/types'
+import { hasEmptyPlayer } from './groups'
 
 export async function doDraw(
   groups: Array<Group>,
@@ -7,7 +8,7 @@ export async function doDraw(
   otherPlayers: Array<Entry>,
   sleepDur: number
 ) {
-  const maxPos = Math.max(...groups.map((grp) => grp.entries.length))
+  const maxPos = Math.max(...groups.map((grp) => grp.entriesIdx.length))
   const randSeededPlayers = seededPlayers.map((p) => {
     const r = Math.random()
     const w = p.seeding! + r
@@ -35,7 +36,7 @@ export async function doDraw(
   for (let pos = 0; pos < maxPos; pos++) {
     if (pos % 2 === 0) {
       for (let j = 0; j < groups.length; j++) {
-        if (!groups[j].entries[pos]) {
+        if (groups[j].entriesIdx[pos] === undefined || groups[j].entriesIdx[pos] === EntryEmptyIdx) {
           continue
         }
         drawPlayerForGrpPos(groups, j, pos, allPlayers, groupsClubs)
@@ -43,7 +44,7 @@ export async function doDraw(
       }
     } else {
       for (let j = groups.length - 1; j >= 0; j--) {
-        if (!groups[j].entries[pos]) {
+        if (groups[j].entriesIdx[pos] === undefined || groups[j].entriesIdx[pos] === EntryEmptyIdx) {
           continue
         }
         drawPlayerForGrpPos(groups, j, pos, allPlayers, groupsClubs)
@@ -76,26 +77,38 @@ function drawPlayerForGrpPos(
   }
   const player = allPlayers[allPlayers.length - 1]
   if (!groupsClubs[j][player.player.club ?? '']) {
-    groups[j].entries[pos] = allPlayers.pop()!.player
-    if (groups[j].entries[pos].club) {
-      groupsClubs[j][groups[j].entries[pos].club!] = true
+    const poppedPlayer = allPlayers.pop()!.player
+    // Find the index of this player in the entries array
+    const entryIndex = groups[j].entriesIdx[pos]
+    groups[j].entriesIdx[pos] = entryIndex // Update the index reference
+    
+    if (poppedPlayer.club) {
+      groupsClubs[j][poppedPlayer.club!] = true
     }
   } else {
     let found = false
     for (let p = allPlayers.length - 1; p >= 0; p--) {
       if (!groupsClubs[j][allPlayers[p].player.club ?? '']) {
-        groups[j].entries[pos] = allPlayers.splice(p, 1)[0].player
-        if (groups[j].entries[pos].club) {
-          groupsClubs[j][groups[j].entries[pos].club!] = true
+        const splicedPlayer = allPlayers.splice(p, 1)[0].player
+        // Find the index of this player in the entries array
+        const entryIndex = groups[j].entriesIdx[pos]
+        groups[j].entriesIdx[pos] = entryIndex // Update the index reference
+        
+        if (splicedPlayer.club) {
+          groupsClubs[j][splicedPlayer.club!] = true
         }
         found = true
         break
       }
     }
     if (!found) {
-      groups[j].entries[pos] = allPlayers.pop()!.player
-      if (groups[j].entries[pos].club) {
-        groupsClubs[j][groups[j].entries[pos].club!] = true
+      const poppedPlayer = allPlayers.pop()!.player
+      // Find the index of this player in the entries array
+      const entryIndex = groups[j].entriesIdx[pos]
+      groups[j].entriesIdx[pos] = entryIndex // Update the index reference
+      
+      if (poppedPlayer.club) {
+        groupsClubs[j][poppedPlayer.club!] = true
       }
     }
   }
@@ -105,8 +118,8 @@ export function clearDraw(entryType: EntryType, groups: Array<Group>) {
   for (let i = 0; i < groups.length; i++) {
     const grp = groups[i]
     clearRound(entryType, grp.rounds)
-    for (let j = 0; j < grp.entries.length; j++) {
-      grp.entries[j] = getEmptyPlayer(entryType)
+    for (let j = 0; j < grp.entriesIdx.length; j++) {
+      grp.entriesIdx[j] = EntryEmptyIdx // Use the empty index constant
     }
   }
 }
@@ -115,8 +128,8 @@ function clearRound(entryType: EntryType, rounds: Match[][]) {
   for (let i = 0; i < rounds.length; i++) {
     const round = rounds[i]
     for (let j = 0; j < round.length; j++) {
-      round[j].entry1 = getEmptyPlayer(entryType)
-      round[j].entry2 = getEmptyPlayer(entryType)
+      round[j].entry1Idx = EntryEmptyIdx // Use the empty index constant
+      round[j].entry2Idx = EntryEmptyIdx // Use the empty index constant
     }
   }
 }

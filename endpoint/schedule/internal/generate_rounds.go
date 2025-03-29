@@ -10,7 +10,7 @@ import (
 func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament, error) {
 	for i, category := range tournament.Categories {
 		for g, grp := range category.Groups {
-			rounds := generateRounds(grp.Entries, category.DurationMinutes)
+			rounds := generateGroupRounds(grp.EntriesIdx, category.DurationMinutes)
 			if len(category.Groups[g].Rounds) == 0 {
 				category.Groups[g].Rounds = rounds
 			} else {
@@ -19,8 +19,8 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 				}
 				for i := range category.Groups[g].Rounds {
 					for j := range category.Groups[g].Rounds[i] {
-						category.Groups[g].Rounds[i][j].Entry1 = rounds[i][j].Entry1
-						category.Groups[g].Rounds[i][j].Entry2 = rounds[i][j].Entry2
+						category.Groups[g].Rounds[i][j].Entry1Idx = rounds[i][j].Entry1Idx
+						category.Groups[g].Rounds[i][j].Entry2Idx = rounds[i][j].Entry2Idx
 					}
 				}
 			}
@@ -38,7 +38,7 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 	return tournament, nil
 }
 
-func swapRoundWithPlayersToEnd(rounds [][]model.Match, player1, player2 model.Entry) {
+func swapRoundWithPlayersToEnd(rounds [][]model.Match, player1, player2 int) {
 	roundIdx := -1
 	for i, round := range rounds {
 		if i == len(rounds)-1 {
@@ -53,11 +53,11 @@ func swapRoundWithPlayersToEnd(rounds [][]model.Match, player1, player2 model.En
 	}
 }
 
-func roundContains(round []model.Match, player1, player2 model.Entry) bool {
+func roundContains(round []model.Match, player1Idx, player2Idx int) bool {
 	for _, match := range round {
-		if match.Entry1 == player1 && match.Entry2 == player2 {
+		if match.Entry1Idx == player1Idx && match.Entry2Idx == player2Idx {
 			return true
-		} else if match.Entry1 == player2 && match.Entry2 == player1 {
+		} else if match.Entry1Idx == player2Idx && match.Entry2Idx == player1Idx {
 			return true
 		}
 	}
@@ -94,7 +94,7 @@ func nextPowerOfTwo(x int) int {
 
 func generateKnockoutRounds(groups []model.Group, numQualifiedPerGroup int) ([]model.KnockoutRound, error) {
 	for _, group := range groups {
-		if len(group.Entries) < numQualifiedPerGroup {
+		if len(group.EntriesIdx) < numQualifiedPerGroup {
 			return nil, fmt.Errorf("not enough players")
 		}
 	}
@@ -127,85 +127,55 @@ func generateKnockoutRounds(groups []model.Group, numQualifiedPerGroup int) ([]m
 	return koRounds, nil
 }
 
-func getByeEntry(typ model.EntryType) model.Entry {
-	entry := model.Entry{
-		EntryType: typ,
-	}
-	switch typ {
-	case model.Doubles:
-		entry.DoublesEntry = &model.DoublesEntry{
-			Players: [2]model.Player{
-				{
-					Name: model.PlayerByeName,
-				},
-				{
-					Name: model.PlayerByeName,
-				},
-			},
-		}
-	case model.Singles:
-		entry.SinglesEntry = &model.SinglesEntry{
-			Player: model.Player{
-				Name: model.PlayerByeName,
-			},
-		}
-	case model.Team:
-		entry.TeamEntry = &model.TeamEntry{
-			TeamName: model.PlayerByeName,
-		}
-	}
-	return entry
-}
-
-func generateRounds(players []model.Entry, matchDurationMinutes int) [][]model.Match {
-	if len(players) < 2 {
+func generateGroupRounds(entriesIdx []int, matchDurationMinutes int) [][]model.Match {
+	if len(entriesIdx) < 2 {
 		return nil
 	}
 
-	numPlayers := len(players)
+	numPlayers := len(entriesIdx)
 	numMatches := (numPlayers * (numPlayers - 1)) / 2
 	numMatchesPerRound := numPlayers / 2
 	numRounds := numMatches / numMatchesPerRound
 
 	if numPlayers%2 == 1 {
-		players = append(players, getByeEntry(players[0].EntryType))
+		entriesIdx = append(entriesIdx, model.EntryByeIdx)
 		numPlayers++
 	}
 
 	rounds := make([][]model.Match, numRounds)
 	indices := make([]int, numPlayers)
 	for r := 0; r < numRounds; r++ {
-		rounds[r] = getRoundMatches(r, players, matchDurationMinutes, indices)
+		rounds[r] = getRoundMatches(r, entriesIdx, matchDurationMinutes, indices)
 	}
 
 	if !isRoundValid(rounds, numMatches, numMatchesPerRound) {
-		slog.Error("generateRounds encounter error", "rounds", rounds, "numMatches", numMatches)
-		panic("generateRounds encounter error")
+		slog.Error("generateGroupRounds encounter error", "rounds", rounds, "numMatches", numMatches)
+		panic("generateGroupRounds encounter error")
 	}
 
-	if len(players) > 2 {
-		swapRoundWithPlayersToEnd(rounds, players[1], players[2])
+	if len(entriesIdx) > 2 {
+		swapRoundWithPlayersToEnd(rounds, entriesIdx[1], entriesIdx[2])
 	}
 	return rounds
 }
 
-func getRoundMatches(round int, players []model.Entry, matchDurationMinutes int, indices []int) []model.Match {
-	getRoundPlayersIndices(round, len(players), indices)
-	matches := make([]model.Match, 0, len(players)/2)
+func getRoundMatches(round int, entriesIdx []int, matchDurationMinutes int, indices []int) []model.Match {
+	getRoundPlayersIndices(round, len(entriesIdx), indices)
+	matches := make([]model.Match, 0, len(entriesIdx)/2)
 
 	for i := 0; i < len(indices); i += 2 {
 		ind1, ind2 := indices[i], indices[i+1]
 		if ind2 < ind1 {
 			ind1, ind2 = ind2, ind1
 		}
-		p1 := players[ind1]
-		p2 := players[ind2]
-		if p1.Name() == model.PlayerByeName || p2.Name() == model.PlayerByeName {
+		p1 := entriesIdx[ind1]
+		p2 := entriesIdx[ind2]
+		if p1 == model.EntryByeIdx || p2 == model.EntryByeIdx {
 			continue
 		}
 		match := model.Match{
-			Entry1:          p1,
-			Entry2:          p2,
+			Entry1Idx:       p1,
+			Entry2Idx:       p2,
 			DurationMinutes: matchDurationMinutes,
 		}
 		matches = append(matches, match)

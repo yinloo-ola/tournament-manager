@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import {
   calculatorGroups,
-  getEmptyPlayer,
   getGroup,
   isGroupEmpty,
   isPlayerChosen,
   removePlayerFromAllGroups
 } from '@/calculator/groups'
-import { type Category, type Group } from '@/types/types'
+import { EntryEmptyIdx, type Category, type Group } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'
@@ -52,7 +51,7 @@ let players = computed(() => {
 let chosenPlayersIndices = computed<{ [key: number]: boolean }>(() => {
   let out: { [key: number]: boolean } = {}
   props.category.entries.forEach((player, i) => {
-    if (isPlayerChosen(player, groups.value)) {
+    if (isPlayerChosen(player, groups.value, props.category.entries)) {
       out[i] = true
     }
   })
@@ -69,12 +68,12 @@ function choosePlayer(grp: number, pos: number) {
   isChoosingPlayer.value = true
 }
 function unselectPlayer(grp: number, pos: number) {
-  groups.value[grp].entries[pos] = getEmptyPlayer(props.category.entryType)
+  groups.value[grp].entriesIdx[pos] = EntryEmptyIdx
 }
 function playerChosen(playerIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
-  removePlayerFromAllGroups(groups.value, props.category.entries[playerIdx])
-  groups.value[grpOnChoosing].entries[posOnChoosing] = props.category.entries[playerIdx]
+  removePlayerFromAllGroups(groups.value)
+  groups.value[grpOnChoosing].entriesIdx[posOnChoosing] = playerIdx
   grpOnChoosing = -1
   posOnChoosing = -1
   isChoosingPlayer.value = false
@@ -149,15 +148,15 @@ async function autoDraw() {
         >
           <div class="py-2">Group {{ i + 1 }}</div>
           <div
-            v-for="(playerInGrp, j) in grp.entries"
+            v-for="(entryIdx, j) in grp.entriesIdx"
             :key="'player-in-group-' + i + '-' + j"
             class="flex items-center py-3"
           >
             <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2" />
             <span> {{ j + 1 }}.</span>
-            <span class="px-2">{{ getPlayerDisplay(playerInGrp) }}</span>
+            <span class="px-2">{{ entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length ? getPlayerDisplay(category.entries[entryIdx]) : '' }}</span>
             <div
-              v-if="playerInGrp.name.length > 0"
+              v-if="entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length"
               @click="unselectPlayer(i, j)"
               class="i-line-md-account-delete cursor-pointer px-2"
             />

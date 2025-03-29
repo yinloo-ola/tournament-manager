@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-const PlayerByeName = "{BYE}"
+const EntryByeIdx = -2
+const EntryEmptyIdx = -1
 
 type Date time.Time
 
@@ -57,8 +58,8 @@ type KnockoutRound struct {
 }
 
 type Group struct {
-	Entries []Entry   `json:"entries"`
-	Rounds  [][]Match `json:"rounds"`
+	EntriesIdx []int     `json:"entries"`
+	Rounds     [][]Match `json:"rounds"`
 }
 
 // EntryType represents the type of tournament entry
@@ -114,8 +115,9 @@ func (e Entry) Name() string {
 			slog.Warn("doubles entry is nil")
 			return ""
 		}
-		if e.DoublesEntry.Players[0].Name == PlayerByeName {
-			return PlayerByeName
+		if e.DoublesEntry.Players[0].Name == "" || e.DoublesEntry.Players[1].Name == "" {
+			slog.Warn("doubles entry is empty")
+			return ""
 		}
 		return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
 	case Team:
@@ -131,11 +133,8 @@ func (e Entry) Name() string {
 }
 
 type Match struct {
-	Entry1 Entry `json:"entry1"`
-	Entry2 Entry `json:"entry2"`
-	// Add IDs calculated during scheduling
-	Entry1ID          int       `json:"-"`
-	Entry2ID          int       `json:"-"`
+	Entry1Idx         int       `json:"entry1Idx"`
+	Entry2Idx         int       `json:"entry2Idx"`
 	DateTime          time.Time `json:"datetime"`
 	DurationMinutes   int       `json:"durationMinutes"`
 	Table             string    `json:"table"`

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { tournament } from '@/store/state';
-import { computed, onMounted, ref } from 'vue';
+import { tournament } from '@/store/state'
+import { computed, onMounted, ref } from 'vue'
 import router from '@/router'
-import { type Match, type Group, type Entry } from '@/types/types';
+import { type Match, type Group, type Entry } from '@/types/types'
 
 const props = defineProps({
   shortName: {
@@ -47,54 +47,59 @@ const getGroupForMatch = (match: Match): string => {
   if (category.value?.groups) {
     for (const group of category.value.groups) {
       for (const round of group.rounds) {
-        if (round.some(m => m.datetime === match.datetime &&
-          m.entry1.name === match.entry1.name &&
-          m.entry2.name === match.entry2.name)) {
+        if (
+          round.some(
+            (m) =>
+              m.datetime === match.datetime &&
+              m.entry1Idx === match.entry1Idx &&
+              m.entry2Idx === match.entry2Idx
+          )
+        ) {
           // Find the group index
-          const groupIndex = category.value.groups.indexOf(group) + 1;
-          return `Group ${groupIndex}`;
+          const groupIndex = category.value.groups.indexOf(group) + 1
+          return `Group ${groupIndex}`
         }
       }
     }
   }
-  return 'N/A';
-};
+  return 'N/A'
+}
 
 // Format date from datetime string in GMT
 const formatDate = (datetime: string): string => {
-  if (!datetime) return 'TBD';
-  const date = new Date(datetime);
+  if (!datetime) return 'TBD'
+  const date = new Date(datetime)
   // Convert to GMT date string format
-  return date.toUTCString().split(' ').slice(0, 4).join(' ');
-};
+  return date.toUTCString().split(' ').slice(0, 4).join(' ')
+}
 
 // Format time from datetime string in GMT
 const formatTime = (datetime: string): string => {
-  if (!datetime) return 'TBD';
-  const date = new Date(datetime);
+  if (!datetime) return 'TBD'
+  const date = new Date(datetime)
   // Extract only the time portion in GMT without timezone indicator
-  return date.toUTCString().split(' ')[4];
-};
+  return date.toUTCString().split(' ')[4]
+}
 
 // Track active tab
-const activeTab = ref('table'); // 'table', 'groups', 'knockouts'
+const activeTab = ref('table') // 'table', 'groups', 'knockouts'
 
 // Get all groups for the current category
 const categoryGroups = computed(() => {
-  return category.value?.groups || [];
-});
+  return category.value?.groups || []
+})
 
 // Helper function to get player position in a group
 const getPlayerPosition = (group: Group, player: Entry): number => {
   // This is a placeholder - in a real app you would calculate position based on points
   return 0
-};
+}
 
 // Helper function to get player points in a group
 const getPlayerPoints = (group: Group, player: Entry): number => {
   // This is a placeholder - in a real app you would calculate points based on match results
-  return 0; // Placeholder value
-};
+  return 0 // Placeholder value
+}
 
 // Add knockout matches computed property
 const knockoutMatches = computed(() => {
@@ -117,7 +122,7 @@ const knockoutMatches = computed(() => {
 const tabs = [
   { name: 'table', label: 'Group Matches' },
   { name: 'groups', label: 'Groups' },
-  { name: 'knockouts', label: 'Knockout Matches' },
+  { name: 'knockouts', label: 'Knockout Matches' }
 ]
 
 onMounted(() => {
@@ -144,13 +149,17 @@ onMounted(() => {
       <!-- Tab navigation -->
       <div class="mb-0">
         <div class="w-full flex overflow-hidden rounded-t-lg bg-transparent shadow-sm">
-          <button v-for="(tab, index) in tabs" :key="index"
+          <button
+            v-for="(tab, index) in tabs"
+            :key="index"
             class="flex flex-auto justify-center border-b-0 rounded-t-2 border-solid px-1 py-2 text-sm font-medium"
             :class="[
               activeTab === tab.name
                 ? 'border-lime-500 bg-lime-50 text-lime-700'
                 : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700 hover:border-lime-400'
-            ]" @click="activeTab = tab.name">
+            ]"
+            @click="activeTab = tab.name"
+          >
             <span>{{ tab.label }}</span>
           </button>
         </div>
@@ -161,30 +170,55 @@ onMounted(() => {
         <!-- Table View Tab -->
         <div v-if="activeTab === 'table'" class="p-4">
           <!-- Add group matches title -->
-          <table class="min-w-full border border-lime-200 rounded-lg border-solid divide-y divide-gray-200">
+          <table
+            class="min-w-full border border-lime-200 rounded-lg border-solid divide-y divide-gray-200"
+          >
             <thead class="sticky top-0 z-10 border bg-lime-50">
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Group
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Table
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Date
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Time
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
-                  Player 1</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
-                  Player 2</th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
+                  Player 1
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
+                  Player 2
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="match in groupMatches" :key="match.datetime"
-                class="transition-colors duration-150 hover:bg-lime-50">
+              <tr
+                v-for="match in groupMatches"
+                :key="match.datetime"
+                class="transition-colors duration-150 hover:bg-lime-50"
+              >
                 <!-- Extracting group information from the match context -->
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                   {{ getGroupForMatch(match) }}
@@ -199,10 +233,10 @@ onMounted(() => {
                   {{ formatTime(match.datetime) }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.entry1.name }}
+                  {{ category?.entries[match.entry1Idx].name }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.entry2.name }}
+                  {{ category?.entries[match.entry2Idx].name }}
                 </td>
               </tr>
             </tbody>
@@ -211,30 +245,55 @@ onMounted(() => {
 
         <!-- Knockout View Tab -->
         <div v-if="activeTab === 'knockouts'" class="p-4">
-          <table class="min-w-full border border-lime-200 rounded-lg border-solid divide-y divide-gray-200">
+          <table
+            class="min-w-full border border-lime-200 rounded-lg border-solid divide-y divide-gray-200"
+          >
             <thead class="sticky top-0 z-10 border bg-lime-50">
               <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Round
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Table
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Date
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
                   Time
                 </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
-                  Player 1</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase">
-                  Player 2</th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
+                  Player 1
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
+                >
+                  Player 2
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="match in knockoutMatches" :key="match.datetime"
-                class="transition-colors duration-150 hover:bg-lime-50">
+              <tr
+                v-for="match in knockoutMatches"
+                :key="match.datetime"
+                class="transition-colors duration-150 hover:bg-lime-50"
+              >
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                   {{ match.round }}
                 </td>
@@ -248,10 +307,10 @@ onMounted(() => {
                   {{ formatTime(match.datetime) }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.entry1.name }}
+                  {{ category?.entries[match.entry1Idx].name }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ match.entry2.name }}
+                  {{ category?.entries[match.entry2Idx].name }}
                 </td>
               </tr>
             </tbody>
@@ -260,57 +319,90 @@ onMounted(() => {
 
         <!-- Group View Tab -->
         <div v-if="activeTab === 'groups'" class="p-4 space-y-8">
-          <div v-for="(group, groupIndex) in categoryGroups" :key="groupIndex" class="overflow-x-auto">
+          <div
+            v-for="(group, groupIndex) in categoryGroups"
+            :key="groupIndex"
+            class="overflow-x-auto"
+          >
             <h3 class="mb-3 flex items-center text-lg text-lime-700 font-semibold">
               Group {{ groupIndex + 1 }}
             </h3>
             <table
-              class="min-w-full border border-lime-200 rounded-lg border-solid shadow-sm divide-y divide-gray-200 divide-solid">
+              class="min-w-full border border-lime-200 rounded-lg border-solid shadow-sm divide-y divide-gray-200 divide-solid"
+            >
               <thead class="bg-lime-50">
                 <tr>
                   <th
-                    class="border-b border-r border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase">
-                  </th>
+                    class="border-b border-r border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase"
+                  ></th>
                   <th
-                    class="border-b border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase">
-                    Player</th>
+                    class="border-b border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase"
+                  >
+                    Player
+                  </th>
                   <!-- Generate columns for each player in the group -->
-                  <th v-for="(_, playerIndex) in group.entries" :key="playerIndex"
-                    class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase">
+                  <th
+                    v-for="(_, playerIndex) in group.entriesIdx"
+                    :key="playerIndex"
+                    class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase"
+                  >
                     {{ playerIndex + 1 }}
                   </th>
                   <th
-                    class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase">
-                    Points</th>
+                    class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase"
+                  >
+                    Points
+                  </th>
                   <th
-                    class="border-b border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase">
-                    Position</th>
+                    class="border-b border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase"
+                  >
+                    Position
+                  </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200 divide-solid">
                 <!-- Row for each player in the group -->
-                <tr v-for="(player, playerIndex) in group.entries" :key="player.name"
-                  class="transition-colors duration-150 divide-x divide-gray-200 hover:bg-lime-50">
-                  <td class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900 font-medium">
+                <tr
+                  v-for="(entryIdx, playerIndex) in group.entriesIdx"
+                  :key="entryIdx"
+                  class="transition-colors duration-150 divide-x divide-gray-200 hover:bg-lime-50"
+                >
+                  <td
+                    class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900 font-medium"
+                  >
                     {{ playerIndex + 1 }}
                   </td>
-                  <td class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900">
-                    {{ player.name }} {{ player.club ? `(${player.club})` : '' }}
+                  <td
+                    class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900"
+                  >
+                    {{ category?.entries[entryIdx].name }}
+                    {{
+                      category?.entries[entryIdx].club
+                        ? `(${category?.entries[entryIdx].club})`
+                        : ''
+                    }}
                   </td>
                   <!-- Cell for each player matchup -->
-                  <td v-for="(opponent, opponentIndex) in group.entries" :key="opponent.name"
+                  <td
+                    v-for="(opponentIdx, opponentIndex) in group.entriesIdx"
+                    :key="opponentIdx"
                     class="border-r border-gray-200 px-4 py-2 text-center text-sm text-gray-500"
-                    :class="{ 'bg-gray-900': playerIndex === opponentIndex }">
+                    :class="{ 'bg-gray-900': playerIndex === opponentIndex }"
+                  >
                     <!-- Display match result if not the same player -->
                     <span v-if="playerIndex !== opponentIndex">
                       <!-- This would be replaced with actual match results in a real app -->
                     </span>
                   </td>
-                  <td class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-center text-sm text-gray-900">
-                    {{ getPlayerPoints(group, player) }}
+                  <td
+                    class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-center text-sm text-gray-900"
+                  >
+                    {{ getPlayerPoints(group, category?.entries[entryIdx]!) }}
                   </td>
-                  <td class="whitespace-nowrap px-4 py-2 text-center text-sm text-lime-700 font-medium">
-                    {{ getPlayerPosition(group, player) }}
+                  <td
+                    class="whitespace-nowrap px-4 py-2 text-center text-sm text-lime-700 font-medium"
+                  >
+                    {{ getPlayerPosition(group, category?.entries[entryIdx]!) }}
                   </td>
                 </tr>
               </tbody>

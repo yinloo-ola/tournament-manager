@@ -44,7 +44,7 @@ func TestTournamentUnmarshal(t *testing.T) {
 					t.Errorf("expected Singles entry type, got %v", entry.EntryType)
 				}
 				if entry.SinglesEntry == nil {
-					t.Fatal("expected SingleEntry to be present")
+					t.Fatal("expected SinglesEntry to be present")
 				}
 				if entry.SinglesEntry.Player.Name != "John Doe" {
 					t.Errorf("expected player name 'John Doe', got %q", entry.SinglesEntry.Player.Name)

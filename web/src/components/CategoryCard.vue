@@ -215,7 +215,10 @@ const isEntryTypeSelected = computed(() => {
           <div v-for="(match, m) in round" :key="'match-' + g + '-' + r + '-' + m" class="px-2">
             M{{ m + 1 }}
             <p class="text-red-700">{{ match.datetime }} on {{ match.table }}</p>
-            <p>{{ match.entry1.name }} vs {{ match.entry2.name }} {{ match.durationMinutes }}</p>
+            <p>
+              {{ category.entries[match.entry1Idx] }} vs {{ category.entries[match.entry2Idx] }}
+              {{ match.durationMinutes }}
+            </p>
           </div>
         </div>
       </div>

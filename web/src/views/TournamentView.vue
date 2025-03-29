@@ -39,8 +39,10 @@ function addCategory() {
 }
 
 function playersImported(categoryIdx: number, players: Entry[]) {
-  players = players.map((player) => {
-    return Entry.from(player)
+  players = players.map((player, i) => {
+    const entry = Entry.from(player)
+    entry.grpIdx = i
+    return entry
   })
   clearGroup(categoryIdx)
   tournament.value.categories[categoryIdx].entries = players

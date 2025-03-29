@@ -11,7 +11,6 @@ import (
 
 	"github.com/xuri/excelize/v2"
 	"github.com/yinloo-ola/tournament-manager/model"
-	"github.com/yinloo-ola/tournament-manager/utils/pointer"
 )
 
 func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (map[string][]model.Group, map[string][]model.KnockoutRound, error) {
@@ -210,7 +209,7 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 		groups := make([]model.Group, len(groupMap))
 
 		// Create a map to track all players in this category
-		categoryPlayerMap := make(map[string]model.Entry)
+		categoryPlayerIndices := make(map[int]bool)
 
 		// Process each group
 		for groupIdx, roundMap := range groupMap {
@@ -226,31 +225,35 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 			rounds := make([][]model.Match, maxRoundIdx+1)
 
 			// Create a map to track players in this group
-			groupPlayerMap := make(map[string]model.Entry)
+			groupPlayerIndices := make(map[int]bool)
 
 			// Fill in the rounds
 			for roundIdx, matchesInRound := range roundMap {
 				rounds[roundIdx] = matchesInRound
 
-				// Add players to both maps
+				// Add player indices to maps
 				for _, match := range matchesInRound {
-					categoryPlayerMap[match.Entry1.Name()] = match.Entry1
-					categoryPlayerMap[match.Entry2.Name()] = match.Entry2
-					groupPlayerMap[match.Entry1.Name()] = match.Entry1
-					groupPlayerMap[match.Entry2.Name()] = match.Entry2
+					if match.Entry1Idx >= 0 {
+						categoryPlayerIndices[match.Entry1Idx] = true
+						groupPlayerIndices[match.Entry1Idx] = true
+					}
+					if match.Entry2Idx >= 0 {
+						categoryPlayerIndices[match.Entry2Idx] = true
+						groupPlayerIndices[match.Entry2Idx] = true
+					}
 				}
 			}
 
-			// Convert group player map to slice
-			groupPlayers := make([]model.Entry, 0, len(groupPlayerMap))
-			for _, player := range groupPlayerMap {
-				groupPlayers = append(groupPlayers, player)
+			// Convert group player indices map to slice
+			groupPlayerIdx := make([]int, 0, len(groupPlayerIndices))
+			for idx := range groupPlayerIndices {
+				groupPlayerIdx = append(groupPlayerIdx, idx)
 			}
 
 			// Create a group
 			group := model.Group{
-				Rounds:  rounds,
-				Entries: groupPlayers,
+				Rounds:     rounds,
+				EntriesIdx: groupPlayerIdx,
 			}
 
 			// Add the group to the slice
@@ -328,55 +331,50 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
 	}
 	slog.Debug("player1", "player1", player1)
-	player1Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("J%d", row))
+	// Club information no longer needed with Entry1Idx/Entry2Idx
+	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("J%d", row))
 	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
+		return model.Match{}, fmt.Errorf("fail to get player1 club: %w", err)
 	}
-	var player1Seeding int
-	player1SeedingStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("K%d", row))
+	// Seeding information no longer needed with Entry1Idx/Entry2Idx
+	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("K%d", row))
 	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
-	}
-	if len(player1SeedingStr) > 0 {
-		player1Seeding, err = strconv.Atoi(player1SeedingStr)
-		if err != nil {
-			return model.Match{}, fmt.Errorf("fail to convert player1 seeding: %w", err)
-		}
+		return model.Match{}, fmt.Errorf("fail to get player1 seeding: %w", err)
 	}
 	player2, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("L%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
 	}
 	slog.Debug("player2", "player2", player2)
-	player2Club, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("M%d", row))
+	// Club information no longer needed with Entry1Idx/Entry2Idx
+	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("M%d", row))
 	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
+		return model.Match{}, fmt.Errorf("fail to get player2 club: %w", err)
 	}
-	player2SeedingStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("N%d", row))
+	// Seeding information no longer needed with Entry1Idx/Entry2Idx
+	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("N%d", row))
 	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
+		return model.Match{}, fmt.Errorf("fail to get player2 seeding: %w", err)
 	}
-	var player2Seeding int
-	if len(player2SeedingStr) > 0 {
-		player2Seeding, err = strconv.Atoi(player2SeedingStr)
-		if err != nil {
-			return model.Match{}, fmt.Errorf("fail to convert player2 seeding: %w", err)
-		}
+	// Convert player1 and player2 to indices
+	player1Idx, err := strconv.Atoi(player1)
+	if err != nil {
+		player1Idx = 0 // Default to first player if conversion fails
 	}
+
+	player2Idx, err := strconv.Atoi(player2)
+	if err != nil {
+		player2Idx = 1 // Default to second player if conversion fails
+	}
+
 	// TODO: support matches of different event types (singles, doubles, team)
 	return model.Match{
 		CategoryShortName: category,
 		RoundIdx:          round - 1,
 		GroupIdx:          grp - 1,
-		Entry1: model.Entry{
-			Club:    pointer.OrNil(player1Club),
-			Seeding: pointer.OrNil(player1Seeding),
-		},
-		Entry2: model.Entry{
-			Club:    pointer.OrNil(player2Club),
-			Seeding: pointer.OrNil(player2Seeding),
-		},
-		Round:    koRound,
-		MatchIdx: koMatch,
+		Entry1Idx:         player1Idx - 1, // Adjust for 1-based indexing in UI
+		Entry2Idx:         player2Idx - 1, // Adjust for 1-based indexing in UI
+		Round:             koRound,
+		MatchIdx:          koMatch,
 	}, nil
 }

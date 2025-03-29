@@ -1,7 +1,11 @@
+// Constants matching the Go model
+export const EntryByeIdx = -2
+export const EntryEmptyIdx = -1
+
 export type Tournament = {
   name: string
   numTables: number
-  startTime: string
+  startTime: string // Format: "2006-01-02T15:04"
   categories: Array<Category>
 }
 
@@ -26,6 +30,7 @@ export enum EntryType {
   Doubles = 'Doubles',
   Team = 'Team'
 }
+
 export interface SinglesEntry {
   player: Player
 }
@@ -51,7 +56,8 @@ export class Entry {
     public club?: string,
     public singlesEntry?: SinglesEntry,
     public doublesEntry?: DoublesEntry,
-    public teamEntry?: TeamEntry
+    public teamEntry?: TeamEntry,
+    public grpIdx?: number
   ) {
     switch (this.entryType) {
       case EntryType.Singles:
@@ -103,16 +109,20 @@ export class Entry {
 }
 
 export type Match = {
-  entry1: Entry
-  entry2: Entry
+  entry1Idx: number
+  entry2Idx: number
   datetime: string
-  table: string
   durationMinutes: number
+  table: string
+  categoryShortName?: string
+  groupIdx?: number
+  roundIdx?: number
   round?: number
+  matchIdx?: number
 }
 
 export type Group = {
-  entries: Array<Entry>
+  entriesIdx: number[] // Changed from entries to entriesIdx to match Go model
   rounds: Array<Array<Match>>
 }
 

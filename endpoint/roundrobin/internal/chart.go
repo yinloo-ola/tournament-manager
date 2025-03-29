@@ -28,8 +28,8 @@ func CreateRobinCharts(tournament model.Tournament) (endpoint.IoWriter, error) {
 func createCategorySheet(tournamentName string, category model.Category, sheet *xlsx.Sheet) error {
 	maxPlayer := 0
 	for _, grp := range category.Groups {
-		if len(grp.Entries) > maxPlayer {
-			maxPlayer = len(grp.Entries)
+		if len(grp.EntriesIdx) > maxPlayer {
+			maxPlayer = len(grp.EntriesIdx)
 		}
 	}
 
@@ -39,7 +39,11 @@ func createCategorySheet(tournamentName string, category model.Category, sheet *
 		c := sheet.AddRow().AddCell()
 		c.SetString(fmt.Sprintf("Group %d", g+1))
 		c.Merge(1, 0)
-		createTableForGroup(grp.Entries, sheet)
+		entries := make([]model.Entry, len(grp.EntriesIdx))
+		for i, idx := range grp.EntriesIdx {
+			entries[i] = category.Entries[idx]
+		}
+		createTableForGroup(entries, sheet)
 	}
 
 	sheet.SetColWidth(1, 1, 4.0)
@@ -54,7 +58,7 @@ func createCategorySheet(tournamentName string, category model.Category, sheet *
 	return nil
 }
 
-func createTableForGroup(grp []model.Entry, sheet *xlsx.Sheet) {
+func createTableForGroup(entries []model.Entry, sheet *xlsx.Sheet) {
 	allBorderStyle := xlsx.NewStyle()
 	allBorderStyle.Alignment.Vertical = "center"
 	allBorderStyle.ApplyFill = true
@@ -82,7 +86,7 @@ func createTableForGroup(grp []model.Entry, sheet *xlsx.Sheet) {
 	playerCell := rowHeaderRow.AddCell()
 	playerCell.SetString("Player")
 	playerCell.SetStyle(headerStyle)
-	for p := range grp {
+	for p := range entries {
 		c := rowHeaderRow.AddCell()
 		c.SetString(strconv.Itoa(p + 1))
 		c.SetStyle(headerStyle2)
@@ -95,7 +99,7 @@ func createTableForGroup(grp []model.Entry, sheet *xlsx.Sheet) {
 	posCell.SetString("Position")
 	posCell.SetStyle(headerStyle2)
 
-	for p, player := range grp {
+	for p, player := range entries {
 		playerRow := sheet.AddRow()
 		cell := playerRow.AddCell()
 		cell.SetString(strconv.Itoa(p + 1))
@@ -108,7 +112,7 @@ func createTableForGroup(grp []model.Entry, sheet *xlsx.Sheet) {
 		playerCell.SetString(playerStr)
 		playerCell.SetStyle(allBorderStyle)
 
-		for p2 := range grp {
+		for p2 := range entries {
 			resultCell := playerRow.AddCell()
 			resultCell.SetStyle(allBorderStyle)
 			if p2 == p {

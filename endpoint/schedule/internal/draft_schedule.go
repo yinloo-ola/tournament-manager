@@ -141,14 +141,14 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'G'), match.DateTime)
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Table)
 
-			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1ID) // Populate EntryID1
-			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'J'), match.Entry2ID) // Populate EntryID2
+			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1Idx+1) // Populate EntryID1
+			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'J'), match.Entry2Idx+1) // Populate EntryID2
 
 			matchesRow++
 
 			// Populate schedule sheet cell with match hyperlink and style
 			displayText := match.Name()
-			toolTip := fmt.Sprintf("%s vs %s", match.Entry1.Name(), match.Entry2.Name())
+			toolTip := fmt.Sprintf("Match %d", match.MatchIdx)
 			matchLink := fmt.Sprintf("matches!A%d", sn)
 			matchStyle, err := getMatchStyle(book, match, colorMap)
 			if err != nil {
@@ -300,7 +300,6 @@ func populateCategoryEntrySheets(book *excelize.File, tournament model.Tournamen
 		row++
 
 		// Data
-		entryID := 1
 		playerSN := 1
 		// Use index to get pointer to entry within the original slice
 		for entryIdx := range category.Entries {
@@ -326,7 +325,7 @@ func populateCategoryEntrySheets(book *excelize.File, tournament model.Tournamen
 
 			for _, player := range players {
 				cell = 'A'
-				book.SetCellInt(sheetName, currentCell(row, cell), entryID)
+				book.SetCellInt(sheetName, currentCell(row, cell), entryIdx+1)
 				cell++
 				book.SetCellStr(sheetName, currentCell(row, cell), teamName) // Blank for Singles/Doubles
 				cell++
@@ -350,7 +349,6 @@ func populateCategoryEntrySheets(book *excelize.File, tournament model.Tournamen
 				playerSN++
 				row++
 			}
-			entryID++
 		}
 
 		// Set column widths
@@ -534,14 +532,13 @@ func getSlotsForCategoryKnockout(category model.Category, numOfTable int, startT
 			matchStartTime := startTime.Add(time.Duration(category.DurationMinutes*slotIdx) * time.Minute)
 			// Schedule match
 			slots[slotIdx].Tables[tableIdx] = &model.Match{
-				Entry1:            match.Entry1,
-				Entry2:            match.Entry2,
+				Entry1Idx:         match.Entry1Idx,
+				Entry2Idx:         match.Entry2Idx,
 				DateTime:          matchStartTime,
 				DurationMinutes:   category.DurationMinutes,
 				Table:             fmt.Sprintf("T%d", tableIdx+1),
 				CategoryShortName: category.ShortName,
 				GroupIdx:          -1, // No group in knockout
-				RoundIdx:          -1,
 				Round:             round.Round,
 				MatchIdx:          m,
 			}
@@ -580,8 +577,8 @@ func getSlotsForCategoryGroup(category model.Category, numOfTable int, startTime
 				slots, slotIdx = getOrCreateSlot(slots, tableIdx, numOfTable)
 				matchStartTime := startTime.Add(time.Duration(category.DurationMinutes*slotIdx) * time.Minute)
 				slots[slotIdx].Tables[tableIdx] = &model.Match{
-					Entry1:            match.Entry1,
-					Entry2:            match.Entry2,
+					Entry1Idx:         match.Entry1Idx,
+					Entry2Idx:         match.Entry2Idx,
 					DurationMinutes:   category.DurationMinutes,
 					DateTime:          matchStartTime,
 					Table:             fmt.Sprintf("T%d", tableIdx+1),
