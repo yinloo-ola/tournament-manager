@@ -17,10 +17,10 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 				if len(category.Groups[g].Rounds) != len(rounds) {
 					return tournament, fmt.Errorf("number of rounds for group %d is not equal", g+1)
 				}
-				for i := range category.Groups[g].Rounds {
-					for j := range category.Groups[g].Rounds[i] {
-						category.Groups[g].Rounds[i][j].Entry1Idx = rounds[i][j].Entry1Idx
-						category.Groups[g].Rounds[i][j].Entry2Idx = rounds[i][j].Entry2Idx
+				for j := range category.Groups[g].Rounds {
+					for k := range category.Groups[g].Rounds[j] {
+						category.Groups[g].Rounds[j][k].Entry1Idx = rounds[j][k].Entry1Idx
+						category.Groups[g].Rounds[j][k].Entry2Idx = rounds[j][k].Entry2Idx
 					}
 				}
 			}
