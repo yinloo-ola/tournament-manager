@@ -58,7 +58,7 @@ type KnockoutRound struct {
 }
 
 type Group struct {
-	EntriesIdx []int     `json:"entries"`
+	EntriesIdx []int     `json:"entriesIdx"`
 	Rounds     [][]Match `json:"rounds"`
 }
 

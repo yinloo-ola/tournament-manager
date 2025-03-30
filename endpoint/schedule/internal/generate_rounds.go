@@ -31,7 +31,9 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 		if err != nil {
 			return tournament, fmt.Errorf("generate knock out rounds for category %s failed: %w", category.ShortName, err)
 		}
-		category.KnockoutRounds = koRounds
+		if len(koRounds) != len(category.KnockoutRounds) {
+			category.KnockoutRounds = koRounds
+		}
 
 		tournament.Categories[i] = category
 	}
@@ -212,6 +214,16 @@ func getRoundPlayersIndicesWithRotation(round, numPlayers int, sliceForRotation,
 	}
 }
 
+// getRoundPlayersIndices computes the indices of players for a given round in a round-robin tournament.
+// This function fills the `res` slice with indices of players for the specified `round`.
+// It expects an even number of players and the number of rounds should not exceed the number of players.
+// The `res` slice will contain the calculated indices, with `res[0]` always being 0.
+// The function panics if the input constraints are not met.
+// Example:
+// For 4 players (0, 1, 2, 3):
+//   - Round 0: res = [0, 1, 2, 3]
+//   - Round 1: res = [0, 3, 1, 2]
+//   - Round 2: res = [0, 2, 3, 1]
 func getRoundPlayersIndices(round, numPlayers int, res []int) {
 	if numPlayers%2 == 1 {
 		panic("num of players should be even")
@@ -222,25 +234,51 @@ func getRoundPlayersIndices(round, numPlayers int, res []int) {
 
 	res[0] = 0
 
+	// Iterate through all players except player 0 (who stays fixed at position 0)
 	for i := 1; i < numPlayers; i++ {
 		var newPos int
-		if i%2 == 0 { // even pos, +2 per move
+
+		if i%2 == 0 { // For players at even positions (2, 4, 6, etc.)
+			// Move forward by 2*round positions for each round
+			// This creates a clockwise rotation pattern for even-positioned players
 			newPos = i + 2*round
+
+			// If the new position exceeds the valid range (0 to numPlayers-1)
 			if newPos >= numPlayers {
+				// Apply "bouncing" logic when we hit the boundary
+				// This formula reflects the position back from the boundary
+				// Example: With 8 players, if newPos = 9, it becomes 2*8-9-1 = 6
 				newPos = 2*numPlayers - newPos - 1
+
+				// Handle double reflection case (when the reflection itself is out of bounds)
+				// This can happen with larger round numbers
 				if newPos < 0 {
+					// Second reflection: if we bounce back past 0, reflect again
+					// The formula -(newPos - 1) ensures we stay within valid range
 					newPos = -(newPos - 1)
 				}
 			}
-		} else { // odd pos, -2 per move
+		} else { // For players at odd positions (1, 3, 5, etc.)
+			// Move backward by 2*round positions for each round
+			// This creates a counterclockwise rotation pattern for odd-positioned players
 			newPos = i - 2*round
+
+			// If the new position is negative (below the valid range)
 			if newPos < 0 {
+				// Apply "bouncing" logic when we hit the lower boundary
+				// This formula reflects the position back from the boundary
+				// Example: With 8 players, if newPos = -1, it becomes -(-1-1) = 2
 				newPos = -(newPos - 1)
+
+				// Handle double reflection case (when the reflection exceeds upper bound)
 				if newPos >= numPlayers {
+					// Second reflection: if we bounce past numPlayers, reflect again
+					// The formula 2*numPlayers - newPos - 1 ensures we stay within valid range
 					newPos = 2*numPlayers - newPos - 1
 				}
 			}
 		}
+
 		res[i] = newPos
 	}
 }
