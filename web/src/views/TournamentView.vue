@@ -59,35 +59,23 @@ function playersImported(categoryIdx: number, players: Entry[]) {
   ) {
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(
-          tournament.value.categories[categoryIdx].entryType,
-          tournament.value.categories[categoryIdx].entriesPerGrpRemainder
-        )
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
       )
     }
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(
-          tournament.value.categories[categoryIdx].entryType,
-          tournament.value.categories[categoryIdx].entriesPerGrpMain
-        )
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpMain)
       )
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(
-          tournament.value.categories[categoryIdx].entryType,
-          tournament.value.categories[categoryIdx].entriesPerGrpMain
-        )
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpMain)
       )
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(
-          tournament.value.categories[categoryIdx].entryType,
-          tournament.value.categories[categoryIdx].entriesPerGrpRemainder
-        )
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
       )
     }
   }
@@ -132,7 +120,7 @@ async function drawDone(groups: Array<Group>) {
   } else {
     tournament.value.categories[drawIndex.value].groups.forEach(
       (_g, i) =>
-        (tournament.value.categories[drawIndex.value].groups[i].entries = groups[i].entries)
+        (tournament.value.categories[drawIndex.value].groups[i].entriesIdx = groups[i].entriesIdx)
     )
   }
   drawIndex.value = -1

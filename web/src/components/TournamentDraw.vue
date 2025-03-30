@@ -28,17 +28,17 @@ onMounted(() => {
 
   if (props.category.entriesPerGrpMain > props.category.entriesPerGrpRemainder) {
     for (let i = 0; i < numGroupsRemainder; i++) {
-      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpRemainder))
+      groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
     }
     for (let i = 0; i < numGroupsMain; i++) {
-      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpMain))
+      groups.value.push(getGroup(props.category.entriesPerGrpMain))
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
-      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpMain))
+      groups.value.push(getGroup(props.category.entriesPerGrpMain))
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
-      groups.value.push(getGroup(props.category.entryType, props.category.entriesPerGrpRemainder))
+      groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
     }
   }
 })
@@ -50,8 +50,8 @@ let players = computed(() => {
 })
 let chosenPlayersIndices = computed<{ [key: number]: boolean }>(() => {
   let out: { [key: number]: boolean } = {}
-  props.category.entries.forEach((player, i) => {
-    if (isPlayerChosen(player, groups.value, props.category.entries)) {
+  props.category.entries.forEach((_player, i) => {
+    if (isPlayerChosen(i, groups.value)) {
       out[i] = true
     }
   })
@@ -70,10 +70,10 @@ function choosePlayer(grp: number, pos: number) {
 function unselectPlayer(grp: number, pos: number) {
   groups.value[grp].entriesIdx[pos] = EntryEmptyIdx
 }
-function playerChosen(playerIdx: number) {
+function playerChosen(entryIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
-  removePlayerFromAllGroups(groups.value)
-  groups.value[grpOnChoosing].entriesIdx[posOnChoosing] = playerIdx
+  removePlayerFromAllGroups(groups.value, entryIdx)
+  groups.value[grpOnChoosing].entriesIdx[posOnChoosing] = entryIdx
   grpOnChoosing = -1
   posOnChoosing = -1
   isChoosingPlayer.value = false
@@ -92,16 +92,30 @@ async function autoDraw() {
     const ok = confirm('Auto draw will overwrite existing players. Continue?')
     if (!ok) return
   }
-  const seededPlayers = props.category.entries.filter(
-    (player) => player.seeding && player.seeding > 0
-  )
-  const otherPlayers = props.category.entries.filter((player) => !player.seeding)
-  if (seededPlayers.length + otherPlayers.length !== props.category.entries.length) {
+
+  // Create arrays with both entry objects and their indices
+  const seededPlayersWithIndices = props.category.entries
+    .map((player, index) => ({ player, entryIdx: index }))
+    .filter((item) => item.player.seeding && item.player.seeding > 0)
+
+  const otherPlayersWithIndices = props.category.entries
+    .map((player, index) => ({ player, entryIdx: index }))
+    .filter((item) => !item.player.seeding)
+
+  if (
+    seededPlayersWithIndices.length + otherPlayersWithIndices.length !==
+    props.category.entries.length
+  ) {
     alert("Something's wrong. Please check player list")
   }
+
   clearDraw(props.category.entryType, groups.value)
   await new Promise((r) => setTimeout(r, sleep.value))
-  doDraw(groups.value, seededPlayers, otherPlayers, sleep.value).catch((e: any) => alert(e.message))
+
+  // Pass the arrays with index information to doDraw
+  doDraw(groups.value, seededPlayersWithIndices, otherPlayersWithIndices, sleep.value).catch(
+    (e: any) => alert(e.message)
+  )
 }
 </script>
 
@@ -154,9 +168,15 @@ async function autoDraw() {
           >
             <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2" />
             <span> {{ j + 1 }}.</span>
-            <span class="px-2">{{ entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length ? getPlayerDisplay(category.entries[entryIdx]) : '' }}</span>
+            <span class="px-2">{{
+              entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length
+                ? getPlayerDisplay(category.entries[entryIdx])
+                : ''
+            }}</span>
             <div
-              v-if="entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length"
+              v-if="
+                entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length
+              "
               @click="unselectPlayer(i, j)"
               class="i-line-md-account-delete cursor-pointer px-2"
             />
