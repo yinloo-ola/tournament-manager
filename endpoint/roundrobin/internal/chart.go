@@ -41,7 +41,9 @@ func createCategorySheet(tournamentName string, category model.Category, sheet *
 		c.Merge(1, 0)
 		entries := make([]model.Entry, len(grp.EntriesIdx))
 		for i, idx := range grp.EntriesIdx {
-			entries[i] = category.Entries[idx]
+			if idx >= 0 {
+				entries[i] = category.Entries[idx]
+			}
 		}
 		createTableForGroup(entries, sheet)
 	}
@@ -105,7 +107,7 @@ func createTableForGroup(entries []model.Entry, sheet *xlsx.Sheet) {
 		cell.SetString(strconv.Itoa(p + 1))
 		cell.SetStyle(allBorderStyle)
 		playerStr := player.Name()
-		if len(*player.Club) > 0 {
+		if player.Club != nil && len(*player.Club) > 0 {
 			playerStr += fmt.Sprintf(" (%s)", *player.Club)
 		}
 		playerCell := playerRow.AddCell()
