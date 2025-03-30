@@ -41,9 +41,11 @@ onMounted(() => {
       groups.value.push(getGroup(props.category.entriesPerGrpRemainder))
     }
   }
+  emit('groups-updated', groups.value)
 })
 
 const props = defineProps<{ category: Category }>()
+const emit = defineEmits(['groups-updated'])
 
 let players = computed(() => {
   return props.category.entries.map(getPlayerDisplay)
@@ -69,6 +71,7 @@ function choosePlayer(grp: number, pos: number) {
 }
 function unselectPlayer(grp: number, pos: number) {
   groups.value[grp].entriesIdx[pos] = EntryEmptyIdx
+  emit('groups-updated', groups.value)
 }
 function playerChosen(entryIdx: number) {
   unselectPlayer(grpOnChoosing, posOnChoosing)
@@ -77,6 +80,7 @@ function playerChosen(entryIdx: number) {
   grpOnChoosing = -1
   posOnChoosing = -1
   isChoosingPlayer.value = false
+  emit('groups-updated', groups.value)
 }
 
 let sleep = ref(10)
@@ -85,6 +89,7 @@ async function clearDrawClicked() {
   const ok = confirm('This will delete all players in the draw. Continue?')
   if (!ok) return
   clearDraw(props.category.entryType, groups.value)
+  emit('groups-updated', groups.value)
 }
 
 async function autoDraw() {
@@ -116,6 +121,7 @@ async function autoDraw() {
   doDraw(groups.value, seededPlayersWithIndices, otherPlayersWithIndices, sleep.value).catch(
     (e: any) => alert(e.message)
   )
+  emit('groups-updated', groups.value)
 }
 </script>
 

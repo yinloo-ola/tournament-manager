@@ -38,15 +38,7 @@ function addCategory() {
   })
 }
 
-function playersImported(categoryIdx: number, players: Entry[]) {
-  players = players.map((player, i) => {
-    const entry = Entry.from(player)
-    entry.grpIdx = i
-    return entry
-  })
-  clearGroup(categoryIdx)
-  tournament.value.categories[categoryIdx].entries = players
-
+function repopulateGroups(categoryIdx: number) {
   const { numGroupsMain, numGroupsRemainder } = calculatorGroups(
     tournament.value.categories[categoryIdx].entries.length,
     tournament.value.categories[categoryIdx].entriesPerGrpMain,
@@ -81,8 +73,20 @@ function playersImported(categoryIdx: number, players: Entry[]) {
   }
 }
 
+function playersImported(categoryIdx: number, players: Entry[]) {
+  players = players.map((player, i) => {
+    const entry = Entry.from(player)
+    entry.grpIdx = i
+    return entry
+  })
+  clearGroup(categoryIdx)
+  tournament.value.categories[categoryIdx].entries = players
+  repopulateGroups(categoryIdx)
+}
+
 function clearGroup(categoryIdx: number) {
   tournament.value.categories[categoryIdx].groups = []
+  repopulateGroups(categoryIdx)
 }
 
 const drawIndex = ref(-1)
@@ -277,6 +281,10 @@ async function exportDraftSchedule() {
       alert(e.message)
     })
 }
+
+function updateGroups(groups: Group[]) {
+  tournament.value.categories[drawIndex.value].groups = groups
+}
 </script>
 
 <template>
@@ -354,7 +362,11 @@ async function exportDraftSchedule() {
       v-model="showDrawModal"
       content-class="bg-blue-200 max-h-[95vh] max-w-[95vw] min-w-4/5"
     >
-      <TournamentDraw v-if="drawIndex >= 0" :category="tournament.categories[drawIndex]">
+      <TournamentDraw
+        v-if="drawIndex >= 0"
+        :category="tournament.categories[drawIndex]"
+        @groups-updated="updateGroups"
+      >
       </TournamentDraw>
     </ModalDialog>
   </main>
