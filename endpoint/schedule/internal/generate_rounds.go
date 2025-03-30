@@ -33,8 +33,18 @@ func GenerateRoundsForTournament(tournament model.Tournament) (model.Tournament,
 		}
 		if len(koRounds) != len(category.KnockoutRounds) {
 			category.KnockoutRounds = koRounds
+		} else {
+			for j := range category.KnockoutRounds {
+				if len(category.KnockoutRounds[j].Matches) != len(koRounds[j].Matches) {
+					category.KnockoutRounds[j].Matches = koRounds[j].Matches
+				} else {
+					for k := range category.KnockoutRounds[j].Matches {
+						category.KnockoutRounds[j].Matches[k].Entry1Idx = koRounds[j].Matches[k].Entry1Idx
+						category.KnockoutRounds[j].Matches[k].Entry2Idx = koRounds[j].Matches[k].Entry2Idx
+					}
+				}
+			}
 		}
-
 		tournament.Categories[i] = category
 	}
 	return tournament, nil
@@ -111,17 +121,31 @@ func generateKnockoutRounds(groups []model.Group, numQualifiedPerGroup int) ([]m
 	round := firstRound
 	for ; round >= 2; round = round / 2 {
 		if round == firstRound {
+			matches := make([]model.Match, numMatches)
+			for i := range matches {
+				matches[i] = model.Match{
+					Entry1Idx: model.EntryEmptyIdx,
+					Entry2Idx: model.EntryEmptyIdx,
+				}
+			}
 			koRound := model.KnockoutRound{
 				Round:   round,
-				Matches: make([]model.Match, numMatches),
+				Matches: matches,
 			}
 			koRounds = append(koRounds, koRound)
 			continue
 		}
 
+		matches := make([]model.Match, round/2)
+		for i := range matches {
+			matches[i] = model.Match{
+				Entry1Idx: model.EntryEmptyIdx,
+				Entry2Idx: model.EntryEmptyIdx,
+			}
+		}
 		koRound := model.KnockoutRound{
 			Round:   round,
-			Matches: make([]model.Match, round/2),
+			Matches: matches,
 		}
 		koRounds = append(koRounds, koRound)
 	}

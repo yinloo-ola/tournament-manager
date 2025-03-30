@@ -141,8 +141,10 @@ func populateSchedule(book *excelize.File, schedule model.Schedule, colorMap map
 			book.SetCellValue(matchesSheetName, currentCell(matchesRow, 'G'), match.DateTime)
 			book.SetCellStr(matchesSheetName, currentCell(matchesRow, 'H'), match.Table)
 
-			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1Idx+1) // Populate EntryID1
-			book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'J'), match.Entry2Idx+1) // Populate EntryID2
+			if match.Entry1Idx >= 0 && match.Entry2Idx >= 0 {
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'I'), match.Entry1Idx+1) // Populate EntryID1
+				book.SetCellInt(matchesSheetName, currentCell(matchesRow, 'J'), match.Entry2Idx+1) // Populate EntryID2
+			}
 
 			matchesRow++
 
