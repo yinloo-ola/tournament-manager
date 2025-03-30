@@ -31,12 +31,6 @@ func CreateDraftSchedule(tournament model.Tournament) (*excelize.File, error) {
 	book := excelize.NewFile()
 	defer book.Close() // Ensure the book is closed
 
-	// Populate the individual category entry sheets
-	err = populateCategoryEntrySheets(book, tournament)
-	if err != nil {
-		return nil, fmt.Errorf("fail to populate category entries: %w", err)
-	}
-
 	// Populate the main schedule and matches sheets
 	if err := populateSchedule(book, schedule, colorMap); err != nil {
 		return nil, fmt.Errorf("fail to populate schedule/matches: %w", err)
@@ -45,6 +39,12 @@ func CreateDraftSchedule(tournament model.Tournament) (*excelize.File, error) {
 	// Populate the tournament info sheet
 	if err := populateTournamentInfoSheet(book, tournament); err != nil {
 		return nil, fmt.Errorf("fail to populate tournament info: %w", err)
+	}
+
+	// Populate the individual category entry sheets
+	err = populateCategoryEntrySheets(book, tournament)
+	if err != nil {
+		return nil, fmt.Errorf("fail to populate category entries: %w", err)
 	}
 
 	// Set active sheet and delete default
