@@ -233,10 +233,10 @@ onMounted(() => {
                   {{ formatTime(match.datetime) }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ category?.entries[match.entry1Idx].name }}
+                  {{ category?.entries[match.entry1Idx]?.name || 'NA' }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ category?.entries[match.entry2Idx].name }}
+                  {{ category?.entries[match.entry2Idx]?.name || 'NA' }}
                 </td>
               </tr>
             </tbody>
@@ -307,10 +307,10 @@ onMounted(() => {
                   {{ formatTime(match.datetime) }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ category?.entries[match.entry1Idx].name }}
+                  {{ category?.entries[match.entry1Idx]?.name || 'NA' }}
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-                  {{ category?.entries[match.entry2Idx].name }}
+                  {{ category?.entries[match.entry2Idx]?.name || 'NA' }}
                 </td>
               </tr>
             </tbody>
