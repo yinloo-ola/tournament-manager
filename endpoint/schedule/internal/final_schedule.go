@@ -267,6 +267,21 @@ func formCategoriesGroupsMap(matches []model.Match) map[string][]model.Group {
 	return result
 }
 
+func getCellIntValue(sheetName, cell string, file *excelize.File) (int, error) {
+	cellValue, err := file.GetCellValue(sheetName, cell)
+	if err != nil {
+		return 0, fmt.Errorf("fail to get cell %s value: %w", cell, err)
+	}
+	if len(cellValue) == 0 {
+		return 0, nil // Return 0 if the cell is empty
+	}
+	intValue, err := strconv.Atoi(cellValue)
+	if err != nil {
+		return 0, fmt.Errorf("fail to convert cell %s value to int: %w", cell, err)
+	}
+	return intValue, nil
+}
+
 func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, error) {
 	matchesSheetName, cellAddr, found := strings.Cut(cellAddr, "!")
 	if !found {
@@ -277,94 +292,39 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 		return model.Match{}, fmt.Errorf("invalid cell addr %s", cellAddr)
 	}
 
+	entry1Idx, err := getCellIntValue(matchesSheetName, fmt.Sprintf("I%d", row), file)
+	if err != nil {
+		return model.Match{}, fmt.Errorf("fail to get entry1Idx: %w", err)
+	}
+
+	entry2Idx, err := getCellIntValue(matchesSheetName, fmt.Sprintf("J%d", row), file)
+	if err != nil {
+		return model.Match{}, fmt.Errorf("fail to get entry2Idx: %w", err)
+	}
+
 	category, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("B%d", row))
 	if err != nil {
 		return model.Match{}, fmt.Errorf("fail to get category: %w", err)
 	}
-	roundStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("C%d", row))
+
+	round, err := getCellIntValue(matchesSheetName, fmt.Sprintf("C%d", row), file)
 	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get round: %w", err)
-	}
-	var round int
-	if len(roundStr) > 0 {
-		round, err = strconv.Atoi(roundStr)
-		if err != nil {
-			return model.Match{}, fmt.Errorf("fail to convert round to int: %w", err)
-		}
-	}
-	grpStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("D%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get group: %w", err)
-	}
-	var grp int
-	if len(grpStr) > 0 {
-		grp, err = strconv.Atoi(grpStr)
-		if err != nil {
-			return model.Match{}, fmt.Errorf("fail to convert group to int: %w", err)
-		}
-	}
-	koRoundStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("E%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get koRound: %w", err)
-	}
-	var koRound int
-	if len(koRoundStr) > 0 {
-		koRound, err = strconv.Atoi(koRoundStr)
-		if err != nil {
-			return model.Match{}, fmt.Errorf("fail to convert koRound to int: %w", err)
-		}
-	}
-	koMatchStr, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("F%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get koMatch: %w", err)
-	}
-	var koMatch int
-	if len(koMatchStr) > 0 {
-		koMatch, err = strconv.Atoi(koMatchStr)
-		if err != nil {
-			return model.Match{}, fmt.Errorf("fail to convert koMatch to int: %w", err)
-		}
+		return model.Match{}, err
 	}
 
-	player1, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("I%d", row))
+	grp, err := getCellIntValue(matchesSheetName, fmt.Sprintf("D%d", row), file)
 	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player1: %w", err)
-	}
-	slog.Debug("player1", "player1", player1)
-	// Club information no longer needed with Entry1Idx/Entry2Idx
-	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("J%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player1 club: %w", err)
-	}
-	// Seeding information no longer needed with Entry1Idx/Entry2Idx
-	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("K%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player1 seeding: %w", err)
-	}
-	player2, err := file.GetCellValue(matchesSheetName, fmt.Sprintf("L%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player2: %w", err)
-	}
-	slog.Debug("player2", "player2", player2)
-	// Club information no longer needed with Entry1Idx/Entry2Idx
-	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("M%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player2 club: %w", err)
-	}
-	// Seeding information no longer needed with Entry1Idx/Entry2Idx
-	_, err = file.GetCellValue(matchesSheetName, fmt.Sprintf("N%d", row))
-	if err != nil {
-		return model.Match{}, fmt.Errorf("fail to get player2 seeding: %w", err)
-	}
-	// Convert player1 and player2 to indices
-	player1Idx, err := strconv.Atoi(player1)
-	if err != nil {
-		player1Idx = 0 // Default to first player if conversion fails
+		return model.Match{}, err
 	}
 
-	player2Idx, err := strconv.Atoi(player2)
+	koRound, err := getCellIntValue(matchesSheetName, fmt.Sprintf("E%d", row), file)
 	if err != nil {
-		player2Idx = 1 // Default to second player if conversion fails
+		return model.Match{}, err
+	}
+
+	koMatch, err := getCellIntValue(matchesSheetName, fmt.Sprintf("F%d", row), file)
+	if err != nil {
+		return model.Match{}, err
 	}
 
 	// TODO: support matches of different event types (singles, doubles, team)
@@ -372,8 +332,8 @@ func getMatchFromCellAddr(cellAddr string, file *excelize.File) (model.Match, er
 		CategoryShortName: category,
 		RoundIdx:          round - 1,
 		GroupIdx:          grp - 1,
-		Entry1Idx:         player1Idx - 1, // Adjust for 1-based indexing in UI
-		Entry2Idx:         player2Idx - 1, // Adjust for 1-based indexing in UI
+		Entry1Idx:         entry1Idx - 1,
+		Entry2Idx:         entry2Idx - 1,
 		Round:             koRound,
 		MatchIdx:          koMatch,
 	}, nil

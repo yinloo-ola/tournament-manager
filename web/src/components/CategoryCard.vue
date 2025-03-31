@@ -94,6 +94,10 @@ const emit = defineEmits(['remove', 'playersImported', 'startDraw', 'error', 'pl
 const isEntryTypeSelected = computed(() => {
   return category.value.entryType !== EntryType.Unknown
 })
+
+const hasEntries = computed(() => {
+  return category.value.entries && category.value.entries.length > 0
+})
 </script>
 
 <template>
@@ -203,6 +207,7 @@ const isEntryTypeSelected = computed(() => {
       <SimpleButton
         @click="router.push(`/tournament/matches/${category.shortName}`)"
         class="h-10 w-full rounded-lg bg-blue-600 text-center text-white"
+        :disabled="!hasEntries"
       >
         Matches
       </SimpleButton>

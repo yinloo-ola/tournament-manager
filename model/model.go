@@ -138,11 +138,11 @@ type Match struct {
 	DateTime          time.Time `json:"datetime"`
 	DurationMinutes   int       `json:"durationMinutes"`
 	Table             string    `json:"table"`
-	CategoryShortName string
-	GroupIdx          int
-	RoundIdx          int
-	Round             int
-	MatchIdx          int
+	CategoryShortName string    `json:"-"`
+	GroupIdx          int       `json:"-"`
+	RoundIdx          int       `json:"-"`
+	Round             int       `json:"round"`
+	MatchIdx          int       `json:"-"`
 }
 
 func (match Match) Name() string {
