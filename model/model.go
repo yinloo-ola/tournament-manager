@@ -37,6 +37,20 @@ type Tournament struct {
 	StartTime  Date       `json:"startTime"`
 }
 
+// AgeRequirement defines age constraints for a lineup item
+type AgeRequirement struct {
+	Type  string `json:"type"`  // "minimum", "maximum"
+	Value int    `json:"value"` // The age value for the requirement
+}
+
+// LineupItem defines a match in a team competition with specific requirements
+type LineupItem struct {
+	Name              string          `json:"name"`
+	MatchType         EntryType       `json:"matchType"`         // Singles or Doubles
+	GenderRequirement string          `json:"genderRequirement"` // "M", "F", "Mixed", or "Any"
+	AgeRequirement    *AgeRequirement `json:"ageRequirement,omitempty"`
+}
+
 type Category struct {
 	Name                   string          `json:"name"`
 	EntryType              EntryType       `json:"entryType"`
@@ -50,6 +64,7 @@ type Category struct {
 	NumQualifiedPerGroup   int             `json:"numQualifiedPerGroup"`
 	MinPlayers             *int            `json:"minPlayers,omitempty"`
 	MaxPlayers             *int            `json:"maxPlayers,omitempty"`
+	Lineup                 []LineupItem    `json:"lineup,omitempty"`
 }
 
 type KnockoutRound struct {

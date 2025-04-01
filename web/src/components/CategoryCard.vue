@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { apiImportSinglesEntry, apiImportDoublesEntry, apiImportTeamEntry } from '@/client/client'
 import LabeledInput from '../widgets/LabeledInput.vue'
 import { EntryType } from '@/types/types'
 import OutlinedButton from '../widgets/OutlinedButton.vue'
 import LabeledSelect from '../widgets/LabeledSelect.vue'
-import type { Category } from '@/types/types'
+import type { Category, LineupItem } from '@/types/types'
 import { isGroupEmpty } from '@/calculator/groups'
 import SimpleButton from '@/widgets/SimpleButton.vue'
 import router from '@/router'
+import TeamLineupModal from './TeamLineupModal.vue'
 
 const isDebug = ref(false)
 const file = ref<HTMLInputElement | null>(null)
+const showTeamLineupModal = ref(false)
 function onFileSelected(event: any) {
   if (event.target.files.length === 0) {
     alert('No files selected')
@@ -51,11 +53,7 @@ function onFileSelected(event: any) {
         alert('Minimum players must be less than maximum players')
         return
       }
-      apiImportTeamEntry(
-        event.target.files[0],
-        category.value.minPlayers,
-        category.value.maxPlayers
-      )
+      apiImportTeamEntry(event.target.files[0], calculateMinPlayers(), category.value.maxPlayers)
         .then((data) => {
           emit('playersImported', data)
         })
@@ -79,12 +77,80 @@ const category = defineModel<Category>({
   required: true
 })
 
-// Initialize minPlayers and maxPlayers if they don't exist
-if (category.value.entryType === EntryType.Team && !category.value.minPlayers) {
-  category.value.minPlayers = 3
-}
+// Initialize maxPlayers if it doesn't exist
 if (category.value.entryType === EntryType.Team && !category.value.maxPlayers) {
   category.value.maxPlayers = 5
+}
+
+// Watch for entry type changes and clear lineup when changed from Team to another type
+watch(
+  () => category.value.entryType,
+  (newEntryType, oldEntryType) => {
+    if (oldEntryType === EntryType.Team && newEntryType !== EntryType.Team) {
+      // Clear lineup data when changing from Team to another entry type
+      if (category.value.lineup) {
+        delete category.value.lineup
+      }
+      if (category.value.minPlayers) {
+        delete category.value.minPlayers
+      }
+      if (category.value.maxPlayers) {
+        delete category.value.maxPlayers
+      }
+    }
+  }
+)
+
+// Function to calculate minimum players required based on lineup
+function calculateMinPlayers() {
+  if (!category.value.lineup || category.value.lineup.length === 0) {
+    return 1 // Default minimum if no lineup is defined
+  }
+
+  const playerCounts = new Map<string, number>()
+
+  category.value.lineup.forEach((item) => {
+    if (item.matchType === EntryType.Singles) {
+      if (item.genderRequirement === 'M') {
+        playerCounts.set('M', (playerCounts.get('M') || 0) + 1)
+      } else if (item.genderRequirement === 'F') {
+        playerCounts.set('F', (playerCounts.get('F') || 0) + 1)
+      } else {
+        // For 'Any' or 'Mixed' in singles, we need at least one player
+        playerCounts.set('Any', (playerCounts.get('Any') || 0) + 1)
+      }
+    } else if (item.matchType === EntryType.Doubles) {
+      if (item.genderRequirement === 'M') {
+        playerCounts.set('M', (playerCounts.get('M') || 0) + 2)
+      } else if (item.genderRequirement === 'F') {
+        playerCounts.set('F', (playerCounts.get('F') || 0) + 2)
+      } else if (item.genderRequirement === 'Mixed') {
+        playerCounts.set('M', (playerCounts.get('M') || 0) + 1)
+        playerCounts.set('F', (playerCounts.get('F') || 0) + 1)
+      } else {
+        // For 'Any' in doubles, we need at least two players
+        playerCounts.set('Any', (playerCounts.get('Any') || 0) + 2)
+      }
+    }
+  })
+
+  // Calculate total minimum players needed
+  let total = 0
+  playerCounts.forEach((count) => {
+    total += count
+  })
+
+  return Math.max(1, total) // Ensure at least 1 player is required
+}
+
+// Function to handle saving lineup data from the modal
+function saveTeamLineup(data: { lineup: LineupItem[]; maxPlayers: number }) {
+  category.value.lineup = data.lineup
+  category.value.maxPlayers = data.maxPlayers
+  // Remove minPlayers as it's now calculated from the lineup
+  if ('minPlayers' in category.value) {
+    delete category.value.minPlayers
+  }
 }
 
 let canChangePlayersPerGrp = computed(() => isGroupEmpty(category.value.groups))
@@ -116,6 +182,37 @@ const hasEntries = computed(() => {
       ]"
       v-model="category.entryType"
     ></LabeledSelect>
+    <div
+      v-if="category.entryType === EntryType.Team"
+      class="mb-2 mt-1 rounded-lg border-none bg-blue-100 p-3 text-sm"
+    >
+      <div class="mb-2 flex items-center justify-between">
+        <div class="text-base text-blue-800 font-bold">Team Configuration</div>
+        <SimpleButton
+          @click="showTeamLineupModal = true"
+          class="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+        >
+          Edit Lineup
+        </SimpleButton>
+      </div>
+      <div v-if="category.lineup && category.lineup.length > 0" class="text-gray-700">
+        <div class="flex justify-between border-b border-blue-100 pb-1">
+          <span>Max Players:</span>
+          <span class="font-medium">{{ category.maxPlayers }}</span>
+        </div>
+        <div class="flex justify-between border-b border-blue-100 py-1">
+          <span>Min Players:</span>
+          <span class="font-medium">{{ calculateMinPlayers() }}</span>
+        </div>
+        <div class="flex justify-between pt-1">
+          <span>Match Count:</span>
+          <span class="font-medium">{{ category.lineup.length }}</span>
+        </div>
+      </div>
+      <div v-else class="text-gray-700 italic">
+        No lineup configured. Click "Edit Lineup" to set up team matches.
+      </div>
+    </div>
     <LabeledInput
       name="category"
       label="Category"
@@ -133,20 +230,6 @@ const hasEntries = computed(() => {
       label="Match Duration (minutes)"
       type="number"
       v-model.number="category.durationMinutes"
-    ></LabeledInput>
-    <LabeledInput
-      v-if="category.entryType === EntryType.Team"
-      name="minPlayers"
-      label="Min Players Per Team"
-      type="number"
-      v-model.number="category.minPlayers"
-    ></LabeledInput>
-    <LabeledInput
-      v-if="category.entryType === EntryType.Team"
-      name="maxPlayers"
-      label="Max Players Per Team"
-      type="number"
-      v-model.number="category.maxPlayers"
     ></LabeledInput>
     <LabeledInput
       name="numQualifiedPerGroup"
@@ -229,4 +312,7 @@ const hasEntries = computed(() => {
       </div>
     </div>
   </div>
+
+  <!-- Team Lineup Modal -->
+  <TeamLineupModal v-model="showTeamLineupModal" :category="category" @save="saveTeamLineup" />
 </template>

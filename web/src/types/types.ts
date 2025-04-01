@@ -9,6 +9,16 @@ export type Tournament = {
   categories: Array<Category>
 }
 
+export type LineupItem = {
+  name: string
+  matchType: EntryType
+  genderRequirement: 'M' | 'F' | 'Mixed' | 'Any'
+  ageRequirement?: {
+    type: 'minimum' | 'maximum'
+    value: number
+  }
+}
+
 export type Category = {
   name: string
   entryType: EntryType
@@ -22,6 +32,7 @@ export type Category = {
   numQualifiedPerGroup: number
   minPlayers?: number
   maxPlayers?: number
+  lineup?: Array<LineupItem>
 }
 
 export enum EntryType {
