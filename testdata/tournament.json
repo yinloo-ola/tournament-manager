@@ -1,0 +1,97 @@
+{
+  "name": "Singapore Open 2025",
+  "numTables": 8,
+  "startTime": "2025-03-22T09:00",
+  "categories": [
+    {
+      "name": "Men's Singles",
+      "shortName": "MS",
+      "entriesPerGrpMain": 4,
+      "entriesPerGrpRemainder": 2,
+      "durationMinutes": 30,
+      "numQualifiedPerGroup": 2,
+      "entries": [
+        {
+          "entryType": "Singles",
+          "singlesEntry": {
+            "name": "Player A",
+            "player": {
+              "name": "John Doe",
+              "dateOfBirth": "1990-01-01",
+              "gender": "M"
+            }
+          }
+        }
+      ],
+      "groups": [],
+      "knockoutRounds": []
+    },
+    {
+      "name": "Men's Doubles",
+      "shortName": "MD",
+      "entriesPerGrpMain": 4,
+      "entriesPerGrpRemainder": 2,
+      "durationMinutes": 45,
+      "numQualifiedPerGroup": 2,
+      "entries": [
+        {
+          "entryType": "Doubles",
+          "doublesEntry": {
+            "name": "Pair A",
+            "players": [
+              {
+                "name": "John Doe",
+                "dateOfBirth": "1990-01-01",
+                "gender": "M"
+              },
+              {
+                "name": "Jane Smith",
+                "dateOfBirth": "1992-05-15",
+                "gender": "F"
+              }
+            ]
+          }
+        }
+      ],
+      "groups": [],
+      "knockoutRounds": []
+    },
+    {
+      "name": "Men's Team",
+      "shortName": "MT",
+      "entriesPerGrpMain": 4,
+      "entriesPerGrpRemainder": 2,
+      "durationMinutes": 60,
+      "numQualifiedPerGroup": 2,
+      "entries": [
+        {
+          "entryType": "Team",
+          "teamEntry": {
+            "name": "Team A",
+            "players": [
+              {
+                "name": "John Doe",
+                "dateOfBirth": "1990-01-01",
+                "gender": "M"
+              },
+              {
+                "name": "Jane Smith",
+                "dateOfBirth": "1992-05-15",
+                "gender": "F"
+              },
+              {
+                "name": "Bob Johnson",
+                "dateOfBirth": "1988-11-20",
+                "gender": "M"
+              }
+            ],
+            "minPlayers": 2,
+            "maxPlayers": 4
+          }
+        }
+      ],
+      "groups": [],
+      "knockoutRounds": []
+    }
+  ]
+}

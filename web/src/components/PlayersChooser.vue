@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { getPlayerDisplay } from '@/calculator/player_display'
-import type { Player } from '@/types/types'
+import type { Entry } from '@/types/types'
 
 const props = defineProps<{
-  players: Array<Player>
+  players: Array<Entry>
 }>()
 
 const emit = defineEmits(['playerChosen', 'close'])

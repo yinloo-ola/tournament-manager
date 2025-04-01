@@ -20,7 +20,7 @@ func ExportScoresheet(ctx context.Context, tournament model.Tournament, template
 					match.RoundIdx = rdIdx
 					match.Round = -1
 					match.MatchIdx = -1
-					if err := AddMatchScoresheet(ctx, tournament.Name, match, templateFile); err != nil {
+					if err := AddMatchScoresheet(ctx, tournament.Name, category.Entries, match, templateFile); err != nil {
 						return nil, err
 					}
 				}
@@ -33,7 +33,7 @@ func ExportScoresheet(ctx context.Context, tournament model.Tournament, template
 				match.RoundIdx = -1
 				match.Round = koRound.Round
 				match.MatchIdx = m
-				if err := AddMatchScoresheet(ctx, tournament.Name, match, templateFile); err != nil {
+				if err := AddMatchScoresheet(ctx, tournament.Name, category.Entries, match, templateFile); err != nil {
 					return nil, err
 				}
 			}
@@ -42,7 +42,10 @@ func ExportScoresheet(ctx context.Context, tournament model.Tournament, template
 	return templateFile, nil
 }
 
-func AddMatchScoresheet(ctx context.Context, tournamentName string, match model.Match, templateFile *excelize.File) error {
+func AddMatchScoresheet(ctx context.Context, tournamentName string,
+	entries []model.Entry,
+	match model.Match, templateFile *excelize.File,
+) error {
 	// The template scoresheet is named by match.CategoryShortName
 	templateName := match.CategoryShortName
 
@@ -134,11 +137,19 @@ func AddMatchScoresheet(ctx context.Context, tournamentName string, match model.
 				isReplaced = true
 			}
 			if strings.Contains(cellValue, "{{player1}}") {
-				cellValue = strings.ReplaceAll(cellValue, "{{player1}}", match.Player1.Name)
+				player1Name := ""
+				if match.Entry1Idx >= 0 {
+					player1Name = entries[match.Entry1Idx].Name()
+				}
+				cellValue = strings.ReplaceAll(cellValue, "{{player1}}", player1Name)
 				isReplaced = true
 			}
 			if strings.Contains(cellValue, "{{player2}}") {
-				cellValue = strings.ReplaceAll(cellValue, "{{player2}}", match.Player2.Name)
+				player2Name := ""
+				if match.Entry2Idx >= 0 {
+					player2Name = entries[match.Entry2Idx].Name()
+				}
+				cellValue = strings.ReplaceAll(cellValue, "{{player2}}", player2Name)
 				isReplaced = true
 			}
 			if !isReplaced {

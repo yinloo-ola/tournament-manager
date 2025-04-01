@@ -2,23 +2,27 @@ package model
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
 
+const EntryByeIdx = -2
+const EntryEmptyIdx = -1
+
 type Date time.Time
 
 func (c *Date) UnmarshalJSON(b []byte) error {
-	value := strings.Trim(string(b), `"`) //get rid of "
+	value := strings.Trim(string(b), `"`) // get rid of "
 	if value == "" || value == "null" {
 		return nil
 	}
 
-	t, err := time.Parse("2006-01-02T15:04", value) //parse time
+	t, err := time.Parse("2006-01-02T15:04", value) // parse time
 	if err != nil {
 		return err
 	}
-	*c = Date(t) //set result using the pointer
+	*c = Date(t) // set result using the pointer
 	return nil
 }
 
@@ -35,14 +39,17 @@ type Tournament struct {
 
 type Category struct {
 	Name                   string          `json:"name"`
+	EntryType              EntryType       `json:"entryType"`
 	ShortName              string          `json:"shortName"`
-	PlayersPerGrpMain      int             `json:"playersPerGrpMain"`
-	PlayersPerGrpRemainder int             `json:"playersPerGrpRemainder"`
-	Players                []Player        `json:"players"`
+	EntriesPerGrpMain      int             `json:"entriesPerGrpMain"`
+	EntriesPerGrpRemainder int             `json:"entriesPerGrpRemainder"`
+	Entries                []Entry         `json:"entries"`
 	Groups                 []Group         `json:"groups"`
 	KnockoutRounds         []KnockoutRound `json:"knockoutRounds"`
 	DurationMinutes        int             `json:"durationMinutes"`
 	NumQualifiedPerGroup   int             `json:"numQualifiedPerGroup"`
+	MinPlayers             *int            `json:"minPlayers,omitempty"`
+	MaxPlayers             *int            `json:"maxPlayers,omitempty"`
 }
 
 type KnockoutRound struct {
@@ -51,27 +58,91 @@ type KnockoutRound struct {
 }
 
 type Group struct {
-	Players []Player  `json:"players"`
-	Rounds  [][]Match `json:"rounds"`
+	EntriesIdx []int     `json:"entriesIdx"`
+	Rounds     [][]Match `json:"rounds"`
 }
 
+// EntryType represents the type of tournament entry
+type EntryType string
+
+const (
+	Singles EntryType = "Singles"
+	Doubles EntryType = "Doubles"
+	Team    EntryType = "Team"
+)
+
 type Player struct {
-	Name    string  `json:"name"`
-	Seeding *int    `json:"seeding,omitempty"`
-	Club    *string `json:"club,omitempty"`
+	Name        string `json:"name"`
+	DateOfBirth string `json:"dateOfBirth"` // yyyy-mm-dd
+	Gender      string `json:"gender"`      // M or F
+}
+
+type SinglesEntry struct {
+	Player Player `json:"player"`
+}
+
+type DoublesEntry struct {
+	Players [2]Player `json:"players"`
+}
+
+type TeamEntry struct {
+	TeamName   string   `json:"teamName"`
+	Players    []Player `json:"players"`
+	MinPlayers int      `json:"minPlayers"`
+	MaxPlayers int      `json:"maxPlayers"`
+}
+
+// Entry represents a polymorphic tournament entry
+type Entry struct {
+	EntryType    EntryType     `json:"entryType"`
+	Seeding      *int          `json:"seeding,omitempty"`
+	Club         *string       `json:"club,omitempty"`
+	SinglesEntry *SinglesEntry `json:"singlesEntry"`
+	DoublesEntry *DoublesEntry `json:"doublesEntry"`
+	TeamEntry    *TeamEntry    `json:"teamEntry"`
+}
+
+func (e Entry) Name() string {
+	switch e.EntryType {
+	case Singles:
+		if e.SinglesEntry == nil {
+			slog.Warn("singles entry is nil")
+			return ""
+		}
+		return e.SinglesEntry.Player.Name
+	case Doubles:
+		if e.DoublesEntry == nil {
+			slog.Warn("doubles entry is nil")
+			return ""
+		}
+		if e.DoublesEntry.Players[0].Name == "" || e.DoublesEntry.Players[1].Name == "" {
+			slog.Warn("doubles entry is empty")
+			return ""
+		}
+		return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
+	case Team:
+		if e.TeamEntry == nil {
+			slog.Warn("team entry is nil")
+			return ""
+		}
+		return e.TeamEntry.TeamName
+	default:
+		slog.Error("invalid entry type", "type", e.EntryType)
+		return ""
+	}
 }
 
 type Match struct {
-	Player1           Player    `json:"player1"`
-	Player2           Player    `json:"player2"`
+	Entry1Idx         int       `json:"entry1Idx"`
+	Entry2Idx         int       `json:"entry2Idx"`
 	DateTime          time.Time `json:"datetime"`
 	DurationMinutes   int       `json:"durationMinutes"`
 	Table             string    `json:"table"`
-	CategoryShortName string
-	GroupIdx          int
-	RoundIdx          int
-	Round             int
-	MatchIdx          int
+	CategoryShortName string    `json:"-"`
+	GroupIdx          int       `json:"-"`
+	RoundIdx          int       `json:"-"`
+	Round             int       `json:"round"`
+	MatchIdx          int       `json:"-"`
 }
 
 func (match Match) Name() string {

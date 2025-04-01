@@ -17,56 +17,32 @@ func Test_getSlotsForCategory(t *testing.T) {
 				Rounds: [][]model.Match{
 					{
 						{
-							Player1: model.Player{
-								Name: "A",
-							},
-							Player2: model.Player{
-								Name: "B",
-							},
+							Entry1Idx: 0,
+							Entry2Idx: 1,
 						},
 						{
-							Player1: model.Player{
-								Name: "C",
-							},
-							Player2: model.Player{
-								Name: "D",
-							},
+							Entry1Idx: 2,
+							Entry2Idx: 3,
 						},
 					},
 					{
 						{
-							Player1: model.Player{
-								Name: "A",
-							},
-							Player2: model.Player{
-								Name: "C",
-							},
+							Entry1Idx: 0,
+							Entry2Idx: 2,
 						},
 						{
-							Player1: model.Player{
-								Name: "B",
-							},
-							Player2: model.Player{
-								Name: "D",
-							},
+							Entry1Idx: 1,
+							Entry2Idx: 3,
 						},
 					},
 					{
 						{
-							Player1: model.Player{
-								Name: "B",
-							},
-							Player2: model.Player{
-								Name: "C",
-							},
+							Entry1Idx: 1,
+							Entry2Idx: 2,
 						},
 						{
-							Player1: model.Player{
-								Name: "A",
-							},
-							Player2: model.Player{
-								Name: "D",
-							},
+							Entry1Idx: 0,
+							Entry2Idx: 3,
 						},
 					},
 				},
@@ -75,56 +51,32 @@ func Test_getSlotsForCategory(t *testing.T) {
 				Rounds: [][]model.Match{
 					{
 						{
-							Player1: model.Player{
-								Name: "A2",
-							},
-							Player2: model.Player{
-								Name: "B2",
-							},
+							Entry1Idx: 4,
+							Entry2Idx: 5,
 						},
 						{
-							Player1: model.Player{
-								Name: "C2",
-							},
-							Player2: model.Player{
-								Name: "D2",
-							},
+							Entry1Idx: 6,
+							Entry2Idx: 7,
 						},
 					},
 					{
 						{
-							Player1: model.Player{
-								Name: "A2",
-							},
-							Player2: model.Player{
-								Name: "C2",
-							},
+							Entry1Idx: 4,
+							Entry2Idx: 6,
 						},
 						{
-							Player1: model.Player{
-								Name: "B2",
-							},
-							Player2: model.Player{
-								Name: "D2",
-							},
+							Entry1Idx: 5,
+							Entry2Idx: 7,
 						},
 					},
 					{
 						{
-							Player1: model.Player{
-								Name: "B2",
-							},
-							Player2: model.Player{
-								Name: "C2",
-							},
+							Entry1Idx: 5,
+							Entry2Idx: 6,
 						},
 						{
-							Player1: model.Player{
-								Name: "A2",
-							},
-							Player2: model.Player{
-								Name: "D2",
-							},
+							Entry1Idx: 4,
+							Entry2Idx: 7,
 						},
 					},
 				},
@@ -133,56 +85,32 @@ func Test_getSlotsForCategory(t *testing.T) {
 				Rounds: [][]model.Match{
 					{
 						{
-							Player1: model.Player{
-								Name: "A3",
-							},
-							Player2: model.Player{
-								Name: "B3",
-							},
+							Entry1Idx: 8,
+							Entry2Idx: 9,
 						},
 						{
-							Player1: model.Player{
-								Name: "C3",
-							},
-							Player2: model.Player{
-								Name: "D3",
-							},
+							Entry1Idx: 10,
+							Entry2Idx: 11,
 						},
 					},
 					{
 						{
-							Player1: model.Player{
-								Name: "A3",
-							},
-							Player2: model.Player{
-								Name: "C3",
-							},
+							Entry1Idx: 8,
+							Entry2Idx: 10,
 						},
 						{
-							Player1: model.Player{
-								Name: "B3",
-							},
-							Player2: model.Player{
-								Name: "D3",
-							},
+							Entry1Idx: 9,
+							Entry2Idx: 11,
 						},
 					},
 					{
 						{
-							Player1: model.Player{
-								Name: "B3",
-							},
-							Player2: model.Player{
-								Name: "C3",
-							},
+							Entry1Idx: 9,
+							Entry2Idx: 10,
 						},
 						{
-							Player1: model.Player{
-								Name: "A3",
-							},
-							Player2: model.Player{
-								Name: "D3",
-							},
+							Entry1Idx: 8,
+							Entry2Idx: 11,
 						},
 					},
 				},

@@ -6,8 +6,12 @@ import TournamentDraw from '../components/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import type { Group, KnockoutRound, Player, Tournament } from '@/types/types'
-import { dateInYyyyMmDdHhMmSs, exportTournamentJson } from '@/calculator/tournament'
+import { type Group, type KnockoutRound, type Tournament, Entry, EntryType } from '@/types/types'
+import {
+  dateInYyyyMmDdHhMmSs,
+  exportTournamentJson,
+  injectEntriesTournament
+} from '@/calculator/tournament'
 import {
   apiExportDraftSchedule,
   apiExportRoundRobinExcel,
@@ -15,39 +19,18 @@ import {
   apiGenerateRounds,
   apiImportFinalSchedule
 } from '@/client/client'
-import { getDateStringFromNow } from '@/calculator/date'
-import { useRouter } from 'vue-router'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/calculator/groups'
-
-const router = useRouter()
-
-const tournament = ref<Tournament>({
-  name: '',
-  numTables: 0,
-  startTime: getDateStringFromNow(7, 9),
-  categories: [
-    {
-      name: '',
-      shortName: '',
-      playersPerGrpMain: 3,
-      playersPerGrpRemainder: 4,
-      players: [],
-      groups: [],
-      durationMinutes: 0,
-      knockoutRounds: [],
-      numQualifiedPerGroup: 0
-    }
-  ]
-})
+import { tournament } from '@/store/state'
 
 function addCategory() {
   tournament.value.categories.push({
     name: '',
+    entryType: EntryType.Singles,
     shortName: '',
-    playersPerGrpMain: 3,
-    playersPerGrpRemainder: 4,
-    players: [],
+    entriesPerGrpMain: 3,
+    entriesPerGrpRemainder: 4,
+    entries: [],
     groups: [],
     durationMinutes: 0,
     knockoutRounds: [],
@@ -55,46 +38,55 @@ function addCategory() {
   })
 }
 
-function playersImported(categoryIdx: number, players: Player[]) {
-  clearGroup(categoryIdx)
-  tournament.value.categories[categoryIdx].players = players
-
+function repopulateGroups(categoryIdx: number) {
   const { numGroupsMain, numGroupsRemainder } = calculatorGroups(
-    tournament.value.categories[categoryIdx].players.length,
-    tournament.value.categories[categoryIdx].playersPerGrpMain,
-    tournament.value.categories[categoryIdx].playersPerGrpRemainder
+    tournament.value.categories[categoryIdx].entries.length,
+    tournament.value.categories[categoryIdx].entriesPerGrpMain,
+    tournament.value.categories[categoryIdx].entriesPerGrpRemainder
   )
 
   if (
-    tournament.value.categories[categoryIdx].playersPerGrpMain >
-    tournament.value.categories[categoryIdx].playersPerGrpRemainder
+    tournament.value.categories[categoryIdx].entriesPerGrpMain >
+    tournament.value.categories[categoryIdx].entriesPerGrpRemainder
   ) {
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
       )
     }
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpMain)
       )
     }
   } else {
     for (let i = 0; i < numGroupsMain; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpMain)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpMain)
       )
     }
     for (let i = 0; i < numGroupsRemainder; i++) {
       tournament.value.categories[categoryIdx].groups.push(
-        getGroup(tournament.value.categories[categoryIdx].playersPerGrpRemainder)
+        getGroup(tournament.value.categories[categoryIdx].entriesPerGrpRemainder)
       )
     }
   }
 }
 
+function playersImported(categoryIdx: number, players: Entry[]) {
+  players = players.map((player, i) => {
+    const entry = Entry.from(player)
+    entry.grpIdx = i
+    return entry
+  })
+  clearGroup(categoryIdx)
+  tournament.value.categories[categoryIdx].entries = players
+  repopulateGroups(categoryIdx)
+}
+
 function clearGroup(categoryIdx: number) {
   tournament.value.categories[categoryIdx].groups = []
+  repopulateGroups(categoryIdx)
 }
 
 const drawIndex = ref(-1)
@@ -104,7 +96,7 @@ const showDrawModal = computed({
     if (!value) {
       // If the modal is being closed, save the current groups data
       if (drawIndex.value >= 0 && tournament.value.categories[drawIndex.value].groups.length > 0) {
-        drawDone(tournament.value.categories[drawIndex.value].groups);
+        drawDone(tournament.value.categories[drawIndex.value].groups)
       } else {
         drawIndex.value = -1
       }
@@ -113,8 +105,8 @@ const showDrawModal = computed({
 })
 function startDraw(idx: number) {
   const diff =
-    tournament.value.categories[idx].playersPerGrpMain -
-    tournament.value.categories[idx].playersPerGrpRemainder
+    tournament.value.categories[idx].entriesPerGrpMain -
+    tournament.value.categories[idx].entriesPerGrpRemainder
   if (Math.abs(diff) !== 1) {
     alert(
       'Difference between "Players Per Group (Main)" and "Players Per Group (Remainder)" should be 1'
@@ -132,11 +124,12 @@ async function drawDone(groups: Array<Group>) {
   } else {
     tournament.value.categories[drawIndex.value].groups.forEach(
       (_g, i) =>
-        (tournament.value.categories[drawIndex.value].groups[i].players = groups[i].players)
+        (tournament.value.categories[drawIndex.value].groups[i].entriesIdx = groups[i].entriesIdx)
     )
   }
   drawIndex.value = -1
   const tournamentRes = await apiGenerateRounds(tournament.value)
+  injectEntriesTournament(tournamentRes)
   tournament.value = tournamentRes
 }
 
@@ -200,21 +193,23 @@ function finalScheduleFileSelected(event: Event) {
     return
   }
   apiImportFinalSchedule(file)
-    .then((response: {
-      categoriesGroupsMap: { [category: string]: Group[] },
-      categoriesKnockoutRoundsMap: { [category: string]: KnockoutRound[] }
-    }) => {
-      console.log(response)
-      const ok = importFinalSchedule(
-        response.categoriesGroupsMap,
-        response.categoriesKnockoutRoundsMap,
-        tournament.value
-      )
-      if (!ok) {
-        return
+    .then(
+      (response: {
+        categoriesGroupsMap: { [category: string]: Group[] }
+        categoriesKnockoutRoundsMap: { [category: string]: KnockoutRound[] }
+      }) => {
+        console.log(response)
+        const ok = importFinalSchedule(
+          response.categoriesGroupsMap,
+          response.categoriesKnockoutRoundsMap,
+          tournament.value
+        )
+        if (!ok) {
+          return
+        }
+        alert('Final schedule imported successfully')
       }
-      alert('Final schedule imported successfully')
-    })
+    )
     .catch((error) => {
       console.error('Error importing final schedule:', error)
       alert('Error importing final schedule: ' + error.message)
@@ -239,7 +234,10 @@ function onTournamentFileSelected(event: Event) {
 }
 function onReaderLoad(event: ProgressEvent<FileReader>) {
   const result = event.target?.result as string
-  const obj = JSON.parse(result)
+  const obj = JSON.parse(result) as Tournament
+
+  injectEntriesTournament(obj)
+
   tournament.value = obj
 }
 
@@ -263,7 +261,7 @@ function exportRoundRobin() {
 async function exportDraftSchedule() {
   try {
     const tournamentRes = await apiGenerateRounds(tournament.value)
-    console.log(tournamentRes)
+    injectEntriesTournament(tournamentRes)
     tournament.value = tournamentRes
   } catch (e: unknown) {
     const error = e as Error
@@ -283,6 +281,10 @@ async function exportDraftSchedule() {
       alert(e.message)
     })
 }
+
+function updateGroups(groups: Group[]) {
+  tournament.value.categories[drawIndex.value].groups = groups
+}
 </script>
 
 <template>
@@ -292,41 +294,79 @@ async function exportDraftSchedule() {
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
       <div class="px-3 py-2">
-        <DropdownMenu buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white 
-          transition-all duration-200 
-          hover:cursor-pointer active:scale-90">
+        <DropdownMenu
+          buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white
+          transition-all duration-200
+          hover:cursor-pointer active:scale-90"
+        >
           <MenuItem label="SAVE" @click="exportTournament()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
           <MenuItem divider />
           <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />
           <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
           <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
-          <MenuItem label="EXPORT SCORESHEET WITH TEMPLATE" wide @click="exportScoresheetWithTemplateFile?.click()" />
-          <MenuItem label="SCHEDULE" @click="router.push('/schedule')" />
+          <MenuItem
+            label="EXPORT SCORESHEET WITH TEMPLATE"
+            wide
+            @click="exportScoresheetWithTemplateFile?.click()"
+          />
         </DropdownMenu>
       </div>
     </header>
-    <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
-      class="invisible" />
-    <input type="file" ref="exportScoresheetWithTemplateFile" @change="exportScoresheetWithTemplateSelected"
-      accept=".xlsx" class="invisible" />
-    <input type="file" name="finalScheduleFile" id="finalScheduleFile" class="hidden" ref="finalScheduleFile"
-      accept=".xlsx" @change="finalScheduleFileSelected" />
-    <div class="flex flex-col">
+    <input
+      type="file"
+      name=""
+      id=""
+      ref="tournamentFile"
+      @change="onTournamentFileSelected"
+      accept=".json"
+      class="hidden"
+    />
+    <input
+      type="file"
+      ref="exportScoresheetWithTemplateFile"
+      @change="exportScoresheetWithTemplateSelected"
+      accept=".xlsx"
+      class="hidden"
+    />
+    <input
+      type="file"
+      name="finalScheduleFile"
+      id="finalScheduleFile"
+      class="hidden"
+      ref="finalScheduleFile"
+      accept=".xlsx"
+      @change="finalScheduleFileSelected"
+    />
+    <div class="flex flex-col pb-4">
       <div class="flex flex-col gap-3 p-4">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>
 
-      <div class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
+      <div
+        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
+      >
         <template v-for="(category, i) in tournament.categories" :key="i">
-          <CategoryCard v-model="tournament.categories[i]" @remove="tournament.categories.splice(i, 1)"
-            @players-imported="(players) => playersImported(i, players)" @startDraw="startDraw(i)" @error="showAlert"
-            @player-count-changed="clearGroup(i)"></CategoryCard>
+          <CategoryCard
+            v-model="tournament.categories[i]"
+            @remove="tournament.categories.splice(i, 1)"
+            @players-imported="(players) => playersImported(i, players)"
+            @startDraw="startDraw(i)"
+            @error="showAlert"
+            @player-count-changed="clearGroup(i)"
+          ></CategoryCard>
         </template>
       </div>
     </div>
-    <ModalDialog v-model="showDrawModal" content-class="bg-blue-200 max-h-[95vh] max-w-[95vw]">
-      <TournamentDraw v-if="drawIndex >= 0" :category="tournament.categories[drawIndex]">
+    <ModalDialog
+      v-model="showDrawModal"
+      content-class="bg-blue-200 max-h-[95vh] max-w-[95vw] min-w-4/5"
+    >
+      <TournamentDraw
+        v-if="drawIndex >= 0"
+        :category="tournament.categories[drawIndex]"
+        @groups-updated="updateGroups"
+      >
       </TournamentDraw>
     </ModalDialog>
   </main>
