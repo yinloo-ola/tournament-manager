@@ -1,0 +1,6 @@
+- record score for each match
+- calculate and determine the qualified players for each group
+- come out with draw prep sheet for each category
+- record the draw result for each category forming the knockout chart
+- allow printing of score sheet for each match
+- allow printing of score sheets for each knockout round
