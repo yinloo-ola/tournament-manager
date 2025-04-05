@@ -4,6 +4,7 @@ import { EntryType, type LineupItem, type Category } from '@/types/types'
 import LabeledInput from '../widgets/LabeledInput.vue'
 import LabeledSelect from '../widgets/LabeledSelect.vue'
 import SimpleButton from '@/widgets/SimpleButton.vue'
+import OutlinedButton from '@/widgets/OutlinedButton.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -272,12 +273,12 @@ function cancel() {
       </div>
 
       <div class="mt-6 flex justify-end space-x-3">
-        <SimpleButton
+        <OutlinedButton
           @click="cancel"
-          class="h-10 border border-gray-300 rounded-lg px-4 text-center text-gray-700 hover:bg-gray-100 hover:shadow-lg"
+          class="h-10 border border-0 rounded-lg px-4 text-center text-gray-700 hover:bg-gray-100"
         >
           Cancel
-        </SimpleButton>
+        </OutlinedButton>
         <SimpleButton
           @click="saveLineup"
           :disabled="maxPlayers < minPlayersRequired"
