@@ -15,6 +15,8 @@ import (
 	"github.com/yinloo-ola/tournament-manager/endpoint/entry"
 	"github.com/yinloo-ola/tournament-manager/endpoint/roundrobin"
 	"github.com/yinloo-ola/tournament-manager/endpoint/schedule"
+	"github.com/yinloo-ola/tournament-manager/endpoint/tournament"
+	"github.com/yinloo-ola/tournament-manager/internal/repo"
 	"github.com/yinloo-ola/tournament-manager/web"
 )
 
@@ -36,6 +38,11 @@ func main() {
 		apiRouters.POST("/importFinalSchedule", scheduleSvc.ImportFinalSchedule)
 		apiRouters.POST("/generateRounds", scheduleSvc.GenerateRounds)
 		apiRouters.POST("/exportScoresheetWithTemplate", scheduleSvc.ExportScoresheetWithTemplate)
+		
+		// Tournament operations
+		tournamentRepo := &repo.TournamentRepo{}
+		tournamentSvc := tournament.NewService(tournamentRepo)
+		apiRouters.POST("/saveTournament", tournamentSvc.SaveTournament)
 	}
 
 	srv := &http.Server{

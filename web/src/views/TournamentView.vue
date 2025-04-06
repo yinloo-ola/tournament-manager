@@ -17,7 +17,8 @@ import {
   apiExportRoundRobinExcel,
   apiExportScoresheetWithTemplate,
   apiGenerateRounds,
-  apiImportFinalSchedule
+  apiImportFinalSchedule,
+  apiSaveTournamentToDatabase
 } from '@/client/client'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/calculator/groups'
@@ -139,6 +140,16 @@ function showAlert(msg: string) {
 
 function exportTournament() {
   exportTournamentJson(tournament.value)
+}
+
+async function saveTournamentToDatabase() {
+  try {
+    await apiSaveTournamentToDatabase(tournament.value)
+    alert(`Tournament saved to database successfully!`)
+  } catch (e: unknown) {
+    const error = e as Error
+    alert(error.message)
+  }
 }
 
 const exportScoresheetWithTemplateFile = ref<HTMLInputElement | null>(null)
@@ -300,6 +311,7 @@ function updateGroups(groups: Group[]) {
           hover:cursor-pointer active:scale-90"
         >
           <MenuItem label="SAVE" @click="exportTournament()" />
+          <MenuItem label="SAVE TO DB" @click="saveTournamentToDatabase()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
           <MenuItem divider />
           <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />

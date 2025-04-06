@@ -24,6 +24,7 @@ CREATE TABLE categories (
 -- Players
 CREATE TABLE players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id INTEGER NOT NULL REFERENCES categories(id),
     name TEXT NOT NULL,
     date_of_birth TEXT NOT NULL,
     gender TEXT NOT NULL CHECK(gender IN ('M', 'F'))
@@ -82,7 +83,12 @@ CREATE TABLE matches (
     duration_minutes INTEGER NOT NULL,
     table TEXT NOT NULL,
     round_idx INTEGER NOT NULL,
-    match_idx INTEGER NOT NULL
+    match_idx INTEGER NOT NULL,
+    games TEXT, -- JSON array of [score1, score2] for each game
+    matches_in_team_match TEXT, -- JSON array of team match details {matchNumber, games: [[s1,s2],...]}
+    winner_entry_id INTEGER REFERENCES entries(id), -- ID of the winning entry (NULL if not played/draw)
+    score1 INTEGER,                 -- Final score for entry1 (games won / sub-matches won)
+    score2 INTEGER                  -- Final score for entry2 (games won / sub-matches won)
 );
 
 -- Lineup Items

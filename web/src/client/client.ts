@@ -175,6 +175,27 @@ export async function apiExportScoresheetWithTemplate(tournament: Tournament, fi
   })
 }
 
+export async function apiSaveTournamentToDatabase(tournament: Tournament) {
+  validTournament(tournament)
+  return fetch('/api/saveTournament', {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify(tournament)
+  }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to save tournament to database: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
+      })
+    }
+    return res.json()
+  })
+}
+
 function validTournament(tournament: Tournament) {
   const nameMap: { [key: string]: boolean } = {}
   const shortFormMap: { [key: string]: boolean } = {}

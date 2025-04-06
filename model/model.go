@@ -148,21 +148,25 @@ func (e Entry) Name() string {
 }
 
 type Match struct {
-	Entry1Idx         int       `json:"entry1Idx"`
-	Entry2Idx         int       `json:"entry2Idx"`
-	DateTime          time.Time `json:"datetime"`
-	DurationMinutes   int       `json:"durationMinutes"`
-	Table             string    `json:"table"`
-	CategoryShortName string    `json:"categoryShortName"`
-	GroupIdx          int       `json:"groupIdx"`
-	RoundIdx          int       `json:"roundIdx"`
-	Round             int       `json:"round"`
-	MatchIdx          int       `json:"matchIdx"`
+	Entry1Idx          int                `json:"entry1Idx"`
+	Entry2Idx          int                `json:"entry2Idx"`
+	DateTime           time.Time          `json:"datetime"`
+	DurationMinutes    int                `json:"durationMinutes"`
+	Table              string             `json:"table"`
+	CategoryShortName  string             `json:"categoryShortName"`
+	GroupIdx           int                `json:"groupIdx"`
+	RoundIdx           int                `json:"roundIdx"`
+	Round              int                `json:"round"`
+	MatchIdx           int                `json:"matchIdx"`
+	Games              []Game             `json:"games"`
+	MatchesInTeamMatch []MatchInTeamMatch `json:"matchesInTeamMatch"`
 }
 
-type Game struct {
-	Score [2]int `json:"score"`
+type MatchInTeamMatch struct {
+	MatchNumber int
+	Games       []Game
 }
+type Game [2]int
 
 func (match Match) Name() string {
 	if match.IsKnockout() {
