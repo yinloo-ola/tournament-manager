@@ -153,11 +153,15 @@ type Match struct {
 	DateTime          time.Time `json:"datetime"`
 	DurationMinutes   int       `json:"durationMinutes"`
 	Table             string    `json:"table"`
-	CategoryShortName string    `json:"-"`
-	GroupIdx          int       `json:"-"`
-	RoundIdx          int       `json:"-"`
+	CategoryShortName string    `json:"categoryShortName"`
+	GroupIdx          int       `json:"groupIdx"`
+	RoundIdx          int       `json:"roundIdx"`
 	Round             int       `json:"round"`
-	MatchIdx          int       `json:"-"`
+	MatchIdx          int       `json:"matchIdx"`
+}
+
+type Game struct {
+	Score [2]int `json:"score"`
 }
 
 func (match Match) Name() string {
