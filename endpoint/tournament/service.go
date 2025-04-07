@@ -2,6 +2,7 @@ package tournament
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yinloo-ola/tournament-manager/internal/repo"
@@ -47,4 +48,37 @@ func (s *Service) SaveTournament(c *gin.Context) {
 		"message": "Tournament saved successfully",
 		"id":      id,
 	})
+}
+
+// GetTournament handles the API request to retrieve a tournament from the database
+func (s *Service) GetTournament(c *gin.Context) {
+	// Get tournament ID from URL parameter
+	idStr := c.Param("id")
+	if idStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tournament ID is required"})
+		return
+	}
+
+	// Convert ID to int64
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tournament ID"})
+		return
+	}
+
+	// Call the repository to get the tournament
+	tournament, err := s.tournamentRepo.GetTournament(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if tournament was found
+	if tournament == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tournament not found"})
+		return
+	}
+
+	// Return tournament data
+	c.JSON(http.StatusOK, tournament)
 }

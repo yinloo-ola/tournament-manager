@@ -25,9 +25,11 @@ CREATE TABLE categories (
 CREATE TABLE players (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     category_id INTEGER NOT NULL REFERENCES categories(id),
+    entry_id INTEGER NOT NULL REFERENCES entries(id),
     name TEXT NOT NULL,
     date_of_birth TEXT NOT NULL,
-    gender TEXT NOT NULL CHECK(gender IN ('M', 'F'))
+    gender TEXT NOT NULL CHECK(gender IN ('M', 'F')),
+    player_order INTEGER NOT NULL
 );
 
 -- Entries
@@ -37,18 +39,11 @@ CREATE TABLE entries (
     entry_type TEXT NOT NULL CHECK(entry_type IN ('Singles', 'Doubles', 'Team')),
     seeding INTEGER,
     club TEXT,
-    team_name TEXT,
-    min_players INTEGER,
-    max_players INTEGER
+    team_name TEXT
 );
 
--- Entry Players (for doubles and teams)
-CREATE TABLE entry_players (
-    entry_id INTEGER NOT NULL REFERENCES entries(id),
-    player_id INTEGER NOT NULL REFERENCES players(id),
-    player_order INTEGER NOT NULL,
-    PRIMARY KEY (entry_id, player_id)
-);
+-- Note: The entry_players junction table has been removed
+-- as each player now directly references its entry via entry_id
 
 -- Groups
 CREATE TABLE groups (
