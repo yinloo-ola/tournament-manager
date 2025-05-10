@@ -1,211 +1,204 @@
 package repo
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
+	"log/slog"
 
 	"github.com/yinloo-ola/tournament-manager/model"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 // MatchRepo provides database operations for match data
 type MatchRepo struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 // NewMatchRepo creates a new MatchRepo
-func NewMatchRepo(db *sql.DB) *MatchRepo {
+func NewMatchRepo(db *gorm.DB) *MatchRepo {
 	return &MatchRepo{
 		db: db,
 	}
 }
 
-// SaveMatch saves a match to the database
-func (r *MatchRepo) SaveMatch(categoryID int64, match model.Match, groupID, knockoutRoundID sql.NullInt64) (int64, error) {
-	// Get category short name
-	var categoryShortName string
-	err := r.db.QueryRow("SELECT short_name FROM categories WHERE id = ?", categoryID).Scan(&categoryShortName)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get category short name: %w", err)
+// SaveMatch saves a match to the database using GORM
+func (r *MatchRepo) SaveMatch(
+	categoryID uint,
+	matchInput model.Match, // Input match data, potentially with non-persistent fields like Entry1Idx
+	groupID *uint,
+	knockoutRoundID *uint,
+	tx *gorm.DB,
+) (uint, error) {
+	dbHandle := r.db
+	if tx != nil {
+		dbHandle = tx
 	}
 
-	// Get entry IDs for entry1Idx and entry2Idx
-	// Skip if they are bye or empty
-	var entry1ID, entry2ID sql.NullInt64
+	// 1. Get CategoryShortName
+	var category model.Category
+	if err := dbHandle.Select("short_name").First(&category, categoryID).Error; err != nil {
+		slog.Error("Failed to get category short name", "categoryID", categoryID, "error", err)
+		return 0, fmt.Errorf("failed to get category short name for ID %d: %w", categoryID, err)
+	}
 
-	if match.Entry1Idx >= 0 {
-		err = r.db.QueryRow(
-			"SELECT id FROM entries WHERE category_id = ? ORDER BY id LIMIT 1 OFFSET ?",
-			categoryID, match.Entry1Idx,
-		).Scan(&entry1ID.Int64)
+	// 2. Prepare GORM model.Match instance (dbMatch)
+	dbMatch := model.Match{
+		CategoryID:        categoryID,
+		GroupID:           groupID,
+		KnockoutRoundID:   knockoutRoundID,
+		DateTime:          matchInput.DateTime,
+		DurationMinutes:   matchInput.DurationMinutes,
+		Table:             matchInput.Table,
+		CategoryShortName: category.ShortName,
+		GroupIdx:          matchInput.GroupIdx, // Persisted for context
+		RoundIdx:          matchInput.RoundIdx, // Persisted for context
+		Round:             matchInput.Round,    // Persisted for context (e.g. knockout round number)
+		MatchIdx:          matchInput.MatchIdx, // Persisted for context
+	}
+
+	// 3. Get Entry IDs from Entry1Idx and Entry2Idx
+	var entry1ID, entry2ID *uint
+	if matchInput.Entry1Idx >= 0 {
+		var e1 model.Entry
+		err := dbHandle.Model(&model.Entry{}).
+			Select("id").
+			Where("category_id = ?", categoryID).
+			Order("id asc").
+			Offset(matchInput.Entry1Idx).
+			Limit(1).
+			First(&e1).Error
 		if err != nil {
-			return 0, fmt.Errorf("failed to get entry1 ID: %w", err)
+			slog.Error("Failed to get entry1 ID from index", "categoryID", categoryID, "entryIndex", matchInput.Entry1Idx, "error", err)
+			return 0, fmt.Errorf("failed to get entry1 ID for index %d: %w", matchInput.Entry1Idx, err)
 		}
-		entry1ID.Valid = true
+		entry1ID = &e1.ID
+		dbMatch.Entry1ID = entry1ID
 	}
 
-	if match.Entry2Idx >= 0 {
-		err = r.db.QueryRow(
-			"SELECT id FROM entries WHERE category_id = ? ORDER BY id LIMIT 1 OFFSET ?",
-			categoryID, match.Entry2Idx,
-		).Scan(&entry2ID.Int64)
+	if matchInput.Entry2Idx >= 0 {
+		var e2 model.Entry
+		err := dbHandle.Model(&model.Entry{}).
+			Select("id").
+			Where("category_id = ?", categoryID).
+			Order("id asc").
+			Offset(matchInput.Entry2Idx).
+			Limit(1).
+			First(&e2).Error
 		if err != nil {
-			return 0, fmt.Errorf("failed to get entry2 ID: %w", err)
+			slog.Error("Failed to get entry2 ID from index", "categoryID", categoryID, "entryIndex", matchInput.Entry2Idx, "error", err)
+			return 0, fmt.Errorf("failed to get entry2 ID for index %d: %w", matchInput.Entry2Idx, err)
 		}
-		entry2ID.Valid = true
+		entry2ID = &e2.ID
+		dbMatch.Entry2ID = entry2ID
 	}
 
-	// Convert games to JSON
-	gamesJSON, err := json.Marshal(match.Games)
-	if err != nil {
-		return 0, fmt.Errorf("failed to marshal games: %w", err)
-	}
-
-	// Convert matches in team match to JSON
-	var matchesInTeamMatchJSON []byte
-	if len(match.MatchesInTeamMatch) > 0 {
-		matchesInTeamMatchJSON, err = json.Marshal(match.MatchesInTeamMatch)
+	// 4. Marshal Games and MatchesInTeamMatch to JSON
+	if matchInput.Games != nil {
+		gamesJSON, err := json.Marshal(matchInput.Games)
 		if err != nil {
+			slog.Error("Failed to marshal games", "error", err)
+			return 0, fmt.Errorf("failed to marshal games: %w", err)
+		}
+		dbMatch.GamesRaw = datatypes.JSON(gamesJSON)
+	} else {
+		dbMatch.GamesRaw = datatypes.JSON("[]") // Store as empty JSON array if nil
+	}
+
+	if matchInput.MatchesInTeamMatch != nil && len(matchInput.MatchesInTeamMatch) > 0 {
+		matchesInTeamMatchJSON, err := json.Marshal(matchInput.MatchesInTeamMatch)
+		if err != nil {
+			slog.Error("Failed to marshal matches in team match", "error", err)
 			return 0, fmt.Errorf("failed to marshal matches in team match: %w", err)
 		}
+		dbMatch.MatchesInTeamMatchRaw = datatypes.JSON(matchesInTeamMatchJSON)
+	} else {
+		dbMatch.MatchesInTeamMatchRaw = datatypes.JSON("[]")
 	}
 
-	// Determine winner entry ID
-	var winnerEntryID sql.NullInt64
-	if match.Games != nil && len(match.Games) > 0 {
-		// Calculate scores
-		score1 := 0
-		score2 := 0
-		for _, game := range match.Games {
-			if game[0] > game[1] {
-				score1++
-			} else if game[1] > game[0] {
-				score2++
+	// 5. Determine WinnerEntryID and Scores
+	// Scores (Score1, Score2) are now part of model.Match and DDL
+	var score1, score2 int
+	if matchInput.Games != nil && len(matchInput.Games) > 0 {
+		for _, game := range matchInput.Games {
+			if len(game) == 2 { // Ensure game has two scores
+				if game[0] > game[1] {
+					score1++
+				} else if game[1] > game[0] {
+					score2++
+				}
 			}
 		}
+		dbMatch.Score1 = &score1
+		dbMatch.Score2 = &score2
 
-		// Set winner
-		if score1 > score2 && entry1ID.Valid {
-			winnerEntryID = entry1ID
-		} else if score2 > score1 && entry2ID.Valid {
-			winnerEntryID = entry2ID
+		if score1 > score2 && entry1ID != nil {
+			dbMatch.WinnerEntryID = entry1ID
+		} else if score2 > score1 && entry2ID != nil {
+			dbMatch.WinnerEntryID = entry2ID
 		}
 	}
 
-	// Check if match already exists
-	var existingID int64
-	var existingQuery string
-	var existingArgs []interface{}
+	// 6. Upsert logic: Find by unique criteria, then create or update.
+	// Unique criteria for a match: CategoryID, MatchIdx, and either (GroupID and RoundIdx) or (KnockoutRoundID)
+	var findCondition model.Match
+	findCondition.CategoryID = categoryID
+	findCondition.MatchIdx = matchInput.MatchIdx
 
-	if groupID.Valid {
-		existingQuery = "SELECT id FROM matches WHERE category_id = ? AND group_id = ? AND round_idx = ? AND match_idx = ?"
-		existingArgs = []interface{}{categoryID, groupID.Int64, match.RoundIdx, match.MatchIdx}
-	} else if knockoutRoundID.Valid {
-		existingQuery = "SELECT id FROM matches WHERE category_id = ? AND knockout_round_id = ? AND match_idx = ?"
-		existingArgs = []interface{}{categoryID, knockoutRoundID.Int64, match.MatchIdx}
-	}
-
-	err = r.db.QueryRow(existingQuery, existingArgs...).Scan(&existingID)
-
-	if err == nil {
-		// Match exists, update it
-		_, err = r.db.Exec(
-			`UPDATE matches SET 
-				entry1_id = ?, 
-				entry2_id = ?, 
-				datetime = ?, 
-				duration_minutes = ?, 
-				table_number = ?, 
-				round = ?, 
-				games = ?, 
-				matches_in_team_match = ?, 
-				winner_entry_id = ?, 
-				score1 = ?, 
-				score2 = ? 
-			WHERE id = ?`,
-			entry1ID,
-			entry2ID,
-			match.DateTime.Format(time.RFC3339),
-			match.DurationMinutes,
-			match.Table,
-			match.Round,
-			gamesJSON,
-			matchesInTeamMatchJSON,
-			winnerEntryID,
-			nil, // score1 - calculated when retrieving
-			nil, // score2 - calculated when retrieving
-			existingID,
-		)
-		if err != nil {
-			return 0, fmt.Errorf("failed to update match: %w", err)
-		}
-		return existingID, nil
-	} else if err == sql.ErrNoRows {
-		// Match doesn't exist, insert new one
-		result, err := r.db.Exec(
-			`INSERT INTO matches (
-				category_id, 
-				group_id, 
-				knockout_round_id, 
-				entry1_id, 
-				entry2_id, 
-				datetime, 
-				duration_minutes, 
-				table_number, 
-				category_short_name, 
-				group_idx, 
-				round_idx, 
-				round, 
-				match_idx, 
-				games, 
-				matches_in_team_match, 
-				winner_entry_id, 
-				score1, 
-				score2
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			categoryID,
-			groupID,
-			knockoutRoundID,
-			entry1ID,
-			entry2ID,
-			match.DateTime.Format(time.RFC3339),
-			match.DurationMinutes,
-			match.Table,
-			categoryShortName,
-			match.GroupIdx,
-			match.RoundIdx,
-			match.Round,
-			match.MatchIdx,
-			gamesJSON,
-			matchesInTeamMatchJSON,
-			winnerEntryID,
-			nil, // score1 - calculated when retrieving
-			nil, // score2 - calculated when retrieving
-		)
-		if err != nil {
-			return 0, fmt.Errorf("failed to insert match: %w", err)
-		}
-
-		matchID, err := result.LastInsertId()
-		if err != nil {
-			return 0, fmt.Errorf("failed to get inserted match ID: %w", err)
-		}
-		return matchID, nil
+	if groupID != nil {
+		findCondition.GroupID = groupID
+		findCondition.RoundIdx = matchInput.RoundIdx // RoundIdx is relevant for group matches
+	} else if knockoutRoundID != nil {
+		findCondition.KnockoutRoundID = knockoutRoundID
+		// Round (overall round number) is part of dbMatch, not typically a unique find criteria here if KnockoutRoundID is present
 	} else {
-		// Some other error occurred
-		return 0, fmt.Errorf("database error when checking for existing match: %w", err)
+		slog.Error("SaveMatch called without GroupID or KnockoutRoundID", "categoryID", categoryID, "matchIdx", matchInput.MatchIdx)
+		return 0, fmt.Errorf("match must have either GroupID or KnockoutRoundID")
+	}
+
+	// Using Clauses.Assign to ensure all fields are updated on conflict or new fields are set for creation.
+	// The .Where condition for FirstOrCreate/Save should be specific enough to find the unique match.
+	// GORM's Save method handles upsert if primary key is set and exists, or creates if not.
+	// For more complex unique constraints not on PK, FirstOrCreate with Attrs/Assign is better.
+
+	// Let's try to find it first
+	var existingMatch model.Match
+	query := dbHandle.Where(&findCondition)
+
+	err := query.First(&existingMatch).Error
+	if err == nil { // Found, so update
+		dbMatch.ID = existingMatch.ID // Set ID for update
+		if updErr := dbHandle.Model(&existingMatch).Updates(dbMatch).Error; updErr != nil {
+			slog.Error("Failed to update existing match", "matchID", existingMatch.ID, "error", updErr)
+			return 0, fmt.Errorf("failed to update match %d: %w", existingMatch.ID, updErr)
+		}
+		return existingMatch.ID, nil
+	} else if err == gorm.ErrRecordNotFound { // Not found, create
+		if createErr := dbHandle.Create(&dbMatch).Error; createErr != nil {
+			slog.Error("Failed to create new match", "error", createErr)
+			return 0, fmt.Errorf("failed to create match: %w", createErr)
+		}
+		return dbMatch.ID, nil
+	} else { // Other error
+		slog.Error("Error finding match for save", "condition", findCondition, "error", err)
+		return 0, fmt.Errorf("error finding match: %w", err)
 	}
 }
 
 // SaveGroupMatches saves all matches for a group
-func (r *MatchRepo) SaveGroupMatches(categoryID, groupID int64, groupIdx int, rounds [][]model.Match) error {
-	for _, round := range rounds {
-		for _, match := range round {
-			groupIDSQL := sql.NullInt64{Int64: groupID, Valid: true}
-			_, err := r.SaveMatch(categoryID, match, groupIDSQL, sql.NullInt64{})
+func (r *MatchRepo) SaveGroupMatches(categoryID, groupID uint, groupIdx int, rounds [][]model.Match, tx *gorm.DB) error {
+	dbHandle := r.db
+	if tx != nil {
+		dbHandle = tx
+	}
+	for _, roundMatches := range rounds {
+		for _, match := range roundMatches {
+			// Ensure GroupIdx is set from the loop context if not already on match
+			// match.GroupIdx = groupIdx // match already has GroupIdx from generation
+			_, err := r.SaveMatch(categoryID, match, &groupID, nil, dbHandle)
 			if err != nil {
-				return fmt.Errorf("failed to save match: %w", err)
+				slog.Error("Failed to save group match", "categoryID", categoryID, "groupID", groupID, "matchIdx", match.MatchIdx, "error", err)
+				return fmt.Errorf("failed to save match for group %d, matchIdx %d: %w", groupID, match.MatchIdx, err)
 			}
 		}
 	}
@@ -213,281 +206,219 @@ func (r *MatchRepo) SaveGroupMatches(categoryID, groupID int64, groupIdx int, ro
 }
 
 // SaveKnockoutMatches saves all matches for a knockout round
-func (r *MatchRepo) SaveKnockoutMatches(categoryID, knockoutRoundID int64, round int, matches []model.Match) error {
+func (r *MatchRepo) SaveKnockoutMatches(categoryID, knockoutRoundID uint, roundVal int, matches []model.Match, tx *gorm.DB) error {
+	dbHandle := r.db
+	if tx != nil {
+		dbHandle = tx
+	}
 	for _, match := range matches {
-		knockoutRoundIDSQL := sql.NullInt64{Int64: knockoutRoundID, Valid: true}
-		_, err := r.SaveMatch(categoryID, match, sql.NullInt64{}, knockoutRoundIDSQL)
+		// match.Round = roundVal // match.Round should already be set correctly from generation
+		_, err := r.SaveMatch(categoryID, match, nil, &knockoutRoundID, dbHandle)
 		if err != nil {
-			return fmt.Errorf("failed to save match: %w", err)
+			slog.Error("Failed to save knockout match", "categoryID", categoryID, "knockoutRoundID", knockoutRoundID, "matchIdx", match.MatchIdx, "error", err)
+			return fmt.Errorf("failed to save match for knockout round %d, matchIdx %d: %w", knockoutRoundID, match.MatchIdx, err)
 		}
 	}
 	return nil
 }
 
 // GetMatchesByGroupID retrieves all matches for a group
-func (r *MatchRepo) GetMatchesByGroupID(groupID int64) ([][]model.Match, error) {
-	// Get category ID and group index
-	var categoryID int64
-	var groupIdx int
-	err := r.db.QueryRow(
-		"SELECT category_id, group_index FROM groups WHERE id = ?",
-		groupID,
-	).Scan(&categoryID, &groupIdx)
+func (r *MatchRepo) GetMatchesByGroupID(groupID uint) ([][]model.Match, error) {
+	var groupInfo struct {
+		CategoryID uint
+		GroupIndex int
+	}
+	// Assuming model.Group has gorm tags for ID, CategoryID, GroupIndex
+	err := r.db.Model(&model.Group{}).Select("category_id, group_index").Where("id = ?", groupID).First(&groupInfo).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get group info: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			slog.Warn("Group not found for GetMatchesByGroupID", "groupID", groupID)
+			return nil, nil
+		}
+		slog.Error("Failed to get group info for GetMatchesByGroupID", "groupID", groupID, "error", err)
+		return nil, fmt.Errorf("failed to get group info for ID %d: %w", groupID, err)
 	}
+	categoryID := groupInfo.CategoryID
+	fetchedGroupIdx := groupInfo.GroupIndex
 
-	// Get all entries for this category to build the mapping from entry ID to index
-	entryRows, err := r.db.Query("SELECT id FROM entries WHERE category_id = ? ORDER BY id", categoryID)
+	var entries []model.Entry
+	err = r.db.Model(&model.Entry{}).Select("id").Where("category_id = ?", categoryID).Order("id asc").Find(&entries).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get entries: %w", err)
-	}
-	defer entryRows.Close()
-
-	// Build map of entry ID to index
-	entryIDToIdx := make(map[int64]int)
-	entryIdx := 0
-	for entryRows.Next() {
-		var entryID int64
-		err := entryRows.Scan(&entryID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan entry ID: %w", err)
-		}
-		entryIDToIdx[entryID] = entryIdx
-		entryIdx++
+		slog.Error("Failed to get entries for category in GetMatchesByGroupID", "categoryID", categoryID, "error", err)
+		return nil, fmt.Errorf("failed to get entries for category %d: %w", categoryID, err)
 	}
 
-	// Get all matches for this group
-	rows, err := r.db.Query(
-		`SELECT 
-			entry1_id, 
-			entry2_id, 
-			datetime, 
-			duration_minutes, 
-			table_number, 
-			category_short_name, 
-			round_idx, 
-			round, 
-			match_idx, 
-			games, 
-			matches_in_team_match 
-		FROM matches 
-		WHERE group_id = ? 
-		ORDER BY round_idx, match_idx`,
-		groupID,
-	)
+	entryIDToIdx := make(map[uint]int)
+	for i, entry := range entries {
+		entryIDToIdx[entry.ID] = i
+	}
+
+	var dbMatches []model.Match
+	err = r.db.Where("group_id = ?", groupID).Order("round_idx asc, match_idx asc").Find(&dbMatches).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get matches: %w", err)
+		slog.Error("Failed to get matches for group in GetMatchesByGroupID", "groupID", groupID, "error", err)
+		return nil, fmt.Errorf("failed to get matches for group %d: %w", groupID, err)
 	}
-	defer rows.Close()
 
-	// Initialize rounds slice
-	var rounds [][]model.Match
-	var currentRoundIdx = -1
+	var resultRounds [][]model.Match
+	currentRoundIdx := -1
 
-	for rows.Next() {
-		var match model.Match
-		var entry1ID, entry2ID sql.NullInt64
-		var datetimeStr string
-		var gamesJSON, matchesInTeamMatchJSON []byte
+	for _, dbMatch := range dbMatches {
+		matchPopulated := dbMatch                 // Start with a copy
+		matchPopulated.GroupIdx = fetchedGroupIdx // Set from fetched groupInfo
 
-		err := rows.Scan(
-			&entry1ID,
-			&entry2ID,
-			&datetimeStr,
-			&match.DurationMinutes,
-			&match.Table,
-			&match.CategoryShortName,
-			&match.RoundIdx,
-			&match.Round,
-			&match.MatchIdx,
-			&gamesJSON,
-			&matchesInTeamMatchJSON,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan match: %w", err)
-		}
-
-		// Parse datetime
-		match.DateTime, err = time.Parse(time.RFC3339, datetimeStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse datetime: %w", err)
-		}
-
-		// Set group index
-		match.GroupIdx = groupIdx
-
-		// Set entry indices
-		if entry1ID.Valid {
-			match.Entry1Idx = entryIDToIdx[entry1ID.Int64]
-		} else {
-			match.Entry1Idx = model.EntryEmptyIdx
-		}
-
-		if entry2ID.Valid {
-			match.Entry2Idx = entryIDToIdx[entry2ID.Int64]
-		} else {
-			match.Entry2Idx = model.EntryEmptyIdx
-		}
-
-		// Parse games
-		if gamesJSON != nil {
-			err = json.Unmarshal(gamesJSON, &match.Games)
-			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshal games: %w", err)
+		if dbMatch.Entry1ID != nil {
+			if idx, ok := entryIDToIdx[*dbMatch.Entry1ID]; ok {
+				matchPopulated.Entry1Idx = idx
+			} else {
+				slog.Warn("GetMatchesByGroupID: Entry1ID not found in map", "entryID", *dbMatch.Entry1ID, "matchID", dbMatch.ID)
+				matchPopulated.Entry1Idx = model.EntryEmptyIdx
 			}
+		} else {
+			matchPopulated.Entry1Idx = model.EntryEmptyIdx
 		}
 
-		// Parse matches in team match
-		if matchesInTeamMatchJSON != nil {
-			err = json.Unmarshal(matchesInTeamMatchJSON, &match.MatchesInTeamMatch)
-			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshal matches in team match: %w", err)
+		if dbMatch.Entry2ID != nil {
+			if idx, ok := entryIDToIdx[*dbMatch.Entry2ID]; ok {
+				matchPopulated.Entry2Idx = idx
+			} else {
+				slog.Warn("GetMatchesByGroupID: Entry2ID not found in map", "entryID", *dbMatch.Entry2ID, "matchID", dbMatch.ID)
+				matchPopulated.Entry2Idx = model.EntryEmptyIdx
 			}
+		} else {
+			matchPopulated.Entry2Idx = model.EntryEmptyIdx
 		}
 
-		// Add match to rounds
-		if match.RoundIdx != currentRoundIdx {
-			// Start a new round
-			rounds = append(rounds, []model.Match{})
-			currentRoundIdx = match.RoundIdx
+		if len(dbMatch.GamesRaw) > 0 {
+			if err := json.Unmarshal(dbMatch.GamesRaw, &matchPopulated.Games); err != nil {
+				slog.Error("Failed to unmarshal GamesRaw", "matchID", dbMatch.ID, "error", err)
+				// Potentially return error or set Games to nil/empty
+			}
+		} else {
+			matchPopulated.Games = []model.Game{}
 		}
-		rounds[len(rounds)-1] = append(rounds[len(rounds)-1], match)
+
+		if len(dbMatch.MatchesInTeamMatchRaw) > 0 {
+			if err := json.Unmarshal(dbMatch.MatchesInTeamMatchRaw, &matchPopulated.MatchesInTeamMatch); err != nil {
+				slog.Error("Failed to unmarshal MatchesInTeamMatchRaw", "matchID", dbMatch.ID, "error", err)
+				// Potentially return error or set MatchesInTeamMatch to nil/empty
+			}
+		} else {
+			matchPopulated.MatchesInTeamMatch = []model.MatchInTeamMatch{}
+		}
+
+		if matchPopulated.RoundIdx != currentRoundIdx {
+			resultRounds = append(resultRounds, []model.Match{})
+			currentRoundIdx = matchPopulated.RoundIdx
+		}
+		if len(resultRounds) == 0 {
+			resultRounds = append(resultRounds, []model.Match{})
+		}
+		resultRounds[len(resultRounds)-1] = append(resultRounds[len(resultRounds)-1], matchPopulated)
 	}
-
-	return rounds, nil
+	return resultRounds, nil
 }
 
 // GetMatchesByKnockoutRoundID retrieves all matches for a knockout round
-func (r *MatchRepo) GetMatchesByKnockoutRoundID(knockoutRoundID int64) ([]model.Match, error) {
-	// Get category ID and round number
-	var categoryID int64
-	var roundNumber int
-	err := r.db.QueryRow(
-		"SELECT category_id, round_number FROM knockout_rounds WHERE id = ?",
-		knockoutRoundID,
-	).Scan(&categoryID, &roundNumber)
+func (r *MatchRepo) GetMatchesByKnockoutRoundID(knockoutRoundID uint) ([]model.Match, error) {
+	var knockoutRoundInfo struct {
+		CategoryID  uint
+		RoundNumber int `gorm:"column:round_number"`
+	}
+	err := r.db.Model(&model.KnockoutRound{}).Select("category_id, round_number").Where("id = ?", knockoutRoundID).First(&knockoutRoundInfo).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get knockout round info: %w", err)
+		if err == gorm.ErrRecordNotFound {
+			slog.Warn("Knockout round not found for GetMatchesByKnockoutRoundID", "knockoutRoundID", knockoutRoundID)
+			return nil, nil
+		}
+		slog.Error("Failed to get knockout round info", "knockoutRoundID", knockoutRoundID, "error", err)
+		return nil, fmt.Errorf("failed to get knockout round info for ID %d: %w", knockoutRoundID, err)
 	}
+	categoryID := knockoutRoundInfo.CategoryID
+	roundNumber := knockoutRoundInfo.RoundNumber
 
-	// Get all entries for this category to build the mapping from entry ID to index
-	entryRows, err := r.db.Query("SELECT id FROM entries WHERE category_id = ? ORDER BY id", categoryID)
+	var entries []model.Entry
+	err = r.db.Model(&model.Entry{}).Select("id").Where("category_id = ?", categoryID).Order("id asc").Find(&entries).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get entries: %w", err)
-	}
-	defer entryRows.Close()
-
-	// Build map of entry ID to index
-	entryIDToIdx := make(map[int64]int)
-	entryIdx := 0
-	for entryRows.Next() {
-		var entryID int64
-		err := entryRows.Scan(&entryID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan entry ID: %w", err)
-		}
-		entryIDToIdx[entryID] = entryIdx
-		entryIdx++
+		slog.Error("Failed to get entries for category in GetMatchesByKnockoutRoundID", "categoryID", categoryID, "error", err)
+		return nil, fmt.Errorf("failed to get entries for category %d: %w", categoryID, err)
 	}
 
-	// Get all matches for this knockout round
-	rows, err := r.db.Query(
-		`SELECT 
-			entry1_id, 
-			entry2_id, 
-			datetime, 
-			duration_minutes, 
-			table_number, 
-			category_short_name, 
-			round_idx, 
-			match_idx, 
-			games, 
-			matches_in_team_match 
-		FROM matches 
-		WHERE knockout_round_id = ? 
-		ORDER BY match_idx`,
-		knockoutRoundID,
-	)
+	entryIDToIdx := make(map[uint]int)
+	for i, entry := range entries {
+		entryIDToIdx[entry.ID] = i
+	}
+
+	var dbMatches []model.Match
+	err = r.db.Where("knockout_round_id = ?", knockoutRoundID).Order("match_idx asc").Find(&dbMatches).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get matches: %w", err)
+		slog.Error("Failed to get matches for knockout round", "knockoutRoundID", knockoutRoundID, "error", err)
+		return nil, fmt.Errorf("failed to get matches for knockout round %d: %w", knockoutRoundID, err)
 	}
-	defer rows.Close()
 
-	var matches []model.Match
+	var resultMatches []model.Match
+	for _, dbMatch := range dbMatches {
+		matchPopulated := dbMatch
+		matchPopulated.GroupIdx = -1 // Indicates knockout match
+		matchPopulated.Round = roundNumber
 
-	for rows.Next() {
-		var match model.Match
-		var entry1ID, entry2ID sql.NullInt64
-		var datetimeStr string
-		var gamesJSON, matchesInTeamMatchJSON []byte
-
-		err := rows.Scan(
-			&entry1ID,
-			&entry2ID,
-			&datetimeStr,
-			&match.DurationMinutes,
-			&match.Table,
-			&match.CategoryShortName,
-			&match.RoundIdx,
-			&match.MatchIdx,
-			&gamesJSON,
-			&matchesInTeamMatchJSON,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan match: %w", err)
-		}
-
-		// Parse datetime
-		match.DateTime, err = time.Parse(time.RFC3339, datetimeStr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse datetime: %w", err)
-		}
-
-		// Set knockout round info
-		match.GroupIdx = -1 // Indicates knockout match
-		match.Round = roundNumber
-
-		// Set entry indices
-		if entry1ID.Valid {
-			match.Entry1Idx = entryIDToIdx[entry1ID.Int64]
-		} else {
-			match.Entry1Idx = model.EntryEmptyIdx
-		}
-
-		if entry2ID.Valid {
-			match.Entry2Idx = entryIDToIdx[entry2ID.Int64]
-		} else {
-			match.Entry2Idx = model.EntryEmptyIdx
-		}
-
-		// Parse games
-		if gamesJSON != nil {
-			err = json.Unmarshal(gamesJSON, &match.Games)
-			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshal games: %w", err)
+		if dbMatch.Entry1ID != nil {
+			if idx, ok := entryIDToIdx[*dbMatch.Entry1ID]; ok {
+				matchPopulated.Entry1Idx = idx
+			} else {
+				slog.Warn("GetMatchesByKnockoutRoundID: Entry1ID not found in map", "entryID", *dbMatch.Entry1ID, "matchID", dbMatch.ID)
+				matchPopulated.Entry1Idx = model.EntryEmptyIdx
 			}
+		} else {
+			matchPopulated.Entry1Idx = model.EntryEmptyIdx
 		}
 
-		// Parse matches in team match
-		if matchesInTeamMatchJSON != nil {
-			err = json.Unmarshal(matchesInTeamMatchJSON, &match.MatchesInTeamMatch)
-			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshal matches in team match: %w", err)
+		if dbMatch.Entry2ID != nil {
+			if idx, ok := entryIDToIdx[*dbMatch.Entry2ID]; ok {
+				matchPopulated.Entry2Idx = idx
+			} else {
+				slog.Warn("GetMatchesByKnockoutRoundID: Entry2ID not found in map", "entryID", *dbMatch.Entry2ID, "matchID", dbMatch.ID)
+				matchPopulated.Entry2Idx = model.EntryEmptyIdx
 			}
+		} else {
+			matchPopulated.Entry2Idx = model.EntryEmptyIdx
 		}
 
-		matches = append(matches, match)
-	}
+		if len(dbMatch.GamesRaw) > 0 {
+			if err := json.Unmarshal(dbMatch.GamesRaw, &matchPopulated.Games); err != nil {
+				slog.Error("Failed to unmarshal GamesRaw for knockout match", "matchID", dbMatch.ID, "error", err)
+			}
+		} else {
+			matchPopulated.Games = []model.Game{}
+		}
 
-	return matches, nil
+		if len(dbMatch.MatchesInTeamMatchRaw) > 0 {
+			if err := json.Unmarshal(dbMatch.MatchesInTeamMatchRaw, &matchPopulated.MatchesInTeamMatch); err != nil {
+				slog.Error("Failed to unmarshal MatchesInTeamMatchRaw for knockout match", "matchID", dbMatch.ID, "error", err)
+			}
+		} else {
+			matchPopulated.MatchesInTeamMatch = []model.MatchInTeamMatch{}
+		}
+		resultMatches = append(resultMatches, matchPopulated)
+	}
+	return resultMatches, nil
 }
 
 // DeleteMatch deletes a match
-func (r *MatchRepo) DeleteMatch(matchID int64) error {
-	_, err := r.db.Exec("DELETE FROM matches WHERE id = ?", matchID)
+func (r *MatchRepo) DeleteMatch(matchID uint) error {
+	err := r.db.Delete(&model.Match{}, matchID).Error
 	if err != nil {
-		return fmt.Errorf("failed to delete match: %w", err)
+		slog.Error("Failed to delete match", "matchID", matchID, "error", err)
+		return fmt.Errorf("failed to delete match %d: %w", matchID, err)
 	}
 	return nil
 }
+
+// Helper to convert *int64 to *uint, not strictly needed if types are consistent (uint for IDs)
+// func NullInt64ToUintPtr(val *int64) *uint {
+// 	if val == nil {
+// 		return nil
+// 	}
+// 	uVal := uint(*val)
+// 	return &uVal
+// }

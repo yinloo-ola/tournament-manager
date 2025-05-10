@@ -5,39 +5,43 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+
+	"gorm.io/datatypes"
 )
 
 const EntryByeIdx = -2
 const EntryEmptyIdx = -1
 
+// Date custom type for JSON marshalling, GORM will use time.Time for Tournament.StartTime
 type Date time.Time
 
-func (c *Date) UnmarshalJSON(b []byte) error {
+func (d *Date) UnmarshalJSON(b []byte) error {
 	value := strings.Trim(string(b), `"`) // get rid of "
 	if value == "" || value == "null" {
 		return nil
 	}
-
 	t, err := time.Parse("2006-01-02T15:04", value) // parse time
 	if err != nil {
 		return err
 	}
-	*c = Date(t) // set result using the pointer
+	*d = Date(t) // set result using the pointer
 	return nil
 }
 
-func (c Date) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + time.Time(c).Format("2006-01-02T15:04") + `"`), nil
+func (d Date) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + time.Time(d).Format("2006-01-02T15:04") + `"`), nil
 }
 
 type Tournament struct {
+	ID         uint       `gorm:"primaryKey" json:"id"`
 	Name       string     `json:"name"`
-	Categories []Category `json:"categories"`
+	Categories []Category `json:"categories" gorm:"foreignKey:TournamentID"`
 	NumTables  int        `json:"numTables"`
-	StartTime  Date       `json:"startTime"`
+	StartTime  time.Time  `json:"startTime"` // Changed from Date to time.Time for GORM
 }
 
 // AgeRequirement defines age constraints for a lineup item
+// This struct will be serialized as JSON within LineupItem for GORM.
 type AgeRequirement struct {
 	Type  string `json:"type"`  // "minimum", "maximum"
 	Value int    `json:"value"` // The age value for the requirement
@@ -45,36 +49,47 @@ type AgeRequirement struct {
 
 // LineupItem defines a match in a team competition with specific requirements
 type LineupItem struct {
-	Name              string          `json:"name"`
-	MatchType         EntryType       `json:"matchType"`         // Singles or Doubles
-	GenderRequirement string          `json:"genderRequirement"` // "M", "F", "Mixed", or "Any"
-	AgeRequirement    *AgeRequirement `json:"ageRequirement,omitempty"`
+	ID                uint           `gorm:"primaryKey" json:"id"`
+	CategoryID        uint           `json:"-"` // Foreign key to Category
+	Name              string         `json:"name"`
+	MatchType         EntryType      `json:"matchType"`                // Singles or Doubles
+	GenderRequirement string         `json:"genderRequirement"`        // "M", "F", "Mixed", or "Any"
+	AgeRequirement    datatypes.JSON `json:"ageRequirement,omitempty"` // Stored as JSON in DB
 }
 
 type Category struct {
+	ID                     uint            `gorm:"primaryKey" json:"id"`
+	TournamentID           uint            `json:"-"` // Foreign key to Tournament
 	Name                   string          `json:"name"`
 	EntryType              EntryType       `json:"entryType"`
 	ShortName              string          `json:"shortName"`
 	EntriesPerGrpMain      int             `json:"entriesPerGrpMain"`
 	EntriesPerGrpRemainder int             `json:"entriesPerGrpRemainder"`
-	Entries                []Entry         `json:"entries"`
-	Groups                 []Group         `json:"groups"`
-	KnockoutRounds         []KnockoutRound `json:"knockoutRounds"`
+	Entries                []Entry         `json:"entries" gorm:"foreignKey:CategoryID"`
+	Groups                 []Group         `json:"groups" gorm:"foreignKey:CategoryID"`
+	KnockoutRounds         []KnockoutRound `json:"knockoutRounds" gorm:"foreignKey:CategoryID"`
 	DurationMinutes        int             `json:"durationMinutes"`
 	NumQualifiedPerGroup   int             `json:"numQualifiedPerGroup"`
 	MinPlayers             *int            `json:"minPlayers,omitempty"`
 	MaxPlayers             *int            `json:"maxPlayers,omitempty"`
-	Lineup                 []LineupItem    `json:"lineup,omitempty"`
+	Lineup                 []LineupItem    `json:"lineup,omitempty" gorm:"foreignKey:CategoryID"`
 }
 
 type KnockoutRound struct {
-	Round   int     `json:"round"`
-	Matches []Match `json:"matches"`
+	ID         uint    `gorm:"primaryKey" json:"id"`
+	CategoryID uint    `json:"-"`                                // Foreign key to Category
+	Round      int     `json:"round" gorm:"column:round_number"` // Match DDL
+	Matches    []Match `json:"matches" gorm:"foreignKey:KnockoutRoundID"`
 }
 
 type Group struct {
-	EntriesIdx []int     `json:"entriesIdx"`
-	Rounds     [][]Match `json:"rounds"`
+	ID         uint           `gorm:"primaryKey" json:"id"`
+	CategoryID uint           `json:"-"`                                    // Foreign key to Category
+	GroupIndex int            `json:"groupIndex" gorm:"column:group_index"` // Match DDL
+	EntriesIdx []int          `json:"entriesIdx" gorm:"-"`                  // Application logic, not for DB persistence directly
+	Entries    []*Entry       `json:"-" gorm:"many2many:group_entries;"`    // GORM many2many
+	RoundsRaw  datatypes.JSON `json:"rounds" gorm:"column:rounds_json"`     // Storing [][]Match as JSON
+	Rounds     [][]Match      `json:"-" gorm:"-"`                           // For application logic, populated from RoundsRaw
 }
 
 // EntryType represents the type of tournament entry
@@ -87,9 +102,13 @@ const (
 )
 
 type Player struct {
+	ID          uint   `gorm:"primaryKey" json:"id"`
+	EntryID     uint   `json:"-"` // Foreign key to Entry
+	CategoryID  uint   `json:"-"` // Foreign key to Category (denormalized from Entry's category for easier queries if needed, matches DDL)
 	Name        string `json:"name"`
-	DateOfBirth string `json:"dateOfBirth"` // yyyy-mm-dd
-	Gender      string `json:"gender"`      // M or F
+	DateOfBirth string `json:"dateOfBirth"`                            // yyyy-mm-dd. Consider time.Time for DB.
+	Gender      string `json:"gender"`                                 // M or F
+	PlayerOrder int    `json:"playerOrder" gorm:"column:player_order"` // Added to match DDL
 }
 
 type SinglesEntry struct {
@@ -103,44 +122,55 @@ type DoublesEntry struct {
 type TeamEntry struct {
 	TeamName   string   `json:"teamName"`
 	Players    []Player `json:"players"`
-	MinPlayers int      `json:"minPlayers"`
-	MaxPlayers int      `json:"maxPlayers"`
+	MinPlayers int      `json:"minPlayers"` // These might be derived from Category
+	MaxPlayers int      `json:"maxPlayers"` // These might be derived from Category
 }
 
 // Entry represents a polymorphic tournament entry
 type Entry struct {
-	EntryType    EntryType     `json:"entryType"`
-	Seeding      *int          `json:"seeding,omitempty"`
-	Club         *string       `json:"club,omitempty"`
-	SinglesEntry *SinglesEntry `json:"singlesEntry"`
-	DoublesEntry *DoublesEntry `json:"doublesEntry"`
-	TeamEntry    *TeamEntry    `json:"teamEntry"`
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	CategoryID uint      `json:"-"` // Foreign key to Category
+	EntryType  EntryType `json:"entryType"`
+	Seeding    *int      `json:"seeding,omitempty"`
+	Club       *string   `json:"club,omitempty"`
+	TeamName   *string   `json:"teamName,omitempty" gorm:"column:team_name"`  // For Team type, matches DDL
+	Players    []Player  `json:"players,omitempty" gorm:"foreignKey:EntryID"` // Associated players
+
+	// These are for JSON unmarshalling and application logic, not direct GORM persistence for these structs.
+	SinglesEntry *SinglesEntry `json:"singlesEntry,omitempty" gorm:"-"`
+	DoublesEntry *DoublesEntry `json:"doublesEntry,omitempty" gorm:"-"`
+	TeamEntry    *TeamEntry    `json:"teamEntry,omitempty" gorm:"-"`
 }
 
 func (e Entry) Name() string {
 	switch e.EntryType {
 	case Singles:
-		if e.SinglesEntry == nil {
-			slog.Warn("singles entry is nil")
-			return ""
+		if len(e.Players) > 0 {
+			return e.Players[0].Name
 		}
-		return e.SinglesEntry.Player.Name
+		if e.SinglesEntry != nil { // Fallback for data not yet migrated to Players field
+			return e.SinglesEntry.Player.Name
+		}
+		slog.Warn("singles entry has no player name")
+		return ""
 	case Doubles:
-		if e.DoublesEntry == nil {
-			slog.Warn("doubles entry is nil")
-			return ""
+		if len(e.Players) >= 2 {
+			return fmt.Sprintf("%s / %s", e.Players[0].Name, e.Players[1].Name)
 		}
-		if e.DoublesEntry.Players[0].Name == "" || e.DoublesEntry.Players[1].Name == "" {
-			slog.Warn("doubles entry is empty")
-			return ""
+		if e.DoublesEntry != nil && e.DoublesEntry.Players[0].Name != "" && e.DoublesEntry.Players[1].Name != "" { // Fallback
+			return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
 		}
-		return fmt.Sprintf("%s / %s", e.DoublesEntry.Players[0].Name, e.DoublesEntry.Players[1].Name)
+		slog.Warn("doubles entry lacks two player names")
+		return ""
 	case Team:
-		if e.TeamEntry == nil {
-			slog.Warn("team entry is nil")
-			return ""
+		if e.TeamName != nil && *e.TeamName != "" {
+			return *e.TeamName
 		}
-		return e.TeamEntry.TeamName
+		if e.TeamEntry != nil { // Fallback
+			return e.TeamEntry.TeamName
+		}
+		slog.Warn("team entry has no team name")
+		return ""
 	default:
 		slog.Error("invalid entry type", "type", e.EntryType)
 		return ""
@@ -148,25 +178,36 @@ func (e Entry) Name() string {
 }
 
 type Match struct {
-	Entry1Idx          int                `json:"entry1Idx"`
-	Entry2Idx          int                `json:"entry2Idx"`
-	DateTime           time.Time          `json:"datetime"`
-	DurationMinutes    int                `json:"durationMinutes"`
-	Table              string             `json:"table"`
-	CategoryShortName  string             `json:"categoryShortName"`
-	GroupIdx           int                `json:"groupIdx"`
-	RoundIdx           int                `json:"roundIdx"`
-	Round              int                `json:"round"`
-	MatchIdx           int                `json:"matchIdx"`
-	Games              []Game             `json:"games"`
-	MatchesInTeamMatch []MatchInTeamMatch `json:"matchesInTeamMatch"`
+	ID                    uint               `gorm:"primaryKey" json:"id"`
+	CategoryID            uint               `json:"-"`              // Foreign key to Category
+	GroupID               *uint              `json:"-" gorm:"index"` // Belongs to Group (nullable)
+	KnockoutRoundID       *uint              `json:"-" gorm:"index"` // Belongs to KnockoutRound (nullable)
+	Entry1ID              *uint              `json:"-" gorm:"column:entry1_id"`
+	Entry2ID              *uint              `json:"-" gorm:"column:entry2_id"`
+	WinnerEntryID         *uint              `json:"-" gorm:"column:winner_entry_id"` // From DDL
+	Entry1Idx             int                `json:"entry1Idx" gorm:"-"`              // Application logic
+	Entry2Idx             int                `json:"entry2Idx" gorm:"-"`              // Application logic
+	DateTime              time.Time          `json:"datetime"`
+	DurationMinutes       int                `json:"durationMinutes"`
+	Table                 string             `json:"table" gorm:"column:table_number"` // Match DDL
+	CategoryShortName     string             `json:"categoryShortName"`
+	GroupIdx              int                `json:"groupIdx" gorm:"column:group_idx"` // Match DDL, for context
+	RoundIdx              int                `json:"roundIdx" gorm:"column:round_idx"` // Match DDL, for context in group
+	Round                 int                `json:"round" gorm:"column:round"`        // Match DDL, for knockout round number
+	MatchIdx              int                `json:"matchIdx" gorm:"column:match_idx"` // Match DDL
+	GamesRaw              datatypes.JSON     `json:"games" gorm:"column:games"`
+	MatchesInTeamMatchRaw datatypes.JSON     `json:"matchesInTeamMatch,omitempty" gorm:"column:matches_in_team_match"`
+	Games                 []Game             `json:"-" gorm:"-"`             // Application logic
+	MatchesInTeamMatch    []MatchInTeamMatch `json:"-" gorm:"-"`             // Application logic
+	Score1                *int               `json:"-" gorm:"column:score1"` // From DDL
+	Score2                *int               `json:"-" gorm:"column:score2"` // From DDL
 }
 
-type MatchInTeamMatch struct {
-	MatchNumber int
-	Games       []Game
+type MatchInTeamMatch struct { // This will be part of JSON in Match.MatchesInTeamMatchRaw
+	MatchNumber int    `json:"matchNumber"`
+	Games       []Game `json:"games"`
 }
-type Game [2]int
+type Game [2]int // This will be part of JSON in Match.GamesRaw
 
 func (match Match) Name() string {
 	if match.IsKnockout() {
@@ -184,5 +225,8 @@ func (match Match) Name() string {
 }
 
 func (match Match) IsKnockout() bool {
-	return match.GroupIdx < 0
+	// A match is knockout if GroupID is nil (or GroupIdx < 0 as per original logic)
+	// and KnockoutRoundID is not nil.
+	// The GroupIdx field is still populated from the DB for context.
+	return match.GroupID == nil || (match.GroupID != nil && *match.GroupID == 0) || match.GroupIdx < 0
 }

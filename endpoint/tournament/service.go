@@ -67,7 +67,7 @@ func (s *Service) GetTournament(c *gin.Context) {
 	}
 
 	// Call the repository to get the tournament
-	tournament, err := s.tournamentRepo.GetTournament(id)
+	tournament, err := s.tournamentRepo.GetTournament(uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

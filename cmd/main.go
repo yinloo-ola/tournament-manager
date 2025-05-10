@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"database/sql"
+	// "database/sql" // Removed
 	"log"
 	"log/slog"
 	"net/http"
@@ -19,8 +19,7 @@ import (
 	"github.com/yinloo-ola/tournament-manager/endpoint/tournament"
 	"github.com/yinloo-ola/tournament-manager/internal/repo"
 	"github.com/yinloo-ola/tournament-manager/web"
-
-	_ "github.com/glebarez/go-sqlite"
+	// _ "github.com/glebarez/go-sqlite" // Removed
 )
 
 // Repositories holds all repository instances
@@ -28,9 +27,9 @@ type Repositories struct {
 	tournamentRepo *repo.TournamentRepo
 	categoryRepo   *repo.CategoryRepo
 	entryRepo      *repo.EntryRepo
-	groupRepo     *repo.GroupRepo
-	knockoutRepo  *repo.KnockoutRepo
-	matchRepo     *repo.MatchRepo
+	groupRepo      *repo.GroupRepo
+	knockoutRepo   *repo.KnockoutRepo
+	matchRepo      *repo.MatchRepo
 }
 
 // Services holds all service instances
@@ -41,41 +40,34 @@ type Services struct {
 	tournamentSvc *tournament.Service
 }
 
-// initDatabase initializes and returns a database connection
-func initDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite", "./tournament.db")
-	if err != nil {
-		return nil, err
-	}
-
-	// Test the connection
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
 // initRepositories initializes all repositories
-func initRepositories(db *sql.DB) *Repositories {
+func initRepositories() *Repositories {
 	tournamentRepo := &repo.TournamentRepo{}
-	tournamentRepo.Initialize() // This initializes the DB connection and schema
+	if err := tournamentRepo.Initialize(); err != nil {
+		slog.Error("Failed to initialize tournament repository and database", "error", err)
+		os.Exit(1)
+	}
+
+	gormDB := tournamentRepo.DB()
+	if gormDB == nil {
+		slog.Error("Failed to get GORM DB instance from TournamentRepo")
+		os.Exit(1)
+	}
 
 	return &Repositories{
 		tournamentRepo: tournamentRepo,
-		categoryRepo:   repo.NewCategoryRepo(db),
-		entryRepo:      repo.NewEntryRepo(db),
-		groupRepo:     repo.NewGroupRepo(db),
-		knockoutRepo:  repo.NewKnockoutRepo(db),
-		matchRepo:     repo.NewMatchRepo(db),
+		categoryRepo:   repo.NewCategoryRepo(gormDB),
+		entryRepo:      repo.NewEntryRepo(gormDB),
+		groupRepo:      repo.NewGroupRepo(gormDB),
+		knockoutRepo:   repo.NewKnockoutRepo(gormDB),
+		matchRepo:      repo.NewMatchRepo(gormDB),
 	}
 }
 
 // initServices initializes all services with their dependencies
 func initServices(repos *Repositories) *Services {
 	return &Services{
-		entrySvc:      &entry.Service{},
+		entrySvc:      &entry.Service{}, // Assuming services are stateless or get DB from repos if needed
 		roundRobinSvc: &roundrobin.Service{},
 		scheduleSvc:   &schedule.Service{},
 		tournamentSvc: tournament.NewService(repos.tournamentRepo),
@@ -85,15 +77,8 @@ func initServices(repos *Repositories) *Services {
 func main() {
 	initLogger()
 
-	// Initialize database connection
-	db, err := initDatabase()
-	if err != nil {
-		slog.Error("Failed to initialize database", "error", err)
-		os.Exit(1)
-	}
-
-	// Initialize repositories
-	repos := initRepositories(db)
+	// Initialize repositories (which now includes DB initialization)
+	repos := initRepositories()
 
 	// Initialize services
 	services := initServices(repos)
@@ -107,16 +92,16 @@ func main() {
 		apiRouters.POST("/importSinglesEntry", services.entrySvc.ImportSinglesEntry)
 		apiRouters.POST("/importTeamEntry", services.entrySvc.ImportTeamEntry)
 		apiRouters.POST("/importDoublesEntry", services.entrySvc.ImportDoublesEntry)
-		
+
 		// Round robin endpoints
 		apiRouters.POST("/exportRoundRobinExcel", services.roundRobinSvc.ExportRoundRobinExcel)
-		
+
 		// Schedule endpoints
 		apiRouters.POST("/exportDraftSchedule", services.scheduleSvc.ExportDraftSchedule)
 		apiRouters.POST("/importFinalSchedule", services.scheduleSvc.ImportFinalSchedule)
 		apiRouters.POST("/generateRounds", services.scheduleSvc.GenerateRounds)
 		apiRouters.POST("/exportScoresheetWithTemplate", services.scheduleSvc.ExportScoresheetWithTemplate)
-		
+
 		// Tournament endpoints
 		apiRouters.POST("/saveTournament", services.tournamentSvc.SaveTournament)
 		apiRouters.GET("/getTournament/:id", services.tournamentSvc.GetTournament)
@@ -154,7 +139,9 @@ func main() {
 	}
 
 	slog.Info("Server exiting")
-	if err := srv.Shutdown(ctx); err != nil {
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatal("Server Shutdown:", err)
 	}
 
