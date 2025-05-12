@@ -126,7 +126,8 @@ function saveLineup() {
   // Send a deep copy of the lineup to prevent reactivity issues
   emit('save', {
     lineup: JSON.parse(JSON.stringify(lineup.value)),
-    maxPlayers: maxPlayers.value
+    maxPlayers: maxPlayers.value,
+    minPlayers: minPlayersRequired.value
   })
   emit('update:modelValue', false)
 }

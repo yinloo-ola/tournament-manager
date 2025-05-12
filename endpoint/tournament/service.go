@@ -3,15 +3,25 @@ package tournament
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yinloo-ola/tournament-manager/internal/repo"
 	"github.com/yinloo-ola/tournament-manager/model"
 )
 
+const timeLayout = "2006-01-02T15:04"
+
 // Service handles tournament-related operations
 type Service struct {
 	tournamentRepo *repo.TournamentRepo
+}
+
+type tournamentInput struct {
+	Name       string           `json:"name"`
+	NumTables  int              `json:"numTables"`
+	StartTime  string           `json:"startTime"`
+	Categories []model.Category `json:"categories"`
 }
 
 // NewService creates a new tournament service with the given repository
@@ -23,11 +33,31 @@ func NewService(repo *repo.TournamentRepo) *Service {
 
 // SaveTournament handles the API request to save a tournament to the database
 func (s *Service) SaveTournament(c *gin.Context) {
-	// Parse tournament data from request
-	var tournament model.Tournament
-	if err := c.ShouldBindJSON(&tournament); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tournament data"})
+	var input tournamentInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid tournament data",
+			"details": err.Error(),
+		})
 		return
+	}
+
+	// Parse the time string as local time (GMT+8)
+	loc, _ := time.LoadLocation("Asia/Singapore")
+	startTime, err := time.ParseInLocation(timeLayout, input.StartTime, loc)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid time format",
+			"details": "Expected format: YYYY-MM-DDTHH:MM",
+		})
+		return
+	}
+
+	tournament := model.Tournament{
+		Name:       input.Name,
+		NumTables:  input.NumTables,
+		StartTime:  startTime,
+		Categories: input.Categories,
 	}
 
 	// Validate tournament data

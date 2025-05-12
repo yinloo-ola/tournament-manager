@@ -144,13 +144,10 @@ function calculateMinPlayers() {
 }
 
 // Function to handle saving lineup data from the modal
-function saveTeamLineup(data: { lineup: LineupItem[]; maxPlayers: number }) {
+function saveTeamLineup(data: { lineup: LineupItem[]; maxPlayers: number; minPlayers: number }) {
   category.value.lineup = data.lineup
   category.value.maxPlayers = data.maxPlayers
-  // Remove minPlayers as it's now calculated from the lineup
-  if ('minPlayers' in category.value) {
-    delete category.value.minPlayers
-  }
+  category.value.minPlayers = data.minPlayers
 }
 
 let canChangePlayersPerGrp = computed(() => isGroupEmpty(category.value.groups))

@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
+	"github.com/glebarez/sqlite"
 	"github.com/yinloo-ola/tournament-manager/model"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -24,13 +23,12 @@ type TournamentRepo struct {
 // Initialize opens a connection to the SQLite database and auto-migrates the schema
 func (r *TournamentRepo) Initialize() error {
 	var err error
-	// TODO: Consider adding &gorm.Config{Logger: logger.Default.LogMode(logger.Info)} for GORM logging during development
 	r.db, err = gorm.Open(sqlite.Open("./tournament.db"), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Auto-migrate the schema
+	// Auto-migrate all tables
 	err = r.db.AutoMigrate(
 		&model.Tournament{},
 		&model.Category{},
@@ -45,7 +43,7 @@ func (r *TournamentRepo) Initialize() error {
 		return fmt.Errorf("failed to auto-migrate database schema: %w", err)
 	}
 
-	// Initialize sub-repositories with the GORM DB instance
+	// Initialize sub-repositories
 	r.categoryRepo = NewCategoryRepo(r.db)
 	r.entryRepo = NewEntryRepo(r.db)
 	r.groupRepo = NewGroupRepo(r.db)
@@ -87,7 +85,7 @@ func (r *TournamentRepo) SaveTournament(tournament model.Tournament) (uint, erro
 		dbTournament := model.Tournament{
 			Name:      tournament.Name,
 			NumTables: tournament.NumTables,
-			StartTime: time.Time(tournament.StartTime), // Convert model.Date
+			StartTime: tournament.StartTime, // Directly use the time.Time value
 		}
 
 		var existingTournament model.Tournament

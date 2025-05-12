@@ -3,6 +3,7 @@ export const EntryByeIdx = -2
 export const EntryEmptyIdx = -1
 
 export type Tournament = {
+  id: number
   name: string
   numTables: number
   startTime: string // Format: "2006-01-02T15:04"
@@ -20,6 +21,7 @@ export type LineupItem = {
 }
 
 export type Category = {
+  id: number
   name: string
   entryType: EntryType
   shortName: string

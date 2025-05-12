@@ -131,10 +131,15 @@ func (r *EntryRepo) SaveEntry(categoryID uint, entry model.Entry, txOrDb *gorm.D
 		}
 	}
 
+	// Clear ID for new entries to prevent duplicate ID errors
+	if entry.ID == 0 {
+		entry.ID = 0
+	}
+
 	// If not found or ID was 0, create a new entry
 	// GORM's Create will insert the entry and its associated Players.
 	// Ensure entry.Players have CategoryID and PlayerOrder set.
-	if err := db.Create(&entry).Error; err != nil {
+	if err := db.Save(&entry).Error; err != nil {
 		slog.Error("Failed to insert entry with GORM", "error", err, "entryName", entry.Name())
 		return 0, fmt.Errorf("failed to save entry: %w", err)
 	}

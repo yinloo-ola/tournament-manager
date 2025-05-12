@@ -34,7 +34,7 @@ func (d Date) MarshalJSON() ([]byte, error) {
 
 type Tournament struct {
 	ID         uint       `gorm:"primaryKey" json:"id"`
-	Name       string     `json:"name"`
+	Name       string     `gorm:"not null" json:"name"`
 	Categories []Category `json:"categories" gorm:"foreignKey:TournamentID"`
 	NumTables  int        `json:"numTables"`
 	StartTime  time.Time  `json:"startTime"` // Changed from Date to time.Time for GORM
