@@ -10,16 +10,6 @@ export type Tournament = {
   categories: Array<Category>
 }
 
-export type LineupItem = {
-  name: string
-  matchType: EntryType
-  genderRequirement: 'M' | 'F' | 'Mixed' | 'Any'
-  ageRequirement?: {
-    type: 'minimum' | 'maximum'
-    value: number
-  }
-}
-
 export type Category = {
   id: number
   tournamentID: number
@@ -38,18 +28,18 @@ export type Category = {
   lineup?: Array<LineupItem>
 }
 
-export type Group = {
-  id: number
-  tournamentID: number
-  categoryID: number
-  entriesIdx: number[] // Changed from entries to entriesIdx to match Go model
-  rounds: Array<Array<Match>>
+export enum EntryType {
+  Unknown = 'Unknown',
+  Singles = 'Singles',
+  Doubles = 'Doubles',
+  Team = 'Team'
 }
 
 export interface Entry {
   id: number
   tournamentID: number
   categoryID: number
+  groupID?: number
   entryType: EntryType
   name: string
   seeding?: number
@@ -61,6 +51,17 @@ export interface Entry {
   maxPlayersPerTeam?: number
 }
 
+export type Player = {
+  id: number
+  entryID?: number
+  categoryID: number
+  tournamentID: number
+  teamID?: number
+  name: string
+  dateOfBirth: string // yyyy-mm-dd
+  gender: string // M or F
+}
+
 export interface Team {
   id: number
   tournamentID: number
@@ -68,13 +69,6 @@ export interface Team {
   entryID: number
   name: string
   players: Player[]
-}
-
-export enum EntryType {
-  Unknown = 'Unknown',
-  Singles = 'Singles',
-  Doubles = 'Doubles',
-  Team = 'Team'
 }
 
 /**
@@ -91,6 +85,15 @@ export function getEntryName(entry: Entry): string {
     default:
       return '';
   }
+}
+
+export type Group = {
+  id: number
+  tournamentID: number
+  categoryID: number
+  entriesIdx: number[]
+  entries: Entry[]
+  rounds: Array<Array<Match>>
 }
 
 export type Match = {
@@ -111,8 +114,12 @@ export type KnockoutRound = {
   matches: Array<Match>
 }
 
-export type Player = {
+export type LineupItem = {
   name: string
-  dateOfBirth: string // yyyy-mm-dd
-  gender: string // M or F
+  matchType: EntryType
+  genderRequirement: 'M' | 'F' | 'Mixed' | 'Any'
+  ageRequirement?: {
+    type: 'minimum' | 'maximum'
+    value: number
+  }
 }
