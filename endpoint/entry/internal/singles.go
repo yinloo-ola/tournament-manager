@@ -48,11 +48,12 @@ func ImportSinglesEntries(ctx context.Context, xlsxReader io.Reader) ([]model.En
 		}
 
 		entry := model.Entry{
-			EntryType: model.Singles,
+			EntryType: model.EntryTypeSingles,
 			Club:      pointer.OrNil(club),
 			Seeding:   pointer.OrNil(seeding),
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
+			Name:      name,
+			Players: []*model.Player{
+				{
 					Name:        name,
 					DateOfBirth: dobStr,
 					Gender:      gender,

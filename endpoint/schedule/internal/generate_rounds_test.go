@@ -62,13 +62,13 @@ func Test_getRoundMatches(t *testing.T) {
 			},
 			want: []model.Match{
 				{
-					Entry1Idx: 0,
-					Entry2Idx: 1,
+					Entry1Idx:       0,
+					Entry2Idx:       1,
 					DurationMinutes: 30,
 				},
 				{
-					Entry1Idx: 2,
-					Entry2Idx: 3,
+					Entry1Idx:       2,
+					Entry2Idx:       3,
 					DurationMinutes: 30,
 				},
 			},
@@ -80,13 +80,13 @@ func Test_getRoundMatches(t *testing.T) {
 			},
 			want: []model.Match{
 				{
-					Entry1Idx: 0,
-					Entry2Idx: 2,
+					Entry1Idx:       0,
+					Entry2Idx:       2,
 					DurationMinutes: 30,
 				},
 				{
-					Entry1Idx: 1,
-					Entry2Idx: 3,
+					Entry1Idx:       1,
+					Entry2Idx:       3,
 					DurationMinutes: 30,
 				},
 			},
@@ -98,13 +98,13 @@ func Test_getRoundMatches(t *testing.T) {
 			},
 			want: []model.Match{
 				{
-					Entry1Idx: 0,
-					Entry2Idx: 3,
+					Entry1Idx:       0,
+					Entry2Idx:       3,
 					DurationMinutes: 30,
 				},
 				{
-					Entry1Idx: 1,
-					Entry2Idx: 2,
+					Entry1Idx:       1,
+					Entry2Idx:       2,
 					DurationMinutes: 30,
 				},
 			},
@@ -128,52 +128,34 @@ func Test_getRoundMatches(t *testing.T) {
 func Benchmark_getRoundMatches(b *testing.B) {
 	players := []model.Entry{
 		{
-
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: "A",
-				},
-			},
+			EntryType: model.EntryTypeSingles,
+			Name:      "A",
+			Players:   []*model.Player{{Name: "A"}},
 		},
 		{
-
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: "B",
-				},
-			},
+			EntryType: model.EntryTypeSingles,
+			Name:      "B",
+			Players:   []*model.Player{{Name: "B"}},
 		},
 		{
-
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: "C",
-				},
-			},
+			EntryType: model.EntryTypeSingles,
+			Name:      "C",
+			Players:   []*model.Player{{Name: "C"}},
 		},
 		{
-
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: "D",
-				},
-			},
+			EntryType: model.EntryTypeSingles,
+			Name:      "D",
+			Players:   []*model.Player{{Name: "D"}},
 		},
 		{
-
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: "E",
-				},
-			},
+			EntryType: model.EntryTypeSingles,
+			Name:      "E",
+			Players:   []*model.Player{{Name: "E"}},
 		},
 		{
-
-			SinglesEntry: &model.SinglesEntry{
-				Player: model.Player{
-					Name: "F",
-				},
-			},
+			EntryType: model.EntryTypeSingles,
+			Name:      "F",
+			Players:   []*model.Player{{Name: "F"}},
 		},
 	}
 	entriesIdx := make([]int, len(players))
@@ -213,86 +195,86 @@ func Test_generateRounds(t *testing.T) {
 			want: [][]model.Match{
 				{
 					{
-						Entry1Idx: 0,
-						Entry2Idx: 1,
+						Entry1Idx:       0,
+						Entry2Idx:       1,
 						DurationMinutes: 30,
 					},
 					{
-						Entry1Idx: 2,
-						Entry2Idx: 3,
+						Entry1Idx:       2,
+						Entry2Idx:       3,
 						DurationMinutes: 30,
 					},
 					{
-						Entry1Idx: 4,
-						Entry2Idx: 5,
-						DurationMinutes: 30,
-					},
-				},
-				{
-					{
-						Entry1Idx: 0,
-						Entry2Idx: 2,
-						DurationMinutes: 30,
-					},
-					{
-						Entry1Idx: 1,
-						Entry2Idx: 4,
-						DurationMinutes: 30,
-					},
-					{
-						Entry1Idx: 3,
-						Entry2Idx: 5,
+						Entry1Idx:       4,
+						Entry2Idx:       5,
 						DurationMinutes: 30,
 					},
 				},
 				{
 					{
-						Entry1Idx: 0,
-						Entry2Idx: 4,
+						Entry1Idx:       0,
+						Entry2Idx:       2,
 						DurationMinutes: 30,
 					},
 					{
-						Entry1Idx: 2,
-						Entry2Idx: 5,
+						Entry1Idx:       1,
+						Entry2Idx:       4,
 						DurationMinutes: 30,
 					},
 					{
-						Entry1Idx: 1,
-						Entry2Idx: 3,
-						DurationMinutes: 30,
-					},
-				},
-				{
-					{
-						Entry1Idx: 0,
-						Entry2Idx: 3,
-						DurationMinutes: 30,
-					},
-					{
-						Entry1Idx: 1,
-						Entry2Idx: 5,
-						DurationMinutes: 30,
-					},
-					{
-						Entry1Idx: 2,
-						Entry2Idx: 4,
+						Entry1Idx:       3,
+						Entry2Idx:       5,
 						DurationMinutes: 30,
 					},
 				},
 				{
 					{
-						Entry1Idx: 0,
-						Entry2Idx: 5,
+						Entry1Idx:       0,
+						Entry2Idx:       4,
 						DurationMinutes: 30,
 					},
 					{
-						Entry1Idx: 3,
-						Entry2Idx: 4,
+						Entry1Idx:       2,
+						Entry2Idx:       5,
 						DurationMinutes: 30,
 					},
 					{
-						Entry1Idx: 1,
-						Entry2Idx: 2,
+						Entry1Idx:       1,
+						Entry2Idx:       3,
+						DurationMinutes: 30,
+					},
+				},
+				{
+					{
+						Entry1Idx:       0,
+						Entry2Idx:       3,
+						DurationMinutes: 30,
+					},
+					{
+						Entry1Idx:       1,
+						Entry2Idx:       5,
+						DurationMinutes: 30,
+					},
+					{
+						Entry1Idx:       2,
+						Entry2Idx:       4,
+						DurationMinutes: 30,
+					},
+				},
+				{
+					{
+						Entry1Idx:       0,
+						Entry2Idx:       5,
+						DurationMinutes: 30,
+					},
+					{
+						Entry1Idx:       3,
+						Entry2Idx:       4,
+						DurationMinutes: 30,
+					},
+					{
+						Entry1Idx:       1,
+						Entry2Idx:       2,
 						DurationMinutes: 30,
 					},
 				},

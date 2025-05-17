@@ -306,23 +306,10 @@ func populateCategoryEntrySheets(book *excelize.File, tournament model.Tournamen
 		// Use index to get pointer to entry within the original slice
 		for entryIdx := range category.Entries {
 			entry := &category.Entries[entryIdx] // Get pointer to the actual entry
-			var players []model.Player
+			players := entry.Players
 			teamName := ""
-
-			switch entry.EntryType {
-			case model.Singles:
-				if entry.SinglesEntry != nil {
-					players = []model.Player{entry.SinglesEntry.Player}
-				}
-			case model.Doubles:
-				if entry.DoublesEntry != nil {
-					players = entry.DoublesEntry.Players[:]
-				}
-			case model.Team:
-				if entry.TeamEntry != nil {
-					players = entry.TeamEntry.Players
-					teamName = entry.TeamEntry.TeamName
-				}
+			if entry.EntryType == model.EntryTypeTeam {
+				teamName = entry.Name
 			}
 
 			for _, player := range players {
