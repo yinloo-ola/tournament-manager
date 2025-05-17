@@ -139,7 +139,7 @@ func AddMatchScoresheet(ctx context.Context, tournamentName string,
 			if strings.Contains(cellValue, "{{player1}}") {
 				player1Name := ""
 				if match.Entry1Idx >= 0 {
-					player1Name = entries[match.Entry1Idx].Name()
+					player1Name = entries[match.Entry1Idx].Name
 				}
 				cellValue = strings.ReplaceAll(cellValue, "{{player1}}", player1Name)
 				isReplaced = true
@@ -147,7 +147,7 @@ func AddMatchScoresheet(ctx context.Context, tournamentName string,
 			if strings.Contains(cellValue, "{{player2}}") {
 				player2Name := ""
 				if match.Entry2Idx >= 0 {
-					player2Name = entries[match.Entry2Idx].Name()
+					player2Name = entries[match.Entry2Idx].Name
 				}
 				cellValue = strings.ReplaceAll(cellValue, "{{player2}}", player2Name)
 				isReplaced = true
