@@ -1,5 +1,6 @@
 import { tournament } from '@/store/state'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { apiGetTournamentById } from '@/client/client'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -7,10 +8,26 @@ const router = createRouter({
     {
       path: '/tournament',
       name: 'tournament',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
       component: () => import('../views/TournamentView.vue')
+    },
+    {
+      path: '/tournament/:id',
+      name: 'tournamentDetail',
+      component: () => import('../views/TournamentView.vue'),
+      props: true,
+      beforeEnter: async (to, _, next) => {
+        try {
+          const id = to.params.id as string
+          if (id) {
+            const tournamentData = await apiGetTournamentById(id)
+            tournament.value = tournamentData
+          }
+          next()
+        } catch (err) {
+          console.error('Failed to load tournament:', err)
+          next('/tournament')
+        }
+      }
     },
     {
       path: '/tournament/matches/:shortName',

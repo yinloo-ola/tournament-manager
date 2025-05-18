@@ -37,54 +37,21 @@ export enum EntryType {
 
 export interface Entry {
   id: number
-  tournamentID: number
   categoryID: number
-  groupID?: number
   entryType: EntryType
   name: string
   seeding?: number
   club?: string
-  player1?: Player
-  player2?: Player
-  teamID?: number
+  players?: Player[]
   minPlayersPerTeam?: number
   maxPlayersPerTeam?: number
 }
 
 export type Player = {
   id: number
-  entryID?: number
-  categoryID: number
-  tournamentID: number
-  teamID?: number
   name: string
   dateOfBirth: string // yyyy-mm-dd
   gender: string // M or F
-}
-
-export interface Team {
-  id: number
-  tournamentID: number
-  categoryID: number
-  entryID: number
-  name: string
-  players: Player[]
-}
-
-/**
- * Returns the display name for an Entry based on its type and player/club/team info.
- */
-export function getEntryName(entry: Entry): string {
-  switch (entry.entryType) {
-    case EntryType.Singles:
-      return entry.player1?.name || '';
-    case EntryType.Doubles:
-      return [entry.player1?.name, entry.player2?.name].filter(Boolean).join(' / ');
-    case EntryType.Team:
-      return entry.club || `Team ${entry.teamID}`;
-    default:
-      return '';
-  }
 }
 
 export type Group = {
@@ -92,7 +59,6 @@ export type Group = {
   tournamentID: number
   categoryID: number
   entriesIdx: number[]
-  entries: Entry[]
   rounds: Array<Array<Match>>
 }
 

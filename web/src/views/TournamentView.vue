@@ -6,7 +6,7 @@ import TournamentDraw from '../components/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import { type Group, type KnockoutRound, type Tournament, Entry, EntryType } from '@/types/types'
+import { type Group, type KnockoutRound, type Tournament, type Entry, EntryType } from '@/types/types'
 import {
   dateInYyyyMmDdHhMmSs,
   exportTournamentJson,
@@ -26,6 +26,8 @@ import { tournament } from '@/store/state'
 
 function addCategory() {
   tournament.value.categories.push({
+    id: 0,
+    tournamentID: 0,
     name: '',
     entryType: EntryType.Singles,
     shortName: '',
@@ -76,8 +78,7 @@ function repopulateGroups(categoryIdx: number) {
 
 function playersImported(categoryIdx: number, players: Entry[]) {
   players = players.map((player, i) => {
-    const entry = Entry.from(player)
-    entry.grpIdx = i
+    const entry = player
     return entry
   })
   clearGroup(categoryIdx)
@@ -305,11 +306,9 @@ function updateGroups(groups: Group[]) {
         Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
       </div>
       <div class="px-3 py-2">
-        <DropdownMenu
-          buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white
+        <DropdownMenu buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white
           transition-all duration-200
-          hover:cursor-pointer active:scale-90"
-        >
+          hover:cursor-pointer active:scale-90">
           <MenuItem label="SAVE" @click="exportTournament()" />
           <MenuItem label="SAVE TO DB" @click="saveTournamentToDatabase()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
@@ -317,68 +316,31 @@ function updateGroups(groups: Group[]) {
           <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />
           <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
           <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
-          <MenuItem
-            label="EXPORT SCORESHEET WITH TEMPLATE"
-            wide
-            @click="exportScoresheetWithTemplateFile?.click()"
-          />
+          <MenuItem label="EXPORT SCORESHEET WITH TEMPLATE" wide @click="exportScoresheetWithTemplateFile?.click()" />
         </DropdownMenu>
       </div>
     </header>
-    <input
-      type="file"
-      name=""
-      id=""
-      ref="tournamentFile"
-      @change="onTournamentFileSelected"
-      accept=".json"
-      class="hidden"
-    />
-    <input
-      type="file"
-      ref="exportScoresheetWithTemplateFile"
-      @change="exportScoresheetWithTemplateSelected"
-      accept=".xlsx"
-      class="hidden"
-    />
-    <input
-      type="file"
-      name="finalScheduleFile"
-      id="finalScheduleFile"
-      class="hidden"
-      ref="finalScheduleFile"
-      accept=".xlsx"
-      @change="finalScheduleFileSelected"
-    />
+    <input type="file" name="" id="" ref="tournamentFile" @change="onTournamentFileSelected" accept=".json"
+      class="hidden" />
+    <input type="file" ref="exportScoresheetWithTemplateFile" @change="exportScoresheetWithTemplateSelected"
+      accept=".xlsx" class="hidden" />
+    <input type="file" name="finalScheduleFile" id="finalScheduleFile" class="hidden" ref="finalScheduleFile"
+      accept=".xlsx" @change="finalScheduleFileSelected" />
     <div class="flex flex-col pb-4">
       <div class="flex flex-col gap-3 p-4">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
       </div>
 
-      <div
-        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
-      >
+      <div class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4">
         <template v-for="(category, i) in tournament.categories" :key="i">
-          <CategoryCard
-            v-model="tournament.categories[i]"
-            @remove="tournament.categories.splice(i, 1)"
-            @players-imported="(players) => playersImported(i, players)"
-            @startDraw="startDraw(i)"
-            @error="showAlert"
-            @player-count-changed="clearGroup(i)"
-          ></CategoryCard>
+          <CategoryCard v-model="tournament.categories[i]" @remove="tournament.categories.splice(i, 1)"
+            @players-imported="(players) => playersImported(i, players)" @startDraw="startDraw(i)" @error="showAlert"
+            @player-count-changed="clearGroup(i)"></CategoryCard>
         </template>
       </div>
     </div>
-    <ModalDialog
-      v-model="showDrawModal"
-      content-class="bg-blue-200 max-h-[95vh] max-w-[95vw] min-w-4/5"
-    >
-      <TournamentDraw
-        v-if="drawIndex >= 0"
-        :category="tournament.categories[drawIndex]"
-        @groups-updated="updateGroups"
-      >
+    <ModalDialog v-model="showDrawModal" content-class="bg-blue-200 max-h-[95vh] max-w-[95vw] min-w-4/5">
+      <TournamentDraw v-if="drawIndex >= 0" :category="tournament.categories[drawIndex]" @groups-updated="updateGroups">
       </TournamentDraw>
     </ModalDialog>
   </main>

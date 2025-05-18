@@ -1,12 +1,14 @@
 package repo
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 
 	"github.com/glebarez/sqlite"
 	"github.com/yinloo-ola/tournament-manager/model"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -78,6 +80,13 @@ func (r *TournamentRepo) SaveTournament(tournament model.Tournament) (uint, erro
 		}
 	}
 
+	for i := range tournament.Categories {
+		for j := range tournament.Categories[i].Groups {
+			entriesIdxBytes, _ := json.Marshal(tournament.Categories[i].Groups[j].EntriesIdx)
+			tournament.Categories[i].Groups[j].EntriesIdxRaw = datatypes.JSON(entriesIdxBytes)
+		}
+	}
+
 	result := r.db.Create(&tournament)
 	if result.Error != nil {
 		slog.Error("Failed to create tournament", "error", result.Error)
@@ -95,14 +104,13 @@ func (r *TournamentRepo) GetTournament(id uint) (*model.Tournament, error) {
 	// team details (including players within teams) for entries,
 	// groups within categories (including their entries and matches),
 	// and knockout rounds within categories (including their matches).
-	dbQuery := r.db.Model(&model.Tournament{}).
+	// Use a Session with FullSaveAssociations to ensure all associations are loaded
+	dbQuery := r.db.Session(&gorm.Session{FullSaveAssociations: true}).Model(&model.Tournament{}).
 		Preload("Categories").
 		Preload("Categories.Entries").
-		Preload("Categories.Entries.Players").      // For Singles, Doubles, and Team entries
+		Preload("Categories.Entries.Players"). // For Singles, Doubles, and Team entries
 		Preload("Categories.Groups").
-		Preload("Categories.Groups.Entries").       // Entries participating in a group
-		Preload("Categories.Groups.Entries.Players"). // Preload players for entries within groups
-		Preload("Categories.Groups.Matches").       // Matches within a group
+		Preload("Categories.Groups.Matches"). // Matches within a group
 		Preload("Categories.KnockoutRounds").
 		Preload("Categories.KnockoutRounds.Matches") // Matches within a knockout round
 
@@ -112,5 +120,14 @@ func (r *TournamentRepo) GetTournament(id uint) (*model.Tournament, error) {
 		}
 		return nil, err // Return actual error for other DB issues
 	}
+
+	for i := range tournament.Categories {
+		for j := range tournament.Categories[i].Groups {
+			if err := json.Unmarshal(tournament.Categories[i].Groups[j].EntriesIdxRaw, &tournament.Categories[i].Groups[j].EntriesIdx); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal entriesIdxRaw: %w", err)
+			}
+		}
+	}
+
 	return &tournament, nil
 }

@@ -61,16 +61,16 @@ func (r *GroupRepo) GetGroupsByCategoryID(categoryID uint) ([]model.Group, error
 	}
 
 	for i := range groups {
-		groups[i].EntriesIdx = make([]int, len(groups[i].Entries))
-		for j, entry := range groups[i].Entries {
-			if originalIndex, ok := entryIDToOriginalIndex[entry.ID]; ok {
+		groups[i].EntriesIdx = make([]int, len(groups[i].EntriesIdx))
+		for j, entryIdx := range groups[i].EntriesIdx {
+			if originalIndex, ok := entryIDToOriginalIndex[uint(entryIdx)]; ok {
 				groups[i].EntriesIdx[j] = originalIndex
 			} else {
 				// This case means an entry associated with a group via group_entries
 				// was not found in the category's main list of entries when ordered by ID.
 				// This could indicate a data integrity issue or a flaw in the indexing logic.
 				groups[i].EntriesIdx[j] = model.EntryEmptyIdx // Fallback
-				slog.Warn("Entry from group not found in category's master entry list", "groupID", groups[i].ID, "entryID", entry.ID, "categoryID", categoryID)
+				slog.Warn("Entry from group not found in category's master entry list", "groupID", groups[i].ID, "entryIdx", entryIdx, "categoryID", categoryID)
 			}
 		}
 		// The groups[i].Rounds field is intentionally not populated here by GroupRepo.
@@ -104,13 +104,13 @@ func (r *GroupRepo) GetGroupByID(groupID uint) (*model.Group, error) {
 	for i, e := range categoryEntries {
 		entryIDToOriginalIndex[e.ID] = i
 	}
-	group.EntriesIdx = make([]int, len(group.Entries))
-	for j, entry := range group.Entries {
-		if originalIndex, ok := entryIDToOriginalIndex[entry.ID]; ok {
+	group.EntriesIdx = make([]int, len(group.EntriesIdx))
+	for j, entryIdx := range group.EntriesIdx {
+		if originalIndex, ok := entryIDToOriginalIndex[uint(entryIdx)]; ok {
 			group.EntriesIdx[j] = originalIndex
 		} else {
 			group.EntriesIdx[j] = model.EntryEmptyIdx
-			slog.Warn("Entry from group not found in category's master entry list during GetGroupByID", "groupID", group.ID, "entryID", entry.ID, "categoryID", group.CategoryID)
+			slog.Warn("Entry from group not found in category's master entry list during GetGroupByID", "groupID", group.ID, "entryIdx", entryIdx, "categoryID", group.CategoryID)
 		}
 	}
 

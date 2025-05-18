@@ -8,6 +8,8 @@ export const tournament = ref<Tournament>({
   startTime: getDateStringFromNow(7, 9),
   categories: [
     {
+      id: 0,
+      tournamentID: 0,
       name: '',
       entryType: EntryType.Singles,
       shortName: '',
@@ -19,5 +21,6 @@ export const tournament = ref<Tournament>({
       knockoutRounds: [],
       numQualifiedPerGroup: 0
     }
-  ]
+  ],
+  id: 0
 })

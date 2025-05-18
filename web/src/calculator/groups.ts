@@ -1,4 +1,4 @@
-import { type Group, Entry, EntryType, EntryEmptyIdx } from '@/types/types'
+import { type Group, type Entry, EntryType, EntryEmptyIdx } from '@/types/types'
 
 export function calculatorGroups(
   playersCount: number,
@@ -41,8 +41,11 @@ export function removePlayerFromAllGroups(groups: Array<Group>, entryIdx: number
 
 export function getGroup(numPlayers: number): Group {
   const group: Group = {
-    rounds: [],
-    entriesIdx: []
+    id: 0,
+    tournamentID: 0,
+    categoryID: 0,
+    entriesIdx: [],
+    rounds: []
   }
   const entriesIdx: number[] = []
   for (let j = 0; j < numPlayers; j++) {
@@ -54,7 +57,12 @@ export function getGroup(numPlayers: number): Group {
 }
 
 export function getEmptyPlayer(entryType: EntryType): Entry {
-  return new Entry(entryType)
+  return {
+    entryType,
+    id: EntryEmptyIdx,
+    categoryID: 0,
+    name: '',
+  }
 }
 
 export function isPlayerChosen(entryIdx: number, groups: Array<Group>): boolean {

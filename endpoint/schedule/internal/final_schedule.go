@@ -79,7 +79,7 @@ func ImportFinalSchedule(ctx context.Context, tournamentXlsxReader io.Reader) (m
 				slog.WarnContext(ctx, "getMatchFromCellAddr failed", slog.Any("cellAddr", cellAddr), slog.Any("err", err))
 				continue
 			}
-			match.DateTime = datetime
+			match.DateTime = model.Date{Time: datetime}
 			match.Table = table
 			matches = append(matches, match)
 		}

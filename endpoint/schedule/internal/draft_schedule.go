@@ -211,7 +211,7 @@ func populateTournamentInfoSheet(book *excelize.File, tournament model.Tournamen
 	book.SetCellInt(tournamentInfoSheetName, currentCell(row, 'B'), tournament.NumTables)
 	row++
 	book.SetCellStr(tournamentInfoSheetName, currentCell(row, 'A'), "Start Time")
-	book.SetCellValue(tournamentInfoSheetName, currentCell(row, 'B'), time.Time(tournament.StartTime))
+	book.SetCellValue(tournamentInfoSheetName, currentCell(row, 'B'), tournament.StartTime.Time)
 	dtStyleID, err := getDateTimeStyle(book) // Reuse date/time style
 	if err != nil {
 		return fmt.Errorf("fail to get date time style for info sheet: %w", err)
@@ -470,9 +470,9 @@ func getDateTimeStyle(book *excelize.File) (int, error) {
 
 func scheduleMatches(tournament model.Tournament) (model.Schedule, error) {
 	schedule := model.Schedule{
-		StartTime: time.Time(tournament.StartTime),
+		StartTime: tournament.StartTime.Time,
 	}
-	nextStartTime := time.Time(tournament.StartTime)
+	nextStartTime := tournament.StartTime.Time
 
 	// Schedule Group Stage
 	for catIdx := range tournament.Categories {
@@ -523,7 +523,7 @@ func getSlotsForCategoryKnockout(category model.Category, numOfTable int, startT
 			slots[slotIdx].Tables[tableIdx] = &model.Match{
 				Entry1Idx:         match.Entry1Idx,
 				Entry2Idx:         match.Entry2Idx,
-				DateTime:          matchStartTime,
+				DateTime:          model.Date{Time: matchStartTime},
 				DurationMinutes:   category.DurationMinutes,
 				Table:             fmt.Sprintf("T%d", tableIdx+1),
 				CategoryShortName: category.ShortName,
@@ -569,7 +569,7 @@ func getSlotsForCategoryGroup(category model.Category, numOfTable int, startTime
 					Entry1Idx:         match.Entry1Idx,
 					Entry2Idx:         match.Entry2Idx,
 					DurationMinutes:   category.DurationMinutes,
-					DateTime:          matchStartTime,
+					DateTime:          model.Date{Time: matchStartTime},
 					Table:             fmt.Sprintf("T%d", tableIdx+1),
 					CategoryShortName: category.ShortName,
 					GroupIdx:          g,

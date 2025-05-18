@@ -67,9 +67,9 @@ func TestSaveAndGetTournament(t *testing.T) {
 	entryTeamAlpha := model.Entry{Name: "Team Alpha", EntryType: model.EntryTypeTeam, Players: []*model.Player{&teamAlphaPlayer1, &teamAlphaPlayer2}}
 	entryTeamBeta := model.Entry{Name: "Team Beta", EntryType: model.EntryTypeTeam, Players: []*model.Player{&teamBetaPlayer1, &teamBetaPlayer2}}
 
-	group1Match1Time := time.Now().Add(time.Hour * 24)
-	group1Match2Time := time.Now().Add(time.Hour * 25)
-	koMatchTime := time.Now().Add(time.Hour * 48)
+	group1Match1Time := model.Date{Time: time.Now().Add(time.Hour * 24)}
+	group1Match2Time := model.Date{Time: time.Now().Add(time.Hour * 25)}
+	koMatchTime := model.Date{Time: time.Now().Add(time.Hour * 48)}
 
 	msCategory := model.Category{
 		Name:      "Men's Singles Detailed",
@@ -78,7 +78,7 @@ func TestSaveAndGetTournament(t *testing.T) {
 		Entries:   []model.Entry{entryMS1, entryMS2, entryMS3},
 		Groups: []model.Group{
 			{
-				Entries: []model.Entry{entryMS1, entryMS2}, // Group containing subset of category entries
+				EntriesIdx: []int{0, 1}, // Group containing subset of category entries
 				Matches: []model.Match{
 					{Table: "1", DateTime: group1Match1Time, DurationMinutes: 60},
 					{Table: "2", DateTime: group1Match2Time, DurationMinutes: 60},
@@ -119,7 +119,7 @@ func TestSaveAndGetTournament(t *testing.T) {
 	tournamentToSave := model.Tournament{
 		Name:       "Fully Recursive Test Tournament",
 		NumTables:  15,
-		StartTime:  time.Now(),
+		StartTime:  model.Date{Time: time.Now()},
 		Categories: []model.Category{msCategory, wdCategory, teamCategory, emptyCategory},
 	}
 
@@ -135,7 +135,7 @@ func TestSaveAndGetTournament(t *testing.T) {
 		assert.Equal(t, savedID, retrievedTournament.ID)
 		assert.Equal(t, tournamentToSave.Name, retrievedTournament.Name)
 		assert.Equal(t, tournamentToSave.NumTables, retrievedTournament.NumTables)
-		assert.WithinDuration(t, tournamentToSave.StartTime, retrievedTournament.StartTime, time.Second)
+		assert.WithinDuration(t, tournamentToSave.StartTime.Time, retrievedTournament.StartTime.Time, time.Second)
 		assert.Len(t, retrievedTournament.Categories, 4, "Should have 4 categories")
 
 		// Helper function to find a player by name in a slice of players
@@ -160,14 +160,14 @@ func TestSaveAndGetTournament(t *testing.T) {
 		// Groups in MS Category
 		assert.Len(t, retrievedMSCategory.Groups, 1, "MS category should have 1 group")
 		msGroup1 := retrievedMSCategory.Groups[0]
-		assert.Len(t, msGroup1.Entries, 2, "MS Group 1 should have 2 entries")
+		assert.Len(t, msGroup1.EntriesIdx, 2, "MS Group 1 should have 2 entries")
 		// Check players for entries in groups
-		assert.True(t, hasPlayer(msGroup1.Entries[0].Players, playerMS1.Name), "Group entry 1 missing playerMS1")
-		assert.True(t, hasPlayer(msGroup1.Entries[1].Players, playerMS2.Name), "Group entry 2 missing playerMS2")
+		assert.True(t, hasPlayer(retrievedMSCategory.Entries[msGroup1.EntriesIdx[0]].Players, playerMS1.Name), "Group entry 1 missing playerMS1")
+		assert.True(t, hasPlayer(retrievedMSCategory.Entries[msGroup1.EntriesIdx[1]].Players, playerMS2.Name), "Group entry 2 missing playerMS2")
 
 		assert.Len(t, msGroup1.Matches, 2, "MS Group 1 should have 2 matches")
 		assert.Equal(t, "1", msGroup1.Matches[0].Table)
-		assert.WithinDuration(t, group1Match1Time, msGroup1.Matches[0].DateTime, time.Second)
+		assert.WithinDuration(t, group1Match1Time.Time, msGroup1.Matches[0].DateTime.Time, time.Second)
 
 		// Knockout Rounds in MS Category
 		assert.Len(t, retrievedMSCategory.KnockoutRounds, 1, "MS category should have 1 knockout round")
@@ -175,7 +175,7 @@ func TestSaveAndGetTournament(t *testing.T) {
 		assert.Equal(t, 1, msKORound1.Round)
 		assert.Len(t, msKORound1.Matches, 1, "MS KO Round 1 should have 1 match")
 		assert.Equal(t, "Center Court", msKORound1.Matches[0].Table)
-		assert.WithinDuration(t, koMatchTime, msKORound1.Matches[0].DateTime, time.Second)
+		assert.WithinDuration(t, koMatchTime.Time, msKORound1.Matches[0].DateTime.Time, time.Second)
 
 		// --- Assertions for Women's Doubles Category (wdCategory) ---
 		retrievedWDCategory := retrievedTournament.Categories[1]

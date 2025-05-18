@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"strings"
 	"time"
@@ -12,7 +13,26 @@ const EntryByeIdx = -2
 const EntryEmptyIdx = -1
 
 // Date custom type for JSON marshalling, GORM will use time.Time for Tournament.StartTime
-type Date time.Time
+type Date struct {
+	time.Time
+}
+
+func (d Date) Value() (driver.Value, error) {
+	return d.Time, nil
+}
+
+func (d *Date) Scan(value interface{}) error {
+	if value == nil {
+		d.Time = time.Time{}
+		return nil
+	}
+	t, ok := value.(time.Time)
+	if !ok {
+		return fmt.Errorf("type assertion failed: %T", value)
+	}
+	d.Time = t
+	return nil
+}
 
 func (d *Date) UnmarshalJSON(b []byte) error {
 	value := strings.Trim(string(b), `"`) // get rid of "
@@ -23,25 +43,25 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	*d = Date(t) // set result using the pointer
+	*d = Date{Time: t}
 	return nil
 }
 
 func (d Date) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + time.Time(d).Format("2006-01-02T15:04") + `"`), nil
+	return []byte(`"` + d.Time.Format("2006-01-02T15:04") + `"`), nil
 }
 
 type Tournament struct {
-	ID         uint       `gorm:"primaryKey" json:"id"`
+	ID         uint       `gorm:"primaryKey" json:"id,omitzero"`
 	Name       string     `gorm:"not null" json:"name"`
 	Categories []Category `json:"categories" gorm:"foreignKey:TournamentID"`
 	NumTables  int        `json:"numTables"`
-	StartTime  time.Time  `json:"startTime"` // Changed from Date to time.Time for GORM
+	StartTime  Date       `json:"startTime"`
 }
 
 type Category struct {
-	ID                     uint            `gorm:"primaryKey" json:"id"`
-	TournamentID           uint            `json:"tournamentID"` // Foreign key to Tournament
+	ID                     uint            `gorm:"primaryKey" json:"id,omitzero"`
+	TournamentID           uint            `json:"tournamentID,omitzero"` // Foreign key to Tournament
 	Name                   string          `json:"name"`
 	EntryType              EntryType       `json:"entryType"`
 	ShortName              string          `json:"shortName"`
@@ -69,54 +89,46 @@ const (
 
 // Entry represents a polymorphic tournament entry
 type Entry struct {
-	ID                uint      `gorm:"primaryKey" json:"id"`
-	CategoryID        uint      `json:"categoryID"`   // Foreign key to Category
-	TournamentID      uint      `json:"tournamentID"` // Foreign key to Tournament
-	GroupID           *uint     `json:"groupID"`      // Belongs to Group (nullable)
+	ID                uint      `gorm:"primaryKey" json:"id,omitzero"`
+	CategoryID        uint      `json:"categoryID,omitzero"` // Foreign key to Category
 	EntryType         EntryType `json:"entryType"`
-	Name              string    `json:"name"`         // Player name for singles, "P1/P2" or conventional name for doubles, Team Name for teams
+	Name              string    `json:"name"` // Player name for singles, "P1/P2" or conventional name for doubles, Team Name for teams
 	Seeding           *int      `json:"seeding,omitempty"`
 	Club              *string   `json:"club,omitempty"`
-	Players           []*Player `gorm:"many2many:entry_players;" json:"players,omitempty"` // Holds 1 for singles, 2 for doubles, N for teams
+	Players           []*Player `json:"players,omitempty"`           // Holds 1 for singles, 2 for doubles, N for teams
 	MinPlayersPerTeam *int      `json:"minPlayersPerTeam,omitempty"` // Relevant for EntryTypeTeam
 	MaxPlayersPerTeam *int      `json:"maxPlayersPerTeam,omitempty"` // Relevant for EntryTypeTeam
 }
 
 type Player struct {
-	ID           uint   `gorm:"primaryKey" json:"id"`
-	// EntryID removed
-	// TeamMembershipID removed
-	CategoryID   uint   `json:"categoryID"`   // Retained: may be used for player's general category affiliation if needed outside of specific entry/team context. Evaluate if truly needed.
-	TournamentID uint   `json:"tournamentID"` // Retained: may be used for player's general tournament affiliation. Evaluate if truly needed.
-	Name         string `json:"name"`
-	DateOfBirth  string `json:"dateOfBirth"`                            // yyyy-mm-dd. Consider time.Time for DB.
-	Gender       string `json:"gender"`                                 // M or F
-	PlayerOrder  int    `json:"playerOrder" gorm:"column:player_order"` // May represent jersey number or preferred order if applicable.
+	ID          uint   `gorm:"primaryKey" json:"id,omitzero"`
+	EntryID     uint   `json:"entryID,omitzero"`
+	Name        string `json:"name"`
+	DateOfBirth string `json:"dateOfBirth"` // yyyy-mm-dd.
+	Gender      string `json:"gender"`      // M or F
 }
 
-
-
 type Group struct {
-	ID           uint      `gorm:"primaryKey" json:"id"`
-	TournamentID uint      `json:"tournamentID"` // Foreign key to Tournament
-	CategoryID   uint      `json:"categoryID"`
-	EntriesIdx   []int     `json:"entriesIdx" gorm:"-"` // Application logic
-	Entries      []Entry   `json:"entries" gorm:"foreignKey:GroupID"`
-	Matches      []Match   `json:"matches,omitempty" gorm:"foreignKey:GroupID"` // Matches belonging to this group
-	Rounds       [][]Match `json:"rounds" gorm:"-"` // Now serialized to JSON for frontend
+	ID            uint           `gorm:"primaryKey" json:"id,omitzero"`
+	TournamentID  uint           `json:"tournamentID,omitzero"` // Foreign key to Tournament
+	CategoryID    uint           `json:"categoryID,omitzero"`
+	EntriesIdx    []int          `json:"entriesIdx" gorm:"-"`
+	EntriesIdxRaw datatypes.JSON `json:"-" gorm:"type:integer[]"`
+	Matches       []Match        `json:"matches,omitempty" gorm:"foreignKey:GroupID"` // Matches belonging to this group
+	Rounds        [][]Match      `json:"rounds"`
 } // For application logic, populated from RoundsRaw
 
 type Match struct {
-	ID                    uint               `gorm:"primaryKey" json:"id"`
-	CategoryID            uint               `json:"categoryID"`
-	GroupID               *uint              `json:"groupID" gorm:"index"`
-	KnockoutRoundID       *uint              `json:"knockoutRoundID,omitempty" gorm:"index"`
-	Entry1ID              *uint              `json:"entry1ID,omitempty" gorm:"column:entry1_id"`
-	Entry2ID              *uint              `json:"entry2ID,omitempty" gorm:"column:entry2_id"`
-	WinnerEntryID         *uint              `json:"winnerEntryID,omitempty" gorm:"column:winner_entry_id"`
+	ID                    uint               `gorm:"primaryKey" json:"id,omitzero"`
+	CategoryID            uint               `json:"categoryID,omitzero"`
+	GroupID               *uint              `json:"groupID,omitzero" gorm:"index"`
+	KnockoutRoundID       *uint              `json:"knockoutRoundID,omitempty,omitzero" gorm:"index"`
+	Entry1ID              *uint              `json:"entry1ID,omitempty,omitzero" gorm:"column:entry1_id"`
+	Entry2ID              *uint              `json:"entry2ID,omitempty,omitzero" gorm:"column:entry2_id"`
+	WinnerEntryID         *uint              `json:"winnerEntryID,omitempty,omitzero" gorm:"column:winner_entry_id"`
 	Entry1Idx             int                `json:"entry1Idx" gorm:"-"` // Application logic
 	Entry2Idx             int                `json:"entry2Idx" gorm:"-"` // Application logic
-	DateTime              time.Time          `json:"datetime"`
+	DateTime              Date               `json:"datetime"`
 	DurationMinutes       int                `json:"durationMinutes"`
 	Table                 string             `json:"table" gorm:"column:table_number"` // Match DDL
 	CategoryShortName     string             `json:"categoryShortName,omitempty"`
@@ -155,8 +167,8 @@ func (match Match) Name() string {
 }
 
 type KnockoutRound struct {
-	ID         uint    `gorm:"primaryKey" json:"id"`
-	CategoryID uint    `json:"categoryID"`                       // Foreign key to Category
+	ID         uint    `gorm:"primaryKey" json:"id,omitzero"`
+	CategoryID uint    `json:"categoryID,omitzero"`              // Foreign key to Category
 	Round      int     `json:"round" gorm:"column:round_number"` // Match DDL
 	Matches    []Match `json:"matches" gorm:"foreignKey:KnockoutRoundID"`
 }
@@ -177,7 +189,7 @@ type AgeRequirement struct {
 
 // LineupItem defines a match in a team competition with specific requirements
 type LineupItem struct {
-	ID                uint           `gorm:"primaryKey" json:"id"`
+	ID                uint           `gorm:"primaryKey" json:"id,omitzero"`
 	CategoryID        uint           `json:"-"` // Foreign key to Category
 	Name              string         `json:"name"`
 	MatchType         EntryType      `json:"matchType"`                // Singles or Doubles

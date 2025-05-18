@@ -56,7 +56,7 @@ func (s *Service) SaveTournament(c *gin.Context) {
 	tournament := model.Tournament{
 		Name:       input.Name,
 		NumTables:  input.NumTables,
-		StartTime:  startTime,
+		StartTime:  model.Date{Time: startTime},
 		Categories: input.Categories,
 	}
 

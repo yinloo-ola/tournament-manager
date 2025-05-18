@@ -196,6 +196,24 @@ export async function apiSaveTournamentToDatabase(tournament: Tournament) {
   })
 }
 
+export async function apiGetTournamentById(id: string) {
+  return fetch(`/api/getTournament/${id}`, {
+    headers: {
+      Accept: 'application/json'
+    },
+    method: 'GET'
+  }).then(function (res) {
+    if (!res.ok) {
+      return res.text().then((text) => {
+        throw new Error(
+          `Failed to get tournament: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
+        )
+      })
+    }
+    return res.json()
+  })
+}
+
 function validTournament(tournament: Tournament) {
   const nameMap: { [key: string]: boolean } = {}
   const shortFormMap: { [key: string]: boolean } = {}
