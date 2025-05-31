@@ -3,10 +3,12 @@ package model
 import (
 	"database/sql/driver"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 const EntryByeIdx = -2
@@ -18,6 +20,9 @@ type Date struct {
 }
 
 func (d Date) Value() (driver.Value, error) {
+	if d.Time.IsZero() {
+		return nil, nil
+	}
 	return d.Time, nil
 }
 
@@ -77,6 +82,14 @@ type Category struct {
 	Lineup                 []LineupItem    `json:"lineup,omitempty" gorm:"foreignKey:CategoryID"`
 }
 
+func (c *Category) BeforeSave(tx *gorm.DB) error {
+	for i, group := range c.Groups {
+		group.GroupIdx = uint(i)
+		c.Groups[i] = group
+	}
+	return nil
+}
+
 // EntryType represents the type of tournament entry
 type EntryType string
 
@@ -109,61 +122,236 @@ type Player struct {
 }
 
 type Group struct {
-	ID            uint           `gorm:"primaryKey" json:"id,omitzero"`
-	TournamentID  uint           `json:"tournamentID,omitzero"` // Foreign key to Tournament
-	CategoryID    uint           `json:"categoryID,omitzero"`
-	EntriesIdx    []int          `json:"entriesIdx" gorm:"-"`
-	EntriesIdxRaw datatypes.JSON `json:"-" gorm:"type:integer[]"`
-	Matches       []Match        `json:"matches,omitempty" gorm:"foreignKey:GroupID"` // Matches belonging to this group
-	Rounds        [][]Match      `json:"rounds"`
-} // For application logic, populated from RoundsRaw
+	ID           uint            `gorm:"primaryKey" json:"id,omitzero"`
+	GroupIdx     uint            `json:"groupIdx"`
+	TournamentID uint            `json:"tournamentID,omitzero"` // Foreign key to Tournament
+	CategoryID   uint            `json:"categoryID,omitzero"`
+	EntriesIdx   []int           `json:"entriesIdx" gorm:"serializer:json"`
+	Matches      []Match         `json:"matches,omitempty" gorm:"foreignKey:GroupID"` // Matches belonging to this group
+	Rounds       [][]Match       `json:"rounds" gorm:"-"`                             // Rounds are populated from the Matches slice
+	TeamRounds   [][]TeamMatches `json:"teamRounds" gorm:"-"`                         // Team rounds are populated from the Matches slice
+}
+
+// BeforeSave GORM hook for Group
+// This hook populates the Matches slice from Rounds or TeamRounds before saving to DB.
+func (g *Group) BeforeSave(tx *gorm.DB) error {
+	g.Matches = nil
+	if len(g.Rounds) > 0 {
+		for roundIdx, round := range g.Rounds {
+			for _, match := range round {
+				m := match
+				// Set round and match indices
+				if m.GroupRoundIdx == nil {
+					val := uint(roundIdx)
+					m.GroupRoundIdx = &val
+				}
+				if m.GroupIdx == nil {
+					val := uint(g.GroupIdx)
+					m.GroupIdx = &val
+				}
+				if m.GroupID == nil {
+					val := uint(g.ID)
+					m.GroupID = &val
+				}
+				m.LineupIdx = nil // singles/doubles rounds do not use LineupIdx
+				g.Matches = append(g.Matches, m)
+			}
+		}
+	} else if len(g.TeamRounds) > 0 {
+		for roundIdx, teamRound := range g.TeamRounds {
+			for teamMatchIdx, teamMatch := range teamRound {
+				if teamMatch.GroupRoundIdx == nil {
+					val := uint(roundIdx)
+					teamMatch.GroupRoundIdx = &val
+				}
+				if teamMatch.GroupIdx == nil {
+					val := uint(teamMatchIdx)
+					teamMatch.GroupIdx = &val
+				}
+				if teamMatch.GroupID == nil {
+					val := uint(g.ID)
+					teamMatch.GroupID = &val
+				}
+				for lineupIdx, match := range teamMatch.Matches {
+					m := match
+					// Set indices for team event
+					if m.GroupRoundIdx == nil {
+						val := uint(roundIdx)
+						m.GroupRoundIdx = &val
+					}
+					if m.GroupIdx == nil {
+						val := uint(teamMatchIdx)
+						m.GroupIdx = &val
+					}
+					if m.GroupID == nil {
+						val := uint(g.ID)
+						m.GroupID = &val
+					}
+					val := uint(lineupIdx)
+					m.LineupIdx = &val
+					// Copy team info
+					m.Entry1Idx = teamMatch.Entry1Idx
+					m.Entry2Idx = teamMatch.Entry2Idx
+					m.CategoryID = teamMatch.CategoryID
+					m.CategoryShortName = teamMatch.CategoryShortName
+					g.Matches = append(g.Matches, m)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// AfterFind GORM hook for Group
+// This hook reconstructs Rounds or TeamRounds from the Matches slice after fetching from DB.
+func (g *Group) AfterFind(tx *gorm.DB) error {
+	g.Rounds = nil
+	g.TeamRounds = nil
+	if len(g.Matches) == 0 {
+		return nil
+	}
+	isTeam := false
+	for _, m := range g.Matches {
+		if m.LineupIdx != nil {
+			isTeam = true
+			break
+		}
+	}
+	if isTeam {
+		// Reconstruct TeamRounds
+		teamRoundsMap := make(map[uint]map[uint][]Match) // roundIdx -> teamMatchIdx -> []Match
+		teamMeta := make(map[string]TeamMatches)         // key: roundIdx|teamMatchIdx
+		for _, m := range g.Matches {
+			if m.GroupRoundIdx == nil || m.GroupIdx == nil || m.GroupID == nil || m.LineupIdx == nil {
+				continue
+			}
+			roundIdx := *m.GroupRoundIdx
+			teamMatchIdx := *m.GroupIdx
+			if _, ok := teamRoundsMap[roundIdx]; !ok {
+				teamRoundsMap[roundIdx] = make(map[uint][]Match)
+			}
+			teamRoundsMap[roundIdx][teamMatchIdx] = append(teamRoundsMap[roundIdx][teamMatchIdx], m)
+			// Use a composite key for teamMeta
+			key := fmt.Sprintf("%d|%d", roundIdx, teamMatchIdx)
+			if _, ok := teamMeta[key]; !ok {
+				teamMeta[key] = TeamMatches{
+					CategoryID:         m.CategoryID,
+					CategoryShortName:  m.CategoryShortName,
+					Entry1Idx:          m.Entry1Idx,
+					Entry2Idx:          m.Entry2Idx,
+					GroupID:            m.GroupID,
+					GroupIdx:           m.GroupIdx,
+					DateTime:           m.DateTime,
+					DurationMinutes:    m.DurationMinutes,
+					Table:              m.Table,
+					GroupRoundIdx:      m.GroupRoundIdx,
+					GroupMatchIdx:      m.GroupMatchIdx,
+				}
+			}
+		}
+		// Build TeamRounds
+		var teamRounds [][]TeamMatches
+		// Get sorted roundIdxs
+		var roundIdxs []uint
+		for r := range teamRoundsMap {
+			roundIdxs = append(roundIdxs, r)
+		}
+		sort.Slice(roundIdxs, func(i, j int) bool { return roundIdxs[i] < roundIdxs[j] })
+		for _, roundIdx := range roundIdxs {
+			teamMatchMap := teamRoundsMap[roundIdx]
+			// Get sorted teamMatchIdxs
+			var teamMatchIdxs []uint
+			for t := range teamMatchMap {
+				teamMatchIdxs = append(teamMatchIdxs, t)
+			}
+			sort.Slice(teamMatchIdxs, func(i, j int) bool { return teamMatchIdxs[i] < teamMatchIdxs[j] })
+			var teamMatches []TeamMatches
+			for _, teamMatchIdx := range teamMatchIdxs {
+				matches := teamMatchMap[teamMatchIdx]
+				// Sort by LineupIdx
+				sort.Slice(matches, func(i, j int) bool {
+					return *matches[i].LineupIdx < *matches[j].LineupIdx
+				})
+				key := fmt.Sprintf("%d|%d", roundIdx, teamMatchIdx)
+				tm := teamMeta[key]
+				tm.Matches = matches
+				teamMatches = append(teamMatches, tm)
+			}
+			teamRounds = append(teamRounds, teamMatches)
+		}
+		g.TeamRounds = teamRounds
+	} else {
+		// Reconstruct Rounds
+		roundsMap := make(map[uint][]Match) // roundIdx -> []Match
+		for _, m := range g.Matches {
+			if m.RoundRobinRound == nil || m.RoundRobinMatchIdx == nil {
+				continue
+			}
+			roundIdx := *m.RoundRobinRound
+			roundsMap[roundIdx] = append(roundsMap[roundIdx], m)
+		}
+		// Build Rounds
+		var roundIdxs []uint
+		for r := range roundsMap {
+			roundIdxs = append(roundIdxs, r)
+		}
+		sort.Slice(roundIdxs, func(i, j int) bool { return roundIdxs[i] < roundIdxs[j] })
+		var rounds [][]Match
+		for _, roundIdx := range roundIdxs {
+			matches := roundsMap[roundIdx]
+			// Sort by RoundRobinMatchIdx
+			sort.Slice(matches, func(i, j int) bool {
+				return *matches[i].RoundRobinMatchIdx < *matches[j].RoundRobinMatchIdx
+			})
+			rounds = append(rounds, matches)
+		}
+		g.Rounds = rounds
+	}
+	return nil
+}
+
+type TeamMatches struct {
+	CategoryID         uint    `json:"categoryID,omitzero"`
+	CategoryShortName  string  `json:"categoryShortName,omitempty"`
+	Winner             *uint   `json:"winner,omitempty,omitzero"`
+	Matches            []Match `json:"matches"`
+	Entry1Idx          int     `json:"entry1Idx"`
+	Entry2Idx          int     `json:"entry2Idx"`
+	DateTime           Date    `json:"datetime"`
+	DurationMinutes    int     `json:"durationMinutes"`
+	Table              string  `json:"table"`
+	GroupID            *uint   `json:"groupID,omitempty,omitzero"`
+	GroupIdx           *uint   `json:"groupIdx,omitempty,omitzero"`
+	GroupRoundIdx      *uint   `json:"groupRoundIdx,omitempty,omitzero"`
+	RoundRobinRound    *uint   `json:"roundRobinRound,omitempty,omitzero"`
+	RoundRobinMatchIdx *uint   `json:"roundRobinMatchIdx,omitempty,omitzero"`
+}
 
 type Match struct {
-	ID                    uint               `gorm:"primaryKey" json:"id,omitzero"`
-	CategoryID            uint               `json:"categoryID,omitzero"`
-	GroupID               *uint              `json:"groupID,omitzero" gorm:"index"`
-	KnockoutRoundID       *uint              `json:"knockoutRoundID,omitempty,omitzero" gorm:"index"`
-	Entry1ID              *uint              `json:"entry1ID,omitempty,omitzero" gorm:"column:entry1_id"`
-	Entry2ID              *uint              `json:"entry2ID,omitempty,omitzero" gorm:"column:entry2_id"`
-	WinnerEntryID         *uint              `json:"winnerEntryID,omitempty,omitzero" gorm:"column:winner_entry_id"`
-	Entry1Idx             int                `json:"entry1Idx" gorm:"-"` // Application logic
-	Entry2Idx             int                `json:"entry2Idx" gorm:"-"` // Application logic
-	DateTime              Date               `json:"datetime"`
-	DurationMinutes       int                `json:"durationMinutes"`
-	Table                 string             `json:"table" gorm:"column:table_number"` // Match DDL
-	CategoryShortName     string             `json:"categoryShortName,omitempty"`
-	GroupIdx              int                `json:"groupIdx,omitempty" gorm:"column:group_idx"`
-	RoundIdx              int                `json:"roundIdx,omitempty" gorm:"column:round_idx"`
-	Round                 int                `json:"round,omitempty" gorm:"column:round"`
-	MatchIdx              int                `json:"matchIdx,omitempty" gorm:"column:match_idx"`
-	GamesRaw              datatypes.JSON     `json:"games" gorm:"column:games"`
-	MatchesInTeamMatchRaw datatypes.JSON     `json:"matchesInTeamMatch,omitempty" gorm:"column:matches_in_team_match"`
-	Games                 []Game             `json:"gamesArray,omitempty" gorm:"-"`              // Application logic, if you want to expose
-	MatchesInTeamMatch    []MatchInTeamMatch `json:"matchesInTeamMatchArray,omitempty" gorm:"-"` // Application logic, if you want to expose
-	Score1                *int               `json:"score1,omitempty" gorm:"column:score1"`
-	Score2                *int               `json:"score2,omitempty" gorm:"column:score2"`
+	ID                 uint        `gorm:"primaryKey" json:"id,omitzero"`
+	CategoryID         uint        `json:"categoryID,omitzero"`
+	CategoryShortName  string      `json:"categoryShortName,omitempty"`
+	KnockoutRoundID    *uint       `json:"knockoutRoundID,omitempty,omitzero"`
+	Players1Idx        []uint      `json:"players1Idx" gorm:"serializer:json"` // first pair/player. 1 player for singles, 2 players for doubles
+	Players2Idx        []uint      `json:"players2Idx" gorm:"serializer:json"` // second pair/player. 1 player for singles, 2 players for doubles
+	Winner             *uint       `json:"winner,omitempty,omitzero"`          // 1: first player/pair, 2: second player/pair
+	Entry1Idx          int         `json:"entry1Idx"`
+	Entry2Idx          int         `json:"entry2Idx"`
+	DateTime           Date        `json:"datetime"`
+	DurationMinutes    int         `json:"durationMinutes"`
+	Table              string      `json:"table"`
+	Games              []GameScore `json:"games" gorm:"serializer:json"`
+	GroupID            *uint       `json:"groupID,omitempty,omitzero"`
+	GroupIdx           *uint       `json:"groupIdx,omitempty,omitzero"`
+	GroupRoundIdx      *uint       `json:"groupRoundIdx,omitempty,omitzero"`
+	RoundRobinRound    *uint       `json:"roundRobinRound,omitempty,omitzero"`
+	RoundRobinMatchIdx *uint       `json:"roundRobinMatchIdx,omitempty,omitzero"`
+	LineupIdx          *uint       `json:"lineupIdx,omitempty,omitzero"` // for team match. 0: first match of lineup, etc.
 }
 
-type MatchInTeamMatch struct { // This will be part of JSON in Match.MatchesInTeamMatchRaw
-	MatchNumber int    `json:"matchNumber"`
-	Games       []Game `json:"games"`
-}
-
-type Game [2]int // This will be part of JSON in Match.GamesRaw
-
-func (match Match) Name() string {
-	if match.IsKnockout() {
-		switch match.Round {
-		case 2:
-			return fmt.Sprintf("%s F", match.CategoryShortName)
-		case 4:
-			return fmt.Sprintf("%s SF", match.CategoryShortName)
-		case 8:
-			return fmt.Sprintf("%s QF", match.CategoryShortName)
-		}
-		return fmt.Sprintf("%s R%d", match.CategoryShortName, match.Round)
-	}
-	return fmt.Sprintf("%s Grp%d", match.CategoryShortName, match.GroupIdx+1)
+type GameScore struct {
+	Players1Score int `json:"players1Score"`
+	Players2Score int `json:"players2Score"`
 }
 
 type KnockoutRound struct {
@@ -171,13 +359,6 @@ type KnockoutRound struct {
 	CategoryID uint    `json:"categoryID,omitzero"`              // Foreign key to Category
 	Round      int     `json:"round" gorm:"column:round_number"` // Match DDL
 	Matches    []Match `json:"matches" gorm:"foreignKey:KnockoutRoundID"`
-}
-
-func (match Match) IsKnockout() bool {
-	// A match is knockout if GroupID is nil (or GroupIdx < 0 as per original logic)
-	// and KnockoutRoundID is not nil.
-	// The GroupIdx field is still populated from the DB for context.
-	return match.GroupID == nil || (match.GroupID != nil && *match.GroupID == 0) || match.GroupIdx < 0
 }
 
 // AgeRequirement defines age constraints for a lineup item

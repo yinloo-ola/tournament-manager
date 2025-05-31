@@ -69,6 +69,7 @@ func TestSaveAndGetTournament(t *testing.T) {
 
 	group1Match1Time := model.Date{Time: time.Now().Add(time.Hour * 24)}
 	group1Match2Time := model.Date{Time: time.Now().Add(time.Hour * 25)}
+	group1Match3Time := model.Date{Time: time.Now().Add(time.Hour * 26)}
 	koMatchTime := model.Date{Time: time.Now().Add(time.Hour * 48)}
 
 	msCategory := model.Category{
@@ -79,17 +80,50 @@ func TestSaveAndGetTournament(t *testing.T) {
 		Groups: []model.Group{
 			{
 				EntriesIdx: []int{0, 1}, // Group containing subset of category entries
-				Matches: []model.Match{
-					{Table: "1", DateTime: group1Match1Time, DurationMinutes: 60},
-					{Table: "2", DateTime: group1Match2Time, DurationMinutes: 60},
-				},
+				Rounds: [][]model.Match{{
+					{
+						Table:             "1",
+						DateTime:          group1Match1Time,
+						DurationMinutes:   60,
+						Entry1Idx:         0,         // First entry in group (entryMS1)
+						Entry2Idx:         1,         // Second entry in group (entryMS2)
+						Players1Idx:       []uint{0}, // First player in entryMS1 (playerMS1)
+						Players2Idx:       []uint{0}, // First player in entryMS2 (playerMS2)
+						CategoryShortName: "MSDet",
+					},
+					{
+						Table:             "2",
+						DateTime:          group1Match2Time,
+						DurationMinutes:   60,
+						Entry1Idx:         0,         // First entry in group (entryMS1)
+						Entry2Idx:         1,         // Second entry in group (entryMS2)
+						Players1Idx:       []uint{0}, // First player in entryMS1 (playerMS1)
+						Players2Idx:       []uint{1}, // Second player in entryMS2 (playerMS2)
+						CategoryShortName: "MSDet",
+					},
+					{
+						Table:             "3",
+						DateTime:          group1Match3Time,
+						DurationMinutes:   60,
+						Entry1Idx:         0,         // First entry in group (entryMS1)
+						Entry2Idx:         1,         // Second entry in group (entryMS2)
+						Players1Idx:       []uint{1}, // Second player in entryMS1 (playerMS1)
+						Players2Idx:       []uint{0}, // First player in entryMS2 (playerMS2)
+						CategoryShortName: "MSDet",
+					},
+				}},
 			},
 		},
 		KnockoutRounds: []model.KnockoutRound{
 			{
 				Round: 1,
 				Matches: []model.Match{
-					{Table: "Center Court", DateTime: koMatchTime, DurationMinutes: 90},
+					{
+						Table:             "Center Court",
+						DateTime:          koMatchTime,
+						DurationMinutes:   90,
+						CategoryShortName: "MSDet",
+					},
 				},
 			},
 		},
@@ -165,9 +199,26 @@ func TestSaveAndGetTournament(t *testing.T) {
 		assert.True(t, hasPlayer(retrievedMSCategory.Entries[msGroup1.EntriesIdx[0]].Players, playerMS1.Name), "Group entry 1 missing playerMS1")
 		assert.True(t, hasPlayer(retrievedMSCategory.Entries[msGroup1.EntriesIdx[1]].Players, playerMS2.Name), "Group entry 2 missing playerMS2")
 
-		assert.Len(t, msGroup1.Matches, 2, "MS Group 1 should have 2 matches")
+		// Check matches in group
+		assert.Len(t, msGroup1.Matches, 3, "MS Group 1 should have 3 matches")
+
+		// First match
 		assert.Equal(t, "1", msGroup1.Matches[0].Table)
 		assert.WithinDuration(t, group1Match1Time.Time, msGroup1.Matches[0].DateTime.Time, time.Second)
+		assert.Equal(t, []uint{0}, msGroup1.Matches[0].Players1Idx, "First match should have playerMS1 as player 1")
+		assert.Equal(t, []uint{0}, msGroup1.Matches[0].Players2Idx, "First match should have playerMS2 as player 2")
+
+		// Second match
+		assert.Equal(t, "2", msGroup1.Matches[1].Table)
+		assert.WithinDuration(t, group1Match2Time.Time, msGroup1.Matches[1].DateTime.Time, time.Second)
+		assert.Equal(t, []uint{0}, msGroup1.Matches[1].Players1Idx, "Second match should have playerMS1 as player 1")
+		assert.Equal(t, []uint{1}, msGroup1.Matches[1].Players2Idx, "Second match should have playerMS2 as player 2")
+
+		// Third match
+		assert.Equal(t, "3", msGroup1.Matches[2].Table)
+		assert.WithinDuration(t, group1Match3Time.Time, msGroup1.Matches[2].DateTime.Time, time.Second)
+		assert.Equal(t, []uint{1}, msGroup1.Matches[2].Players1Idx, "Third match should have playerMS1 as player 1")
+		assert.Equal(t, []uint{0}, msGroup1.Matches[2].Players2Idx, "Third match should have playerMS2 as player 2")
 
 		// Knockout Rounds in MS Category
 		assert.Len(t, retrievedMSCategory.KnockoutRounds, 1, "MS category should have 1 knockout round")
@@ -210,6 +261,115 @@ func TestSaveAndGetTournament(t *testing.T) {
 		retrievedTournament, errGet := repo.GetTournament(nonExistentID)
 		assert.NoError(t, errGet, "GetTournament for non-existent ID should not error")
 		assert.Nil(t, retrievedTournament, "GetTournament for non-existent ID should return nil")
+	})
+}
+
+func TestGroupRoundsAndTeamRoundsPersistence(t *testing.T) {
+	db := setupTestDB(t)
+	// Test for Rounds (non-team)
+	t.Run("Rounds (non-team)", func(t *testing.T) {
+		group := model.Group{
+			EntriesIdx: []int{0, 1},
+			Rounds: [][]model.Match{{
+				{
+					Table:           "1",
+					Entry1Idx:       0,
+					Entry2Idx:       1,
+					Players1Idx:     []uint{0},
+					Players2Idx:     []uint{1},
+					DurationMinutes: 30,
+				},
+				{
+					Table:           "2",
+					Entry1Idx:       1,
+					Entry2Idx:       0,
+					Players1Idx:     []uint{1},
+					Players2Idx:     []uint{0},
+					DurationMinutes: 35,
+				},
+			}},
+		}
+		err := db.Create(&group).Error
+		assert.NoError(t, err)
+
+		var got model.Group
+		err = db.Preload("Matches").First(&got, group.ID).Error
+		assert.NoError(t, err)
+		assert.Len(t, got.Matches, 2)
+		assert.NotNil(t, got.Rounds)
+		assert.Len(t, got.Rounds, 1)
+		assert.Len(t, got.Rounds[0], 2)
+		assert.Equal(t, "1", got.Rounds[0][0].Table)
+		assert.Equal(t, "2", got.Rounds[0][1].Table)
+		// Ensure indices are set
+		assert.NotNil(t, got.Rounds[0][0].RoundRobinRound)
+		assert.NotNil(t, got.Rounds[0][1].RoundRobinMatchIdx)
+	})
+
+	// Test for TeamRounds (team)
+	t.Run("TeamRounds (team)", func(t *testing.T) {
+		teamMatch1 := model.TeamMatches{
+			Entry1Idx: 0,
+			Entry2Idx: 1,
+			CategoryID: 5,
+			CategoryShortName: "TEAM",
+			Matches: []model.Match{
+				{
+					Table:           "T1",
+					Entry1Idx:       0,
+					Entry2Idx:       1,
+					Players1Idx:     []uint{0},
+					Players2Idx:     []uint{1},
+					DurationMinutes: 40,
+				},
+				{
+					Table:           "T2",
+					Entry1Idx:       0,
+					Entry2Idx:       1,
+					Players1Idx:     []uint{0},
+					Players2Idx:     []uint{1},
+					DurationMinutes: 45,
+				},
+			},
+		}
+		teamMatch2 := model.TeamMatches{
+			Entry1Idx: 1,
+			Entry2Idx: 0,
+			CategoryID: 5,
+			CategoryShortName: "TEAM",
+			Matches: []model.Match{
+				{
+					Table:           "T3",
+					Entry1Idx:       1,
+					Entry2Idx:       0,
+					Players1Idx:     []uint{1},
+					Players2Idx:     []uint{0},
+					DurationMinutes: 50,
+				},
+			},
+		}
+		group := model.Group{
+			EntriesIdx: []int{0, 1},
+			TeamRounds: [][]model.TeamMatches{{teamMatch1, teamMatch2}},
+		}
+		err := db.Create(&group).Error
+		assert.NoError(t, err)
+
+		var got model.Group
+		err = db.Preload("Matches").First(&got, group.ID).Error
+		assert.NoError(t, err)
+		assert.Len(t, got.Matches, 3)
+		assert.NotNil(t, got.TeamRounds)
+		assert.Len(t, got.TeamRounds, 1)
+		assert.Len(t, got.TeamRounds[0], 2)
+		assert.Equal(t, "T1", got.TeamRounds[0][0].Matches[0].Table)
+		assert.Equal(t, "T2", got.TeamRounds[0][0].Matches[1].Table)
+		assert.Equal(t, "T3", got.TeamRounds[0][1].Matches[0].Table)
+		// Ensure indices and team info are set
+		assert.NotNil(t, got.TeamRounds[0][0].Matches[0].LineupIdx)
+		assert.Equal(t, 0, got.TeamRounds[0][0].Matches[0].Entry1Idx)
+		assert.Equal(t, 1, got.TeamRounds[0][0].Matches[0].Entry2Idx)
+		assert.Equal(t, "TEAM", got.TeamRounds[0][0].Matches[0].CategoryShortName)
 	})
 }
 

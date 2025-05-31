@@ -1,14 +1,12 @@
 package repo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 
 	"github.com/glebarez/sqlite"
 	"github.com/yinloo-ola/tournament-manager/model"
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -18,8 +16,8 @@ type TournamentRepo struct {
 	categoryRepo *CategoryRepo
 	entryRepo    *EntryRepo
 	groupRepo    *GroupRepo
-	knockoutRepo *KnockoutRepo
-	matchRepo    *MatchRepo
+	// knockoutRepo *KnockoutRepo
+	// matchRepo    *MatchRepo
 }
 
 // Initialize opens a connection to the SQLite database and auto-migrates the schema
@@ -49,8 +47,8 @@ func (r *TournamentRepo) Initialize() error {
 	r.categoryRepo = NewCategoryRepo(r.db)
 	r.entryRepo = NewEntryRepo(r.db)
 	r.groupRepo = NewGroupRepo(r.db)
-	r.knockoutRepo = NewKnockoutRepo(r.db)
-	r.matchRepo = NewMatchRepo(r.db)
+	// r.knockoutRepo = NewKnockoutRepo(r.db)
+	// r.matchRepo = NewMatchRepo(r.db)
 
 	return nil
 }
@@ -62,8 +60,8 @@ func (r *TournamentRepo) SetDB(db *gorm.DB) {
 	r.categoryRepo = NewCategoryRepo(db)
 	r.entryRepo = NewEntryRepo(db)
 	r.groupRepo = NewGroupRepo(db)
-	r.knockoutRepo = NewKnockoutRepo(db)
-	r.matchRepo = NewMatchRepo(db)
+	// r.knockoutRepo = NewKnockoutRepo(db)
+	// r.matchRepo = NewMatchRepo(db)
 }
 
 // DB returns the underlying gorm.DB instance.
@@ -77,13 +75,6 @@ func (r *TournamentRepo) SaveTournament(tournament model.Tournament) (uint, erro
 		if err := r.Initialize(); err != nil {
 			slog.Error("Failed to initialize database during SaveTournament", "error", err)
 			return 0, fmt.Errorf("failed to initialize database: %w", err)
-		}
-	}
-
-	for i := range tournament.Categories {
-		for j := range tournament.Categories[i].Groups {
-			entriesIdxBytes, _ := json.Marshal(tournament.Categories[i].Groups[j].EntriesIdx)
-			tournament.Categories[i].Groups[j].EntriesIdxRaw = datatypes.JSON(entriesIdxBytes)
 		}
 	}
 
@@ -119,14 +110,6 @@ func (r *TournamentRepo) GetTournament(id uint) (*model.Tournament, error) {
 			return nil, nil // Return nil, nil if tournament not found
 		}
 		return nil, err // Return actual error for other DB issues
-	}
-
-	for i := range tournament.Categories {
-		for j := range tournament.Categories[i].Groups {
-			if err := json.Unmarshal(tournament.Categories[i].Groups[j].EntriesIdxRaw, &tournament.Categories[i].Groups[j].EntriesIdx); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal entriesIdxRaw: %w", err)
-			}
-		}
 	}
 
 	return &tournament, nil
