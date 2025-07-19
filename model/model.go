@@ -132,15 +132,58 @@ type Group struct {
 	TeamRounds   [][]TeamMatches `json:"teamRounds" gorm:"-"`                         // Team rounds are populated from the Matches slice
 }
 
+// ValidateAndPopulateMatchData ensures all match data is properly populated before saving
+func (g *Group) ValidateAndPopulateMatchData() error {
+	// Validate that we have either Rounds or TeamRounds, but not both
+	if len(g.Rounds) > 0 && len(g.TeamRounds) > 0 {
+		return fmt.Errorf("group cannot have both regular rounds and team rounds")
+	}
+
+	// Validate group has required IDs
+	if g.CategoryID == 0 {
+		return fmt.Errorf("group must have a valid CategoryID")
+	}
+
+	// Populate TournamentID in matches that inherit from group
+	for i := range g.Rounds {
+		for j := range g.Rounds[i] {
+			if g.Rounds[i][j].CategoryID == 0 {
+				g.Rounds[i][j].CategoryID = g.CategoryID
+			}
+		}
+	}
+
+	// Populate TournamentID in team matches that inherit from group
+	for i := range g.TeamRounds {
+		for j := range g.TeamRounds[i] {
+			if g.TeamRounds[i][j].CategoryID == 0 {
+				g.TeamRounds[i][j].CategoryID = g.CategoryID
+			}
+			for k := range g.TeamRounds[i][j].Matches {
+				if g.TeamRounds[i][j].Matches[k].CategoryID == 0 {
+					g.TeamRounds[i][j].Matches[k].CategoryID = g.CategoryID
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // BeforeSave GORM hook for Group
 // This hook populates the Matches slice from Rounds or TeamRounds before saving to DB.
 func (g *Group) BeforeSave(tx *gorm.DB) error {
+	// Validate and populate missing data
+	if err := g.ValidateAndPopulateMatchData(); err != nil {
+		return fmt.Errorf("group validation failed: %w", err)
+	}
+
 	g.Matches = nil
 	if len(g.Rounds) > 0 {
 		for roundIdx, round := range g.Rounds {
-			for _, match := range round {
+			for matchIdx, match := range round {
 				m := match
-				// Set round and match indices
+				// Set round and match indices for regular rounds
 				if m.GroupRoundIdx == nil {
 					val := uint(roundIdx)
 					m.GroupRoundIdx = &val
@@ -153,13 +196,28 @@ func (g *Group) BeforeSave(tx *gorm.DB) error {
 					val := uint(g.ID)
 					m.GroupID = &val
 				}
-				m.LineupIdx = nil // singles/doubles rounds do not use LineupIdx
+				// Set round robin specific indices
+				if m.RoundRobinRound == nil {
+					val := uint(roundIdx)
+					m.RoundRobinRound = &val
+				}
+				if m.RoundRobinMatchIdx == nil {
+					val := uint(matchIdx)
+					m.RoundRobinMatchIdx = &val
+				}
+				// Inherit tournament and category information
+				if m.CategoryID == 0 {
+					m.CategoryID = g.CategoryID
+				}
+				// Ensure LineupIdx is nil for singles/doubles rounds
+				m.LineupIdx = nil
 				g.Matches = append(g.Matches, m)
 			}
 		}
 	} else if len(g.TeamRounds) > 0 {
 		for roundIdx, teamRound := range g.TeamRounds {
 			for teamMatchIdx, teamMatch := range teamRound {
+				// Set team match metadata
 				if teamMatch.GroupRoundIdx == nil {
 					val := uint(roundIdx)
 					teamMatch.GroupRoundIdx = &val
@@ -172,9 +230,14 @@ func (g *Group) BeforeSave(tx *gorm.DB) error {
 					val := uint(g.ID)
 					teamMatch.GroupID = &val
 				}
+				// Inherit category information if not set
+				if teamMatch.CategoryID == 0 {
+					teamMatch.CategoryID = g.CategoryID
+				}
+
 				for lineupIdx, match := range teamMatch.Matches {
 					m := match
-					// Set indices for team event
+					// Set indices for team event matches
 					if m.GroupRoundIdx == nil {
 						val := uint(roundIdx)
 						m.GroupRoundIdx = &val
@@ -187,13 +250,33 @@ func (g *Group) BeforeSave(tx *gorm.DB) error {
 						val := uint(g.ID)
 						m.GroupID = &val
 					}
+					// Set lineup index
 					val := uint(lineupIdx)
 					m.LineupIdx = &val
-					// Copy team info
+
+					// Copy team match info to individual matches
 					m.Entry1Idx = teamMatch.Entry1Idx
 					m.Entry2Idx = teamMatch.Entry2Idx
-					m.CategoryID = teamMatch.CategoryID
-					m.CategoryShortName = teamMatch.CategoryShortName
+					if m.CategoryID == 0 {
+						m.CategoryID = teamMatch.CategoryID
+					}
+					if m.CategoryShortName == "" {
+						m.CategoryShortName = teamMatch.CategoryShortName
+					}
+					if m.DateTime.IsZero() {
+						m.DateTime = teamMatch.DateTime
+					}
+					if m.DurationMinutes == 0 {
+						m.DurationMinutes = teamMatch.DurationMinutes
+					}
+					if m.Table == "" {
+						m.Table = teamMatch.Table
+					}
+
+					// Clear round robin indices for team matches
+					m.RoundRobinRound = nil
+					m.RoundRobinMatchIdx = nil
+
 					g.Matches = append(g.Matches, m)
 				}
 			}
@@ -210,6 +293,8 @@ func (g *Group) AfterFind(tx *gorm.DB) error {
 	if len(g.Matches) == 0 {
 		return nil
 	}
+
+	// Determine if this is a team tournament by checking for LineupIdx
 	isTeam := false
 	for _, m := range g.Matches {
 		if m.LineupIdx != nil {
@@ -217,96 +302,148 @@ func (g *Group) AfterFind(tx *gorm.DB) error {
 			break
 		}
 	}
+
 	if isTeam {
 		// Reconstruct TeamRounds
 		teamRoundsMap := make(map[uint]map[uint][]Match) // roundIdx -> teamMatchIdx -> []Match
 		teamMeta := make(map[string]TeamMatches)         // key: roundIdx|teamMatchIdx
+
 		for _, m := range g.Matches {
-			if m.GroupRoundIdx == nil || m.GroupIdx == nil || m.GroupID == nil || m.LineupIdx == nil {
+			// Skip matches that don't have required indices for team rounds
+			if m.GroupRoundIdx == nil || m.GroupIdx == nil || m.LineupIdx == nil {
 				continue
 			}
+
 			roundIdx := *m.GroupRoundIdx
 			teamMatchIdx := *m.GroupIdx
+
+			// Initialize maps if needed
 			if _, ok := teamRoundsMap[roundIdx]; !ok {
 				teamRoundsMap[roundIdx] = make(map[uint][]Match)
 			}
 			teamRoundsMap[roundIdx][teamMatchIdx] = append(teamRoundsMap[roundIdx][teamMatchIdx], m)
-			// Use a composite key for teamMeta
+
+			// Create or update team match metadata
 			key := fmt.Sprintf("%d|%d", roundIdx, teamMatchIdx)
 			if _, ok := teamMeta[key]; !ok {
 				teamMeta[key] = TeamMatches{
-					CategoryID:         m.CategoryID,
-					CategoryShortName:  m.CategoryShortName,
-					Entry1Idx:          m.Entry1Idx,
-					Entry2Idx:          m.Entry2Idx,
-					GroupID:            m.GroupID,
-					GroupIdx:           m.GroupIdx,
-					DateTime:           m.DateTime,
-					DurationMinutes:    m.DurationMinutes,
-					Table:              m.Table,
-					GroupRoundIdx:      m.GroupRoundIdx,
-					GroupMatchIdx:      m.GroupMatchIdx,
+					CategoryID:        m.CategoryID,
+					CategoryShortName: m.CategoryShortName,
+					Entry1Idx:         m.Entry1Idx,
+					Entry2Idx:         m.Entry2Idx,
+					GroupID:           m.GroupID,
+					GroupIdx:          m.GroupIdx,
+					DateTime:          m.DateTime,
+					DurationMinutes:   m.DurationMinutes,
+					Table:             m.Table,
+					GroupRoundIdx:     m.GroupRoundIdx,
+					Winner:            nil, // Will be calculated based on match results
 				}
 			}
 		}
-		// Build TeamRounds
+
+		// Build TeamRounds with proper sorting
 		var teamRounds [][]TeamMatches
-		// Get sorted roundIdxs
+
+		// Get sorted round indices
 		var roundIdxs []uint
 		for r := range teamRoundsMap {
 			roundIdxs = append(roundIdxs, r)
 		}
 		sort.Slice(roundIdxs, func(i, j int) bool { return roundIdxs[i] < roundIdxs[j] })
+
 		for _, roundIdx := range roundIdxs {
 			teamMatchMap := teamRoundsMap[roundIdx]
-			// Get sorted teamMatchIdxs
+
+			// Get sorted team match indices
 			var teamMatchIdxs []uint
 			for t := range teamMatchMap {
 				teamMatchIdxs = append(teamMatchIdxs, t)
 			}
 			sort.Slice(teamMatchIdxs, func(i, j int) bool { return teamMatchIdxs[i] < teamMatchIdxs[j] })
+
 			var teamMatches []TeamMatches
 			for _, teamMatchIdx := range teamMatchIdxs {
 				matches := teamMatchMap[teamMatchIdx]
-				// Sort by LineupIdx
+
+				// Sort matches by LineupIdx
 				sort.Slice(matches, func(i, j int) bool {
+					if matches[i].LineupIdx == nil || matches[j].LineupIdx == nil {
+						return false
+					}
 					return *matches[i].LineupIdx < *matches[j].LineupIdx
 				})
+
+				// Get team match metadata and assign matches
 				key := fmt.Sprintf("%d|%d", roundIdx, teamMatchIdx)
 				tm := teamMeta[key]
 				tm.Matches = matches
+				// Calculate team match winner based on individual match results
+				tm.UpdateWinner()
 				teamMatches = append(teamMatches, tm)
 			}
 			teamRounds = append(teamRounds, teamMatches)
 		}
 		g.TeamRounds = teamRounds
+
 	} else {
-		// Reconstruct Rounds
+		// Reconstruct regular Rounds for singles/doubles
 		roundsMap := make(map[uint][]Match) // roundIdx -> []Match
+
 		for _, m := range g.Matches {
-			if m.RoundRobinRound == nil || m.RoundRobinMatchIdx == nil {
+			// For regular rounds, use either RoundRobinRound or GroupRoundIdx
+			var roundIdx uint
+			var matchIdx uint
+			var hasValidIndices bool
+
+			if m.RoundRobinRound != nil && m.RoundRobinMatchIdx != nil {
+				roundIdx = *m.RoundRobinRound
+				matchIdx = *m.RoundRobinMatchIdx
+				hasValidIndices = true
+			} else if m.GroupRoundIdx != nil {
+				roundIdx = *m.GroupRoundIdx
+				// Use a default match index if RoundRobinMatchIdx is not available
+				matchIdx = 0
+				hasValidIndices = true
+			}
+
+			if !hasValidIndices {
 				continue
 			}
-			roundIdx := *m.RoundRobinRound
+
+			// Store the match index for proper sorting later
+			if m.RoundRobinMatchIdx == nil {
+				val := matchIdx
+				m.RoundRobinMatchIdx = &val
+			}
+
 			roundsMap[roundIdx] = append(roundsMap[roundIdx], m)
 		}
-		// Build Rounds
+
+		// Build Rounds with proper sorting
 		var roundIdxs []uint
 		for r := range roundsMap {
 			roundIdxs = append(roundIdxs, r)
 		}
 		sort.Slice(roundIdxs, func(i, j int) bool { return roundIdxs[i] < roundIdxs[j] })
+
 		var rounds [][]Match
 		for _, roundIdx := range roundIdxs {
 			matches := roundsMap[roundIdx]
-			// Sort by RoundRobinMatchIdx
+
+			// Sort matches by RoundRobinMatchIdx
 			sort.Slice(matches, func(i, j int) bool {
+				if matches[i].RoundRobinMatchIdx == nil || matches[j].RoundRobinMatchIdx == nil {
+					return false
+				}
 				return *matches[i].RoundRobinMatchIdx < *matches[j].RoundRobinMatchIdx
 			})
+
 			rounds = append(rounds, matches)
 		}
 		g.Rounds = rounds
 	}
+
 	return nil
 }
 
@@ -325,6 +462,44 @@ type TeamMatches struct {
 	GroupRoundIdx      *uint   `json:"groupRoundIdx,omitempty,omitzero"`
 	RoundRobinRound    *uint   `json:"roundRobinRound,omitempty,omitzero"`
 	RoundRobinMatchIdx *uint   `json:"roundRobinMatchIdx,omitempty,omitzero"`
+}
+
+// CalculateWinner determines the winner of a team match based on individual match results
+// Returns 1 if team 1 wins, 2 if team 2 wins, nil if tie or incomplete
+func (tm *TeamMatches) CalculateWinner() *uint {
+	if len(tm.Matches) == 0 {
+		return nil
+	}
+
+	team1Wins := 0
+	team2Wins := 0
+
+	for _, match := range tm.Matches {
+		if match.Winner != nil {
+			if *match.Winner == 1 {
+				team1Wins++
+			} else if *match.Winner == 2 {
+				team2Wins++
+			}
+		}
+	}
+
+	// Determine overall winner based on majority wins
+	if team1Wins > team2Wins {
+		val := uint(1)
+		return &val
+	} else if team2Wins > team1Wins {
+		val := uint(2)
+		return &val
+	}
+
+	// Tie or insufficient data
+	return nil
+}
+
+// UpdateWinner calculates and updates the Winner field based on match results
+func (tm *TeamMatches) UpdateWinner() {
+	tm.Winner = tm.CalculateWinner()
 }
 
 type Match struct {

@@ -100,6 +100,7 @@ func (r *TournamentRepo) GetTournament(id uint) (*model.Tournament, error) {
 		Preload("Categories").
 		Preload("Categories.Entries").
 		Preload("Categories.Entries.Players"). // For Singles, Doubles, and Team entries
+		Preload("Categories.Lineup").          // Lineup items for team categories
 		Preload("Categories.Groups").
 		Preload("Categories.Groups.Matches"). // Matches within a group
 		Preload("Categories.KnockoutRounds").
