@@ -79,9 +79,8 @@ function playersImported(categoryIdx: number, players: Entry[]) {
     entry.grpIdx = i
     return entry
   })
-  clearGroup(categoryIdx)
   tournament.value.categories[categoryIdx].entries = players
-  repopulateGroups(categoryIdx)
+  clearGroup(categoryIdx)
 }
 
 function clearGroup(categoryIdx: number) {
