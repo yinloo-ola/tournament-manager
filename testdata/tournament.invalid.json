@@ -1,0 +1,35 @@
+{
+  "name": "Team name drift",
+  "numTables": 1,
+  "startTime": "2025-03-22T09:00",
+  "categories": [
+    {
+      "name": "Men's Team",
+      "entryType": "Team",
+      "shortName": "MT",
+      "entriesPerGrpMain": 4,
+      "entriesPerGrpRemainder": 2,
+      "durationMinutes": 60,
+      "numQualifiedPerGroup": 2,
+      "entries": [
+        {
+          "entryType": "Team",
+          "teamEntry": {
+            "name": "Team A",
+            "players": [
+              {
+                "name": "John Doe",
+                "dateOfBirth": "1990-01-01",
+                "gender": "M"
+              }
+            ],
+            "minPlayers": 2,
+            "maxPlayers": 4
+          }
+        }
+      ],
+      "groups": [],
+      "knockoutRounds": []
+    }
+  ]
+}

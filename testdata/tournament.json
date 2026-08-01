@@ -5,6 +5,7 @@
   "categories": [
     {
       "name": "Men's Singles",
+      "entryType": "Singles",
       "shortName": "MS",
       "entriesPerGrpMain": 4,
       "entriesPerGrpRemainder": 2,
@@ -14,7 +15,6 @@
         {
           "entryType": "Singles",
           "singlesEntry": {
-            "name": "Player A",
             "player": {
               "name": "John Doe",
               "dateOfBirth": "1990-01-01",
@@ -28,6 +28,7 @@
     },
     {
       "name": "Men's Doubles",
+      "entryType": "Doubles",
       "shortName": "MD",
       "entriesPerGrpMain": 4,
       "entriesPerGrpRemainder": 2,
@@ -37,7 +38,6 @@
         {
           "entryType": "Doubles",
           "doublesEntry": {
-            "name": "Pair A",
             "players": [
               {
                 "name": "John Doe",
@@ -58,6 +58,7 @@
     },
     {
       "name": "Men's Team",
+      "entryType": "Team",
       "shortName": "MT",
       "entriesPerGrpMain": 4,
       "entriesPerGrpRemainder": 2,
@@ -67,7 +68,7 @@
         {
           "entryType": "Team",
           "teamEntry": {
-            "name": "Team A",
+            "teamName": "Team A",
             "players": [
               {
                 "name": "John Doe",

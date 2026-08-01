@@ -155,9 +155,60 @@ export function rehydrate(t: Tournament): Tournament {
   return t
 }
 
+export class ParseError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ParseError'
+  }
+}
+
+// validateTournament guards the canonical shape a document must have to be
+// ingested as a Tournament. It enforces the invariants the model relies on — an
+// `entryType` on every category/entry, and `teamName` on team entries — so a
+// structurally-drifted document (e.g. the legacy `teamEntry.name` instead of
+// `teamName`, or a category missing `entryType`) fails loudly here instead of
+// silently producing a broken in-memory model. Runs inside parse(), the single
+// entry point for untrusted documents (open-from-file, autosave resume).
+function validateTournament(t: any): void {
+  if (!t || typeof t !== 'object' || !Array.isArray(t.categories)) {
+    throw new ParseError('Invalid tournament document: missing categories.')
+  }
+  for (const category of t.categories) {
+    if (!category || typeof category !== 'object') {
+      throw new ParseError('Invalid tournament document: a category is invalid.')
+    }
+    if (!category.entryType || category.entryType === '') {
+      throw new ParseError('Invalid tournament document: a category is missing entryType.')
+    }
+    if (!Array.isArray(category.entries)) {
+      throw new ParseError('Invalid tournament document: a category is missing entries.')
+    }
+    for (const entry of category.entries) validateEntry(entry)
+  }
+}
+
+function validateEntry(e: any): void {
+  if (!e || typeof e !== 'object' || !e.entryType || e.entryType === '') {
+    throw new ParseError('Invalid tournament document: an entry is missing entryType.')
+  }
+  if (e.entryType === EntryType.Team && (!e.teamEntry || !e.teamEntry.teamName)) {
+    throw new ParseError('Invalid tournament document: a Team entry is missing teamName.')
+  }
+}
+
 // Parse a tournament JSON string into the live model (Entry instances restored).
+// Throws a typed ParseError on malformed JSON or structural violations — this is
+// how open-from-file and autosave-resume reject untrusted/malformed documents.
 export function parse(json: string): Tournament {
-  return rehydrate(JSON.parse(json) as Tournament)
+  let data: unknown
+  try {
+    data = JSON.parse(json)
+  } catch (error) {
+    throw new ParseError('Invalid tournament JSON: could not parse.')
+  }
+  const tournament = data as Tournament
+  validateTournament(tournament)
+  return rehydrate(tournament)
 }
 
 // Serialize the live model to a tournament JSON string.

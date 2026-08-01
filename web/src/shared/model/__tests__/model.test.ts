@@ -8,6 +8,7 @@ import {
   EntryType,
   EntryByeIdx,
   EntryEmptyIdx,
+  ParseError,
   type Tournament
 } from '@/shared/model'
 
@@ -274,8 +275,12 @@ describe('canonical model — grounding with real fixture', () => {
     const parsed = parse(json)
     // exhaustive rehydration across the real document
     for (const cat of parsed.categories) {
+      expect(cat.entryType).toMatch(/Singles|Doubles|Team/)
       for (const entry of cat.entries) expect(entry).toBeInstanceOf(Entry)
     }
+    // the testdata fixture is canonical: category entryType is present and the
+    // legacy teamEntry.name drift is fixed (Entry.name for a Team reads teamName)
+    expect(parsed.categories[2].entries[0].teamEntry?.teamName).toBe('Team A')
     // losslessness vs the original (Entry.from copies all fields, so nothing drops)
     expect(JSON.parse(serialize(parsed))).toEqual(JSON.parse(json))
     // stability: normalizing once is a fixed point (secondary property check)
@@ -295,5 +300,53 @@ describe('canonical model — constants', () => {
   it('exposes EntryByeIdx / EntryEmptyIdx', () => {
     expect(EntryByeIdx).toBe(-2)
     expect(EntryEmptyIdx).toBe(-1)
+  })
+})
+
+describe('canonical model — parse() rejects malformed documents', () => {
+  it('parses a canonical document into a live model', () => {
+    const parsed = parse(JSON.stringify(plainInput))
+    expect(parsed.categories[0].entries[0]).toBeInstanceOf(Entry)
+    expect(parsed.categories[2].entries[0].teamEntry?.teamName).toBe('Team Alpha')
+  })
+
+  it('throws ParseError on malformed JSON syntax', () => {
+    expect(() => parse('{not valid json')).toThrow(ParseError)
+    expect(() => parse('{not valid json')).toThrow(/JSON/)
+  })
+
+  it('throws ParseError on an empty document', () => {
+    expect(() => parse('')).toThrow(ParseError)
+    expect(() => parse('   ')).toThrow(ParseError)
+  })
+
+  it('throws ParseError on a category missing entryType (regression guard)', () => {
+    const missing = {
+      name: 'x',
+      numTables: 1,
+      startTime: '2025-01-01T09:00',
+      categories: [
+        {
+          name: 'No entryType',
+          shortName: 'X',
+          entriesPerGrpMain: 3,
+          entriesPerGrpRemainder: 4,
+          durationMinutes: 30,
+          numQualifiedPerGroup: 2,
+          entries: [],
+          groups: [],
+          knockoutRounds: []
+        }
+      ]
+    }
+    expect(() => parse(JSON.stringify(missing))).toThrow(ParseError)
+    expect(() => parse(JSON.stringify(missing))).toThrow(/entryType/)
+  })
+
+  it('throws ParseError on a Team entry missing teamName (regression guard for the old name/teamName drift)', () => {
+    const path = resolve(process.cwd(), '../testdata/tournament.invalid.json')
+    const json = readFileSync(path, 'utf-8')
+    expect(() => parse(json)).toThrow(ParseError)
+    expect(() => parse(json)).toThrow(/teamName/)
   })
 })
