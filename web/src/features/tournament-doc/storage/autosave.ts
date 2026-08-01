@@ -58,6 +58,10 @@ export interface AutosaveWatchOptions {
 export function startAutosaveWatch(tournament: Ref<Tournament>, opts: AutosaveWatchOptions = {}): () => void {
   const debounceMs = opts.debounceMs ?? AUTOSAVE_DEBOUNCE_MS
   const write = opts.write ?? saveAutosave
+  // FIXME(surface): warn the user *visibly* on autosave failure (Req 4 criterion 5
+  // "a warning is shown"). The onWarning seam is injected and tested; this default
+  // only logs. A toast/host component is deferred to a UI slice — wire onWarning
+  // from a presentational warning sink there.
   const onWarning = opts.onWarning ?? ((error: unknown) => console.warn('autosave write failed', error))
   let timer: ReturnType<typeof setTimeout> | null = null
 

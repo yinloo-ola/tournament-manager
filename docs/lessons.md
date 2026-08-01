@@ -17,6 +17,9 @@ Reusable patterns and pitfalls. Generic rules only — strip domain specifics.
 - **A transaction auto-closes once its request queue drains.** Don't `await` between requests expecting them to share a transaction — do one logical operation per transaction.
 - **A "poison" record (corrupt/unparseable) loaded on startup re-fails every launch.** Self-heal: catch the parse failure on the resume path and delete the bad record.
 
+## Parsing & ingestion
+- **Validate untrusted documents at the ingestion boundary, not inside the permissive factory.** `parse` (which ingests files / IDB records) should enforce the canonical shape and throw a typed `ParseError`; the constructor/factory (`Entry.from`) is also used for *trusted* in-memory objects, so making it strict breaks those call sites. Keep the factory permissive; let the entry point be strict. Same rule applies to any "from wire" function.
+
 ## File System Access API
 - **The pickers take a single options object, not an array.** `showOpenFilePicker([{...}])` silently drops the `types` filter; pass `showOpenFilePicker({ types: [...] })`.
 - **In-place writes leak an exclusive lock if `close()` is skipped.** Wrap `createWritable()`/`write()`/`close()` in `try/finally`, or the next write to the same handle fails with `NoModificationAllowedError`.
