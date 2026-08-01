@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import CategoryCard from '../components/CategoryCard.vue'
-import TournamentInfo from '../components/TournamentInfo.vue'
+import TournamentInfo from '@/features/tournament-config/ui/TournamentInfo.vue'
 import TournamentDraw from '@/features/draw/ui/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
