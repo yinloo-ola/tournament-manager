@@ -2,3 +2,6 @@ tmp/
 cmd/__debug*
 .DS_Store
 .gograph/
+
+# pi-subagents review/session artifacts
+.pi-subagents/
