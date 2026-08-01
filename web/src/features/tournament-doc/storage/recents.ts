@@ -1,4 +1,4 @@
-import { openDb } from './db'
+import { STORES, withStore } from './db'
 
 // Recent-tournaments metadata store, backed by IndexedDB.
 //
@@ -20,30 +20,20 @@ export interface RecentEntry {
   fileHandle?: FileSystemFileHandle
 }
 
-const STORE = 'recents'
-
-// One logical operation per transaction: IndexedDB auto-closes a transaction
-// once its request queue drains, so each helper below owns its own transaction.
-async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const db = await openDb()
-  return new Promise<T>((resolve, reject) => {
-    const tx = db.transaction(STORE, mode)
-    const req = fn(tx.objectStore(STORE))
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
 function getAll(): Promise<RecentEntry[]> {
-  return withStore('readonly', (s) => s.getAll() as IDBRequest<RecentEntry[]>)
+  return withStore('readonly', STORES.recents, (s) => s.getAll() as IDBRequest<RecentEntry[]>)
 }
 
 function putEntry(entry: RecentEntry): Promise<void> {
-  return withStore('readwrite', (s) => s.put(entry) as IDBRequest<IDBValidKey>).then(() => undefined)
+  return withStore('readwrite', STORES.recents, (s) => s.put(entry) as IDBRequest<IDBValidKey>).then(
+    () => undefined
+  )
 }
 
 function deleteEntry(id: string): Promise<void> {
-  return withStore('readwrite', (s) => s.delete(id) as IDBRequest<undefined>).then(() => undefined)
+  return withStore('readwrite', STORES.recents, (s) => s.delete(id) as IDBRequest<undefined>).then(
+    () => undefined
+  )
 }
 
 // List recents newest-first.

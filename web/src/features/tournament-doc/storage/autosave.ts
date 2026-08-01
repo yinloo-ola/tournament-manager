@@ -1,42 +1,50 @@
 import { watch, type Ref } from 'vue'
 import { parse, serialize, type Tournament } from '@/shared/model'
-import { openDb } from './db'
+import { STORES, withStore } from './db'
 
 // Crash-recovery autosave: a debounced deep watcher persists the active
 // tournament to IndexedDB so a refresh/crash never loses unsaved work. This is
 // a SAFETY NET only — explicit file save (Req 6) remains the user's
 // authoritative action. Write failures never throw into the UI (onWarning sink).
 
-const STORE = 'autosave'
 const KEY = 'latest'
 export const AUTOSAVE_DEBOUNCE_MS = 1000
 
-async function withStore<T>(
-  mode: IDBTransactionMode,
-  fn: (store: IDBObjectStore) => IDBRequest<T>
-): Promise<T> {
-  const db = await openDb()
-  return new Promise<T>((resolve, reject) => {
-    const tx = db.transaction(STORE, mode)
-    const req = fn(tx.objectStore(STORE))
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
 export async function saveAutosave(tournament: Tournament): Promise<void> {
-  await withStore('readwrite', (s) => s.put(serialize(tournament), KEY) as IDBRequest<IDBValidKey>).then(
-    () => undefined
+  await withStore('readwrite', STORES.autosave, (s) =>
+    s.put(serialize(tournament), KEY) as IDBRequest<IDBValidKey>
   )
 }
 
 export async function loadAutosave(): Promise<Tournament | null> {
-  const raw = await withStore<string | undefined>('readonly', (s) => s.get(KEY) as IDBRequest<string | undefined>)
+  const raw = await withStore<string | undefined>('readonly', STORES.autosave, (s) =>
+    s.get(KEY) as IDBRequest<string | undefined>
+  )
   return raw == null ? null : parse(raw)
 }
 
 export async function clearAutosave(): Promise<void> {
-  await withStore('readwrite', (s) => s.delete(KEY) as IDBRequest<undefined>).then(() => undefined)
+  await withStore('readwrite', STORES.autosave, (s) => s.delete(KEY) as IDBRequest<undefined>)
+}
+
+// Restore the most recent autosaved state into the given ref on reopen/boot.
+// Never throws: a corrupt/unparseable record self-heals (cleared) and the
+// default document is left intact. Returns whether a state was restored.
+export async function resumeFromAutosave(tournament: Ref<Tournament>): Promise<boolean> {
+  try {
+    const saved = await loadAutosave()
+    if (saved) {
+      tournament.value = saved
+      return true
+    }
+    return false
+  } catch (error) {
+    // Poison record (corrupt bytes / incompatible old build): clear it so the
+    // app doesn't re-fail on every launch. Keep the default document.
+    console.warn('autosave restore failed; clearing corrupt record', error)
+    await clearAutosave().catch(() => undefined)
+    return false
+  }
 }
 
 export interface AutosaveWatchOptions {

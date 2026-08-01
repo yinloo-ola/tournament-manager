@@ -5,8 +5,10 @@ import {
   saveAutosave,
   loadAutosave,
   clearAutosave,
-  startAutosaveWatch
+  startAutosaveWatch,
+  resumeFromAutosave
 } from '@/features/tournament-doc/storage/autosave'
+import { openDb, STORES } from '@/features/tournament-doc/storage/db'
 import { newTournament } from '@/app/documentStore'
 import { Entry, EntryType } from '@/shared/model'
 
@@ -101,5 +103,46 @@ describe('autosave — debounced watch', () => {
     stop()
 
     expect(onWarning).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('autosave — resume on reopen', () => {
+  beforeEach(async () => {
+    await clearAutosave()
+  })
+
+  it('restores the most recent state into the document ref after no explicit save', async () => {
+    const editing = ref(newTournament())
+    editing.value.name = 'Reopen Me'
+    await saveAutosave(editing.value)
+
+    const reopened = ref(newTournament())
+    const restored = await resumeFromAutosave(reopened)
+    expect(restored).toBe(true)
+    expect(reopened.value.name).toBe('Reopen Me')
+  })
+
+  it('returns false (no restore) when nothing is saved', async () => {
+    const t = ref(newTournament())
+    expect(await resumeFromAutosave(t)).toBe(false)
+    expect(t.value.name).toBe('')
+  })
+
+  it('does not throw and self-heals when the autosave record is corrupt', async () => {
+    // write corrupt bytes directly into the autosave store
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.autosave, 'readwrite')
+      tx.objectStore(STORES.autosave).put('{not valid json', 'latest')
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+
+    const t = ref(newTournament())
+    t.value.name = 'Kept'
+    const restored = await resumeFromAutosave(t) // must not throw
+    expect(restored).toBe(false)
+    expect(t.value.name).toBe('Kept') // current document not clobbered
+    expect(await loadAutosave()).toBeNull() // corrupt record self-healed (cleared)
   })
 })
