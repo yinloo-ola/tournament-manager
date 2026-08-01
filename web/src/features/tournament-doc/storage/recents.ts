@@ -1,3 +1,5 @@
+import { openDb } from './db'
+
 // Recent-tournaments metadata store, backed by IndexedDB.
 //
 // Scope note: this is the DATA layer only. The HomeView UI for listing /
@@ -18,28 +20,7 @@ export interface RecentEntry {
   fileHandle?: FileSystemFileHandle
 }
 
-const DB_NAME = 'tournament-manager'
 const STORE = 'recents'
-const DB_VERSION = 1
-
-let dbPromise: Promise<IDBDatabase> | null = null
-
-function openDb(): Promise<IDBDatabase> {
-  if (!dbPromise) {
-    dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION)
-      req.onupgradeneeded = () => {
-        const db = req.result
-        if (!db.objectStoreNames.contains(STORE)) {
-          db.createObjectStore(STORE, { keyPath: 'id' })
-        }
-      }
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => reject(req.error)
-    })
-  }
-  return dbPromise
-}
 
 // One logical operation per transaction: IndexedDB auto-closes a transaction
 // once its request queue drains, so each helper below owns its own transaction.
