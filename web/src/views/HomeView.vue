@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { tournament, newTournament } from '@/app/documentStore'
 
 const file = ref<HTMLInputElement | null>(null)
 
 const router = useRouter()
+
+function createNew() {
+  tournament.value = newTournament()
+  router.push('/tournament')
+}
 
 function onFileSelected(event: any) {
   if (event.target.files.length === 0) {
@@ -29,7 +35,7 @@ function onReaderLoad(event: any) {
       class="w-2/3 cursor-pointer border-0 rounded-lg bg-lime-600 px-5 py-3 text-[15px] text-white shadow-gray-500/50 shadow-lg lg:w-1/3 active:scale-[.97]">
       Import Tournament
     </button>
-    <button @click="router.push('/tournament')"
+    <button @click="createNew" data-test="create-new"
       class="w-2/3 cursor-pointer border-0 rounded-lg bg-lime-800 px-5 py-3 text-[15px] text-white shadow-gray-500/50 shadow-lg lg:w-1/3 active:scale-[.97]">
       Create New Tournament
     </button>

@@ -1,23 +1,4 @@
-import { ref } from 'vue'
-import { getDateStringFromNow } from '@/calculator/date'
-import { EntryType, type Tournament } from '@/types/types'
-
-export const tournament = ref<Tournament>({
-  name: '',
-  numTables: 0,
-  startTime: getDateStringFromNow(7, 9),
-  categories: [
-    {
-      name: '',
-      entryType: EntryType.Singles,
-      shortName: '',
-      entriesPerGrpMain: 3,
-      entriesPerGrpRemainder: 4,
-      entries: [],
-      groups: [],
-      durationMinutes: 0,
-      knockoutRounds: [],
-      numQualifiedPerGroup: 0
-    }
-  ]
-})
+// The reactive tournament document lives in @/app/documentStore. Re-exported
+// here so existing imports (`@/store/state`) keep working during the migration.
+// New code should import from @/app/documentStore directly.
+export { tournament } from '@/app/documentStore'
