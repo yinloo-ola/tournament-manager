@@ -268,7 +268,7 @@ describe('canonical model — serialize()', () => {
 })
 
 describe('canonical model — grounding with real fixture', () => {
-  it('parses testdata/tournament.json, rehydrates entries, and is stable', () => {
+  it('parses testdata/tournament.json, rehydrates entries, and is lossless + stable', () => {
     const path = resolve(process.cwd(), '../testdata/tournament.json')
     const json = readFileSync(path, 'utf-8')
     const parsed = parse(json)
@@ -276,9 +276,18 @@ describe('canonical model — grounding with real fixture', () => {
     for (const cat of parsed.categories) {
       for (const entry of cat.entries) expect(entry).toBeInstanceOf(Entry)
     }
+    // losslessness vs the original (Entry.from copies all fields, so nothing drops)
+    expect(JSON.parse(serialize(parsed))).toEqual(JSON.parse(json))
     // stability: normalizing once is a fixed point (secondary property check)
     const once = serialize(parsed)
     expect(serialize(parse(once))).toBe(once)
+  })
+})
+
+describe('canonical model — edge cases', () => {
+  it('round-trips an empty tournament (zero categories) losslessly', () => {
+    const empty = { name: '', numTables: 0, startTime: '2025-01-01T09:00', categories: [] }
+    expect(parse(JSON.stringify(empty))).toEqual(empty)
   })
 })
 

@@ -13,7 +13,7 @@ Requirements are listed in build order (dependencies first).
 
 ### Acceptance criteria
 - Given a representative tournament fixture (singles, with groups and knockout rounds), when `serialize()` then `parse()` is applied, then the result deep-equals the original.
-- Given a parsed tournament, when reading an entry's display name anywhere it appears (category entries, group match entries, knockout match entries), then it returns the computed name — proving `Entry` instances are rehydrated as class instances with the `name` getter (regression for today's `injectEntriesTournament`).
+- Given a parsed tournament, when reading a category entry's display name, then it returns the computed name — proving `Entry` instances are rehydrated as class instances with the `name` getter (regression for today's `injectEntriesTournament`). Entries live only in `category.entries[]`; groups and knockout rounds reference them by index, so no `Entry` instances are nested in matches.
 - Given `testdata/tournament.json`, when parsed, then every entry nested in categories, groups, and knockout matches is an `Entry` class instance.
 - Given edge fixtures (empty tournament, doubles, team), when round-tripped through serialize/parse, then the result is lossless.
 - Given the rest of the app, when it needs a tournament type, then it imports from `shared/model` — no other module re-implements tournament (de)serialization (`types.ts` is superseded).
@@ -21,7 +21,7 @@ Requirements are listed in build order (dependencies first).
 ### Integration tests
 - `should round-trip a tournament losslessly through serialize/parse` — `parse(serialize(t))` deep-equals `t` for singles/doubles/team fixtures.
 - `should rehydrate Entry class instances with a working name getter` — parsed entries are `Entry` instances whose `.name` returns the expected display name.
-- `should rehydrate entries nested in groups and knockout matches` — group/knockout match entries are `Entry` instances after parse.
+- `should preserve group entriesIdx and knockout structure` — groups reference entries by index (`entriesIdx`, incl. `EntryByeIdx`); knockout rounds/matches survive a round-trip (there are no `Entry` instances nested in matches).
 - `should be the single model source` — (structural) the app imports `Tournament`/`Entry` from `shared/model`; the legacy `types.ts` no longer defines them.
 
 ### Checkpoints: full
