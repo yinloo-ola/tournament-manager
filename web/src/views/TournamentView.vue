@@ -15,11 +15,11 @@ import {
   apiExportDraftSchedule,
   apiExportRoundRobinExcel,
   apiExportScoresheetWithTemplate,
-  apiGenerateRounds,
   apiImportFinalSchedule
 } from '@/client/client'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/features/draw/domain/groups'
+import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
 import { tournament } from '@/store/state'
 import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
 import { saveFileSink } from '@/features/tournament-doc/storage/fileAccess'
@@ -115,7 +115,7 @@ function startDraw(idx: number) {
   }
   drawIndex.value = idx
 }
-async function drawDone(groups: Array<Group>) {
+function drawDone(groups: Array<Group>) {
   if (
     tournament.value.categories[drawIndex.value].groups == null ||
     tournament.value.categories[drawIndex.value].groups.length === 0
@@ -128,9 +128,12 @@ async function drawDone(groups: Array<Group>) {
     )
   }
   drawIndex.value = -1
-  const tournamentRes = await apiGenerateRounds(tournament.value)
-  injectEntriesTournament(tournamentRes)
-  tournament.value = tournamentRes
+  try {
+    generateRoundsForTournament(tournament.value)
+  } catch (e: unknown) {
+    const error = e as Error
+    alert(error.message)
+  }
 }
 
 function showAlert(msg: string) {
@@ -268,9 +271,7 @@ function exportRoundRobin() {
 
 async function exportDraftSchedule() {
   try {
-    const tournamentRes = await apiGenerateRounds(tournament.value)
-    injectEntriesTournament(tournamentRes)
-    tournament.value = tournamentRes
+    generateRoundsForTournament(tournament.value)
   } catch (e: unknown) {
     const error = e as Error
     alert(error.message)

@@ -2,9 +2,9 @@
 import { tournament } from '@/store/state'
 import { computed, onMounted, ref } from 'vue'
 import router from '@/router'
-import GroupMatchesTab from '@/components/GroupMatchesTab.vue'
-import GroupsTab from '@/components/GroupsTab.vue'
-import KnockoutMatchesTab from '@/components/KnockoutMatchesTab.vue'
+import GroupMatchesTab from '@/features/matches/ui/GroupMatchesTab.vue'
+import GroupsTab from '@/features/matches/ui/GroupsTab.vue'
+import KnockoutMatchesTab from '@/features/matches/ui/KnockoutMatchesTab.vue'
 
 const props = defineProps({
   shortName: {
