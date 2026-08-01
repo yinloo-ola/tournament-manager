@@ -5,13 +5,13 @@ import {
   isGroupEmpty,
   isPlayerChosen,
   removePlayerFromAllGroups
-} from '@/calculator/groups'
+} from '@/features/draw/domain/groups'
 import { EntryEmptyIdx, type Category, type Group } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
-import SimpleButton from '../widgets/SimpleButton.vue'
+import SimpleButton from '../../../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'
 import { getPlayerDisplay } from '@/calculator/player_display'
-import { clearDraw, doDraw } from '@/calculator/draw'
+import { clearDraw, doDraw } from '@/features/draw/domain/draw'
 import OutlinedButton from '@/widgets/OutlinedButton.vue'
 
 let groups = ref<Array<Group>>([])

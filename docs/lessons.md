@@ -24,3 +24,14 @@ Reusable patterns and pitfalls. Generic rules only — strip domain specifics.
 - **The pickers take a single options object, not an array.** `showOpenFilePicker([{...}])` silently drops the `types` filter; pass `showOpenFilePicker({ types: [...] })`.
 - **In-place writes leak an exclusive lock if `close()` is skipped.** Wrap `createWritable()`/`write()`/`close()` in `try/finally`, or the next write to the same handle fails with `NoModificationAllowedError`.
 - **Persist the file handle across reloads if you want in-place save to survive a refresh.** A module-level handle ref resets to null on reload; restore it (with permission re-grant) on the resume path, or save takes the new-file/download path instead.
+
+## Go → TypeScript ports
+- **Decide error-message parity at the throw site, not by habit.** Go `fmt.Errorf("...: %w", err)` wraps context (e.g. a category short name) around an inner error. Ask: does the UI or any test assert the *wrapped* top-level string, or only the *inner* message? If only the inner message is surfaced (e.g. `"not enough players"`), throw the inner error directly; if endpoint-string parity matters, reconstruct the full wrapped message. Document the chosen parity per port so a later refactor doesn't silently narrow a user-facing message.
+
+  - A port that is a **synchronous** function returning a value and throwing on error (no `async`/`Promise` return) is invoked synchronously at the orchestration layer: the orchestrator's own `try/catch` intercepts the throw directly. Do not re-wrap a sync-thrower in an `await`/promise chain — it converts the synchronous throw into an unhandled rejection and mis-routes the `Error`, which is exactly the failure to assert in orchestration tests (assert the throw surfaces via `alert`/`rejects.toThrow` and assert no `fetch`).
+
+## Refactoring / relocation
+- **Treat a relocation as a verbatim move with import rebasing**: the relocated file must `diff` to zero except import lines rewritten to the project alias (`@/…`). Deletion of the original is safe **iff** a residual-importer grep is empty for the deleted symbol/paths — verify 'zero live importers,' never 'only legacy importers,' before `rm`. Co-locate a `__tests__/` dir with each relocated module (matching the project's test glob) so regression coverage moves with the code and stays green at every gate.
+
+## Review & verification
+- **An unreliable automated reviewer must not block completed work**: capture live verdicts where the tool delivers them; cover dimensions it timed out on via author self-review against directly reproducible evidence (rerun the green suite + static checks such as `vue-tsc --build --force` and `go test ./...`). Treat repeated reviewer timeouts (same symptom across every scope and thinking budget) as an infra pattern — assert, don't retry — and record it so a stalled review is attested on evidence rather than silently re-spawned.

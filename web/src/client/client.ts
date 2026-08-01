@@ -22,27 +22,6 @@ export async function apiExportRoundRobinExcel(tournament: Tournament) {
   })
 }
 
-export async function apiGenerateRounds(tournament: Tournament) {
-  validTournament(tournament)
-  return fetch('/api/generateRounds', {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json'
-    },
-    method: 'POST',
-    body: JSON.stringify(tournament)
-  }).then(function (res) {
-    if (!res.ok) {
-      return res.text().then((text) => {
-        throw new Error(
-          `Failed to generate rounds: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
-        )
-      })
-    }
-    return res.json()
-  })
-}
-
 export async function apiExportDraftSchedule(tournament: Tournament) {
   validTournament(tournament)
   return fetch('/api/exportDraftSchedule', {

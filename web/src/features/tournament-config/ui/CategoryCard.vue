@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { apiImportSinglesEntry, apiImportDoublesEntry, apiImportTeamEntry } from '@/client/client'
-import LabeledInput from '../widgets/LabeledInput.vue'
+import LabeledInput from '@/widgets/LabeledInput.vue'
 import { EntryType } from '@/types/types'
-import OutlinedButton from '../widgets/OutlinedButton.vue'
-import LabeledSelect from '../widgets/LabeledSelect.vue'
+import OutlinedButton from '@/widgets/OutlinedButton.vue'
+import LabeledSelect from '@/widgets/LabeledSelect.vue'
 import type { Category } from '@/types/types'
-import { isGroupEmpty } from '@/calculator/groups'
+import { isGroupEmpty } from '@/features/draw/domain/groups'
 import SimpleButton from '@/widgets/SimpleButton.vue'
 import router from '@/router'
 

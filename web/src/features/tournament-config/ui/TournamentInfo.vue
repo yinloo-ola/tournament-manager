@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import OutlinedInput from '../widgets/OutlinedInput.vue'
-import SimpleButton from '../widgets/SimpleButton.vue'
+import OutlinedInput from '@/widgets/OutlinedInput.vue'
+import SimpleButton from '@/widgets/SimpleButton.vue'
 import type { Tournament } from '@/types/types'
 
 const tournament = defineModel<Tournament>({
