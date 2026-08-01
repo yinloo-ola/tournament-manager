@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import CategoryCard from '../components/CategoryCard.vue'
 import TournamentInfo from '../components/TournamentInfo.vue'
-import TournamentDraw from '../components/TournamentDraw.vue'
+import TournamentDraw from '@/features/draw/ui/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
@@ -19,7 +19,7 @@ import {
   apiImportFinalSchedule
 } from '@/client/client'
 import { importFinalSchedule } from '@/calculator/schedule'
-import { calculatorGroups, getGroup } from '@/calculator/groups'
+import { calculatorGroups, getGroup } from '@/features/draw/domain/groups'
 import { tournament } from '@/store/state'
 import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
 import { saveFileSink } from '@/features/tournament-doc/storage/fileAccess'
