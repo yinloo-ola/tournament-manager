@@ -4,11 +4,14 @@ import type { FileSource, OpenedFile } from '../openDocument'
 // for both open-via-upload and save-via-download).
 export function downloadText(text: string, filename: string): void {
   const blob = new Blob([text], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.download = filename
-  link.href = URL.createObjectURL(blob)
+  link.href = url
   link.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }))
   link.remove()
+  // revoke after the browser has captured the blob (avoids leak; safe vs cancel)
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 // Fallback file source for browsers without the File System Access API

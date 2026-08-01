@@ -2,10 +2,15 @@ import { tournament, currentFileHandle } from '@/app/documentStore'
 import { recordRecent } from './storage/recents'
 import { serialize } from '@/shared/model'
 
+// What a save produced. Distinguishing these lets the UI inform the user
+// correctly (e.g. "saved as a download — the on-disk file was not updated").
+export type SaveOutcome =
+  | { kind: 'file'; handle: FileSystemFileHandle } // written to a file (in-place or newly created)
+  | { kind: 'download' } // saved via browser download (no FSA, or permission-denied fallback)
+  | { kind: 'cancelled' } // user dismissed the save picker
+
 export interface FileSink {
-  // Write the text. Returns the handle now associated with the document (an
-  // in-place write or a newly-created file), or null if saved via download.
-  write(text: string): Promise<FileSystemFileHandle | null>
+  write(text: string): Promise<SaveOutcome> // throws on genuine failure
 }
 
 export class SaveFileError extends Error {
@@ -15,28 +20,43 @@ export class SaveFileError extends Error {
   }
 }
 
+export interface SaveResult {
+  saved: boolean
+  downloaded: boolean
+}
+
 // Save the active tournament through a sink: serialize -> write -> remember any
-// returned handle -> refresh the recent's lastModified. Sink failures become
-// SaveFileError (the caller surfaces them; the document is never corrupted).
-export async function saveTournamentDocument(sink: FileSink): Promise<{ downloaded: boolean }> {
+// handle -> refresh the recent. Cancel is a no-op; genuine sink failures become
+// SaveFileError. The document is never corrupted (we only remember a handle /
+// touch recents after a successful write).
+export async function saveTournamentDocument(sink: FileSink): Promise<SaveResult> {
   const text = serialize(tournament.value)
 
-  let handle: FileSystemFileHandle | null
+  let outcome: SaveOutcome
   try {
-    handle = await sink.write(text)
+    outcome = await sink.write(text)
   } catch (error) {
     throw new SaveFileError(
       error instanceof Error ? `Could not save the file: ${error.message}` : 'Could not save the file.'
     )
   }
 
+  if (outcome.kind === 'cancelled') return { saved: false, downloaded: false }
+
+  const handle = outcome.kind === 'file' ? outcome.handle : null
   if (handle) currentFileHandle.value = handle
 
-  await recordRecent({
-    name: tournament.value.name || 'tournament',
-    sourceKind: handle ? 'file' : 'downloaded',
-    fileHandle: handle ?? undefined
-  })
+  // Recents is best-effort: a failure here must not turn a successful file save
+  // into a misleading "Save failed".
+  try {
+    await recordRecent({
+      name: tournament.value.name || 'tournament',
+      sourceKind: handle ? 'file' : 'downloaded',
+      fileHandle: handle ?? undefined
+    })
+  } catch (error) {
+    console.warn('failed to update recents after save', error)
+  }
 
-  return { downloaded: !handle }
+  return { saved: true, downloaded: outcome.kind === 'download' }
 }

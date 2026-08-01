@@ -9,7 +9,6 @@ import ModalDialog from '../widgets/ModalDialog.vue'
 import { type Group, type KnockoutRound, type Tournament, Entry, EntryType } from '@/types/types'
 import {
   dateInYyyyMmDdHhMmSs,
-  exportTournamentJson,
   injectEntriesTournament
 } from '@/calculator/tournament'
 import {
@@ -138,13 +137,13 @@ function showAlert(msg: string) {
   alert(msg)
 }
 
-function exportTournament() {
-  exportTournamentJson(tournament.value)
-}
-
 async function saveTournament() {
   try {
-    await saveTournamentDocument(saveFileSink())
+    const result = await saveTournamentDocument(saveFileSink())
+    if (!result.saved) return // user cancelled the save picker
+    if (result.downloaded) {
+      showAlert('Saved as a download — the original file was not updated.')
+    }
   } catch (e) {
     showAlert(e instanceof Error ? e.message : 'Save failed')
   }
