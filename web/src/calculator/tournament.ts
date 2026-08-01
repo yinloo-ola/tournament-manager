@@ -1,8 +1,8 @@
-import { Entry, type Tournament } from '@/types/types'
+import { rehydrate, serialize, type Tournament } from '@/shared/model'
 
 export function exportTournamentJson(tournament: Tournament) {
   const filename = `tournament_${tournament.name}_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.json`
-  const blob = new Blob([JSON.stringify(tournament)], { type: 'text/json' })
+  const blob = new Blob([serialize(tournament)], { type: 'text/json' })
   const link = document.createElement('a')
 
   link.download = filename
@@ -48,41 +48,7 @@ export function dateInYyyyMmDdHhMmSs(date: Date, dateDiveder: string = '-') {
 }
 
 export function injectEntriesTournament(obj: Tournament) {
-  // Convert plain entry objects to Entry class instances
-  if (obj.categories && Array.isArray(obj.categories)) {
-    obj.categories.forEach((category: any) => {
-      if (category.entries && Array.isArray(category.entries)) {
-        category.entries = category.entries.map((entry: any) => Entry.from(entry))
-      }
-      // Also convert entries within groups if they exist
-      if (category.groups && Array.isArray(category.groups)) {
-        category.groups.forEach((group: any) => {
-          if (group.entries && Array.isArray(group.entries)) {
-            group.entries = group.entries.map((entry: any) => Entry.from(entry))
-          }
-          if (group.rounds && Array.isArray(group.rounds)) {
-            group.rounds.forEach((round: any) => {
-              round.forEach((match: any) => {
-                if (match.entry1) match.entry1 = Entry.from(match.entry1)
-                if (match.entry2) match.entry2 = Entry.from(match.entry2)
-                if (match.winner) match.winner = Entry.from(match.winner)
-              })
-            })
-          }
-        })
-      }
-      // Also convert entries within knockout rounds if they exist
-      if (category.knockoutRounds && Array.isArray(category.knockoutRounds)) {
-        category.knockoutRounds.forEach((round: any) => {
-          if (round.matches && Array.isArray(round.matches)) {
-            round.matches.forEach((match: any) => {
-              if (match.entry1) match.entry1 = Entry.from(match.entry1)
-              if (match.entry2) match.entry2 = Entry.from(match.entry2)
-              if (match.winner) match.winner = Entry.from(match.winner)
-            })
-          }
-        })
-      }
-    })
-  }
+  // Delegate to the canonical model rehydration. Entries live only in
+  // category.entries[]; groups and knockout rounds reference them by index.
+  rehydrate(obj)
 }
