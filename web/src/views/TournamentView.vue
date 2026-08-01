@@ -22,6 +22,8 @@ import {
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/calculator/groups'
 import { tournament } from '@/store/state'
+import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
+import { saveFileSink } from '@/features/tournament-doc/storage/fileAccess'
 
 function addCategory() {
   tournament.value.categories.push({
@@ -138,6 +140,14 @@ function showAlert(msg: string) {
 
 function exportTournament() {
   exportTournamentJson(tournament.value)
+}
+
+async function saveTournament() {
+  try {
+    await saveTournamentDocument(saveFileSink())
+  } catch (e) {
+    showAlert(e instanceof Error ? e.message : 'Save failed')
+  }
 }
 
 const exportScoresheetWithTemplateFile = ref<HTMLInputElement | null>(null)
@@ -298,7 +308,7 @@ function updateGroups(groups: Group[]) {
           transition-all duration-200
           hover:cursor-pointer active:scale-90"
         >
-          <MenuItem label="SAVE" @click="exportTournament()" />
+          <MenuItem label="SAVE" @click="saveTournament()" />
           <MenuItem label="LOAD" @click="tournamentFile?.click()" />
           <MenuItem divider />
           <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />

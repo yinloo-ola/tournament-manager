@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { tournament, newTournament } from '@/app/documentStore'
+import { tournament, newTournament, currentFileHandle } from '@/app/documentStore'
 import {
   listRecents,
   removeRecent,
@@ -38,6 +38,7 @@ async function importTournament() {
 
 function createNew() {
   tournament.value = newTournament()
+  currentFileHandle.value = null
   router.push('/tournament')
 }
 

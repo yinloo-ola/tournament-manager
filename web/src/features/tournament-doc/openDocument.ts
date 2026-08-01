@@ -1,4 +1,4 @@
-import { tournament } from '@/app/documentStore'
+import { tournament, currentFileHandle } from '@/app/documentStore'
 import { recordRecent } from './storage/recents'
 import { parse, type Tournament } from '@/shared/model'
 
@@ -40,6 +40,7 @@ export async function openTournamentFromFile(source: FileSource): Promise<void> 
   }
 
   tournament.value = parsed
+  currentFileHandle.value = file.handle ?? null
   await recordRecent({
     name: parsed.name || file.name,
     sourceKind: file.handle ? 'file' : 'downloaded',
