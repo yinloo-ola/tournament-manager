@@ -22,48 +22,6 @@ export async function apiExportRoundRobinExcel(tournament: Tournament) {
   })
 }
 
-export async function apiExportDraftSchedule(tournament: Tournament) {
-  validTournament(tournament)
-  return fetch('/api/exportDraftSchedule', {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json'
-    },
-    method: 'POST',
-    body: JSON.stringify(tournament)
-  }).then(function (res) {
-    if (!res.ok) {
-      return res.text().then((text) => {
-        throw new Error(
-          `Failed to export draft schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
-        )
-      })
-    }
-    return res.blob()
-  })
-}
-
-export async function apiImportFinalSchedule(file: File) {
-  const form = new FormData()
-  form.append('file', file)
-  return fetch('/api/importFinalSchedule', {
-    headers: {
-      Accept: 'application/json'
-    },
-    method: 'POST',
-    body: form
-  }).then(function (res) {
-    if (!res.ok) {
-      return res.text().then((text) => {
-        throw new Error(
-          `Failed to import final schedule: ${res.status} ${res.statusText}${text ? ' - ' + text : ''}`
-        )
-      })
-    }
-    return res.json()
-  })
-}
-
 export async function apiExportScoresheetWithTemplate(tournament: Tournament, file: File) {
   validTournament(tournament)
   const form = new FormData()

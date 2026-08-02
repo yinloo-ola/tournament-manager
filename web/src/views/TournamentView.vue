@@ -12,14 +12,15 @@ import {
   injectEntriesTournament
 } from '@/calculator/tournament'
 import {
-  apiExportDraftSchedule,
   apiExportRoundRobinExcel,
-  apiExportScoresheetWithTemplate,
-  apiImportFinalSchedule
+  apiExportScoresheetWithTemplate
 } from '@/client/client'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/features/draw/domain/groups'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
+import { scheduleMatches } from '@/features/schedule/domain/scheduleMatches'
+import { createDraftScheduleWorkbook, workbookToBuffer } from '@/features/schedule/excel/draftScheduleWorkbook'
+import { importFinalScheduleFromBuffer } from '@/features/schedule/domain/importFinalSchedule'
 import { tournament } from '@/store/state'
 import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
 import { saveFileSink } from '@/features/tournament-doc/storage/fileAccess'
@@ -203,24 +204,19 @@ function finalScheduleFileSelected(event: Event) {
     alert('No file selected')
     return
   }
-  apiImportFinalSchedule(file)
-    .then(
-      (response: {
-        categoriesGroupsMap: { [category: string]: Group[] }
-        categoriesKnockoutRoundsMap: { [category: string]: KnockoutRound[] }
-      }) => {
-        console.log(response)
-        const ok = importFinalSchedule(
-          response.categoriesGroupsMap,
-          response.categoriesKnockoutRoundsMap,
-          tournament.value
-        )
-        if (!ok) {
-          return
-        }
-        alert('Final schedule imported successfully')
+  file.arrayBuffer()
+    .then(async (buffer: ArrayBuffer) => {
+      const result = await importFinalScheduleFromBuffer(new Uint8Array(buffer))
+      const ok = importFinalSchedule(
+        result.categoriesGroupsMap,
+        result.categoriesKnockoutRoundsMap,
+        tournament.value
+      )
+      if (!ok) {
+        return
       }
-    )
+      alert('Final schedule imported successfully')
+    })
     .catch((error) => {
       console.error('Error importing final schedule:', error)
       alert('Error importing final schedule: ' + error.message)
@@ -277,18 +273,23 @@ async function exportDraftSchedule() {
     alert(error.message)
     return
   }
-  apiExportDraftSchedule(tournament.value)
-    .then((blob) => {
-      const a = document.createElement('a')
-      const file = window.URL.createObjectURL(blob)
-      a.href = file
-      a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
-      a.click()
-      window.URL.revokeObjectURL(file)
+  try {
+    const schedule = scheduleMatches(tournament.value)
+    const wb = createDraftScheduleWorkbook(tournament.value, schedule)
+    const buffer = await workbookToBuffer(wb)
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
-    .catch((e: Error) => {
-      alert(e.message)
-    })
+    const a = document.createElement('a')
+    const file = window.URL.createObjectURL(blob)
+    a.href = file
+    a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
+    a.click()
+    window.URL.revokeObjectURL(file)
+  } catch (e: unknown) {
+    const error = e as Error
+    alert(error.message)
+  }
 }
 
 function updateGroups(groups: Group[]) {
