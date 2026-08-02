@@ -1,0 +1,255 @@
+{
+  "entries": [
+    [
+      "SN",
+      "Team",
+      "Club",
+      "Seeding"
+    ],
+    [
+      "1",
+      "Absolute",
+      "CHN",
+      "1"
+    ],
+    [
+      "2",
+      "Bestest",
+      "CHN",
+      "2"
+    ],
+    [
+      "3",
+      "Champions",
+      "",
+      "3"
+    ],
+    [
+      "4",
+      "Delicious",
+      "",
+      "4"
+    ],
+    [
+      "5",
+      "Excellence",
+      "EUR"
+    ],
+    [
+      "6",
+      "Fabulous",
+      "EUR"
+    ],
+    [
+      "7",
+      "Goldilock",
+      "KOR"
+    ],
+    [
+      "8",
+      "Hemen"
+    ],
+    [
+      "9",
+      "Ipad"
+    ]
+  ],
+  "players": [
+    [
+      "SN",
+      "Name",
+      "Date Of Birth",
+      "Gender",
+      "Team"
+    ],
+    [
+      "1",
+      "Fan Zhendong",
+      "36893",
+      "M",
+      "Absolute"
+    ],
+    [
+      "2",
+      "Ma Long",
+      "36894",
+      "M",
+      "Absolute"
+    ],
+    [
+      "3",
+      "Tomokazu Harimoto",
+      "36895",
+      "M",
+      "Absolute"
+    ],
+    [
+      "4",
+      "Dang Qiu",
+      "36896",
+      "M",
+      "Bestest"
+    ],
+    [
+      "5",
+      "Felix Lebrun",
+      "36897",
+      "M",
+      "Bestest"
+    ],
+    [
+      "6",
+      "Darko Jorgic",
+      "36898",
+      "M",
+      "Bestest"
+    ],
+    [
+      "7",
+      "Lee Sangsu",
+      "36899",
+      "M",
+      "Champions"
+    ],
+    [
+      "8",
+      "Quadri Aruna",
+      "36900",
+      "M",
+      "Champions"
+    ],
+    [
+      "9",
+      "Anton Kallberg",
+      "36901",
+      "M",
+      "Champions"
+    ],
+    [
+      "10",
+      "Koki Niwa",
+      "36902",
+      "M",
+      "Delicious"
+    ],
+    [
+      "11",
+      "Simon Gauzy",
+      "36903",
+      "M",
+      "Delicious"
+    ],
+    [
+      "12",
+      "Kristian Karlsson",
+      "36904",
+      "M",
+      "Delicious"
+    ],
+    [
+      "13",
+      "Jonathan Groth",
+      "36905",
+      "M",
+      "Excellence"
+    ],
+    [
+      "14",
+      "Wang Chuqin",
+      "36906",
+      "M",
+      "Excellence"
+    ],
+    [
+      "15",
+      "Liang Jingkun",
+      "36907",
+      "M",
+      "Excellence"
+    ],
+    [
+      "16",
+      "Lin Gaoyuan",
+      "36908",
+      "M",
+      "Fabulous"
+    ],
+    [
+      "17",
+      "Lin Yun-Ju",
+      "36909",
+      "M",
+      "Fabulous"
+    ],
+    [
+      "18",
+      "Truls Moregard",
+      "36910",
+      "M",
+      "Fabulous"
+    ],
+    [
+      "19",
+      "Patrick Franziska",
+      "36911",
+      "M",
+      "Goldilock"
+    ],
+    [
+      "20",
+      "Jang Woojin",
+      "36912",
+      "M",
+      "Goldilock"
+    ],
+    [
+      "21",
+      "Liam Pitchford",
+      "36913",
+      "M",
+      "Goldilock"
+    ],
+    [
+      "22",
+      "Mattias Falck",
+      "36914",
+      "M",
+      "Hemen"
+    ],
+    [
+      "23",
+      "Ovidiu Ionescu",
+      "36915",
+      "M",
+      "Hemen"
+    ],
+    [
+      "24",
+      "Timo Boll",
+      "36916",
+      "M",
+      "Hemen"
+    ],
+    [
+      "25",
+      "Andrej Gacina",
+      "36917",
+      "M",
+      "Ipad"
+    ],
+    [
+      "26",
+      "Alvaro Robles",
+      "36918",
+      "M",
+      "Ipad"
+    ],
+    [
+      "27",
+      "Izzac Quek",
+      "36919",
+      "M",
+      "Ipad"
+    ]
+  ]
+}

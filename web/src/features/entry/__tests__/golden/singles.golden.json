@@ -1,0 +1,361 @@
+[
+  {
+    "entryType": "Singles",
+    "seeding": 1,
+    "club": "China",
+    "singlesEntry": {
+      "player": {
+        "name": "Fan Zhendong",
+        "dateOfBirth": "36892",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 2,
+    "club": "China",
+    "singlesEntry": {
+      "player": {
+        "name": "Wang Chuqin",
+        "dateOfBirth": "36893",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 3,
+    "club": "China",
+    "singlesEntry": {
+      "player": {
+        "name": "Ma Long",
+        "dateOfBirth": "36894",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 4,
+    "club": "Brazil",
+    "singlesEntry": {
+      "player": {
+        "name": "Hugo Calderano",
+        "dateOfBirth": "36895",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 5,
+    "club": "Japan",
+    "singlesEntry": {
+      "player": {
+        "name": "Tomokazu Harimoto",
+        "dateOfBirth": "36896",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 6,
+    "club": "China",
+    "singlesEntry": {
+      "player": {
+        "name": "Liang Jingkun",
+        "dateOfBirth": "36897",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 7,
+    "club": "China",
+    "singlesEntry": {
+      "player": {
+        "name": "Lin Gaoyuan",
+        "dateOfBirth": "36898",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "seeding": 8,
+    "club": "Germany",
+    "singlesEntry": {
+      "player": {
+        "name": "Dang Qiu",
+        "dateOfBirth": "36899",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "France",
+    "singlesEntry": {
+      "player": {
+        "name": "Felix Lebrun",
+        "dateOfBirth": "36900",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Sweden",
+    "singlesEntry": {
+      "player": {
+        "name": "Truls Moregard",
+        "dateOfBirth": "36901",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Slovenia",
+    "singlesEntry": {
+      "player": {
+        "name": "Darko Jorgic",
+        "dateOfBirth": "36902",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Taiwan",
+    "singlesEntry": {
+      "player": {
+        "name": "Lin Yun-Ju",
+        "dateOfBirth": "36903",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Germany",
+    "singlesEntry": {
+      "player": {
+        "name": "Patrick Franziska",
+        "dateOfBirth": "36904",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Sweden",
+    "singlesEntry": {
+      "player": {
+        "name": "Mattias Falck",
+        "dateOfBirth": "36905",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "South Korea",
+    "singlesEntry": {
+      "player": {
+        "name": "Lee Sangsu",
+        "dateOfBirth": "36906",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "South Korea",
+    "singlesEntry": {
+      "player": {
+        "name": "Jang Woojin",
+        "dateOfBirth": "36907",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Nigeria",
+    "singlesEntry": {
+      "player": {
+        "name": "Quadri Aruna",
+        "dateOfBirth": "36908",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "England",
+    "singlesEntry": {
+      "player": {
+        "name": "Liam Pitchford",
+        "dateOfBirth": "36909",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Sweden",
+    "singlesEntry": {
+      "player": {
+        "name": "Anton Kallberg",
+        "dateOfBirth": "36910",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Japan",
+    "singlesEntry": {
+      "player": {
+        "name": "Koki Niwa",
+        "dateOfBirth": "36911",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Germany",
+    "singlesEntry": {
+      "player": {
+        "name": "Timo Boll",
+        "dateOfBirth": "36912",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "France",
+    "singlesEntry": {
+      "player": {
+        "name": "Simon Gauzy",
+        "dateOfBirth": "36913",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Romania",
+    "singlesEntry": {
+      "player": {
+        "name": "Ovidiu Ionescu",
+        "dateOfBirth": "36914",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Sweden",
+    "singlesEntry": {
+      "player": {
+        "name": "Kristian Karlsson",
+        "dateOfBirth": "36915",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Croatia",
+    "singlesEntry": {
+      "player": {
+        "name": "Andrej Gacina",
+        "dateOfBirth": "36916",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Denmark",
+    "singlesEntry": {
+      "player": {
+        "name": "Jonathan Groth",
+        "dateOfBirth": "36917",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  },
+  {
+    "entryType": "Singles",
+    "club": "Spain",
+    "singlesEntry": {
+      "player": {
+        "name": "Alvaro Robles",
+        "dateOfBirth": "36918",
+        "gender": "M"
+      }
+    },
+    "doublesEntry": null,
+    "teamEntry": null
+  }
+]

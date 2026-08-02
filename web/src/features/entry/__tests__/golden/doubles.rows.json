@@ -1,0 +1,251 @@
+{
+  "entries": [
+    [
+      "SN",
+      "Player1",
+      "Player2",
+      "Club",
+      "Seeding"
+    ],
+    [
+      "1",
+      "Fan Zhendong",
+      "Wang Chuqin",
+      "CHN",
+      "1"
+    ],
+    [
+      "2",
+      "Ma Long",
+      "Liang Jingkun",
+      "CHN",
+      "2"
+    ],
+    [
+      "3",
+      "Tomokazu Harimoto",
+      "Lin Gaoyuan",
+      "",
+      "3"
+    ],
+    [
+      "4",
+      "Dang Qiu",
+      "Lin Yun-Ju",
+      "",
+      "4"
+    ],
+    [
+      "5",
+      "Felix Lebrun",
+      "Truls Moregard",
+      "EUR"
+    ],
+    [
+      "6",
+      "Darko Jorgic",
+      "Patrick Franziska",
+      "EUR"
+    ],
+    [
+      "7",
+      "Lee Sangsu",
+      "Jang Woojin",
+      "KOR"
+    ],
+    [
+      "8",
+      "Quadri Aruna",
+      "Liam Pitchford"
+    ],
+    [
+      "9",
+      "Anton Kallberg",
+      "Mattias Falck"
+    ],
+    [
+      "10",
+      "Koki Niwa",
+      "Ovidiu Ionescu"
+    ],
+    [
+      "11",
+      "Simon Gauzy",
+      "Timo Boll"
+    ],
+    [
+      "12",
+      "Kristian Karlsson",
+      "Andrej Gacina"
+    ],
+    [
+      "13",
+      "Jonathan Groth",
+      "Alvaro Robles"
+    ]
+  ],
+  "players": [
+    [
+      "SN",
+      "Name",
+      "Date Of Birth",
+      "Gender"
+    ],
+    [
+      "1",
+      "Fan Zhendong",
+      "36893",
+      "M"
+    ],
+    [
+      "2",
+      "Ma Long",
+      "36894",
+      "M"
+    ],
+    [
+      "3",
+      "Tomokazu Harimoto",
+      "36895",
+      "M"
+    ],
+    [
+      "4",
+      "Dang Qiu",
+      "36896",
+      "M"
+    ],
+    [
+      "5",
+      "Felix Lebrun",
+      "36897",
+      "M"
+    ],
+    [
+      "6",
+      "Darko Jorgic",
+      "36898",
+      "M"
+    ],
+    [
+      "7",
+      "Lee Sangsu",
+      "36899",
+      "M"
+    ],
+    [
+      "8",
+      "Quadri Aruna",
+      "36900",
+      "M"
+    ],
+    [
+      "9",
+      "Anton Kallberg",
+      "36901",
+      "M"
+    ],
+    [
+      "10",
+      "Koki Niwa",
+      "36902",
+      "M"
+    ],
+    [
+      "11",
+      "Simon Gauzy",
+      "36903",
+      "M"
+    ],
+    [
+      "12",
+      "Kristian Karlsson",
+      "36904",
+      "M"
+    ],
+    [
+      "13",
+      "Jonathan Groth",
+      "36905",
+      "M"
+    ],
+    [
+      "14",
+      "Wang Chuqin",
+      "36906",
+      "M"
+    ],
+    [
+      "15",
+      "Liang Jingkun",
+      "36907",
+      "M"
+    ],
+    [
+      "16",
+      "Lin Gaoyuan",
+      "36908",
+      "M"
+    ],
+    [
+      "17",
+      "Lin Yun-Ju",
+      "36909",
+      "M"
+    ],
+    [
+      "18",
+      "Truls Moregard",
+      "36910",
+      "M"
+    ],
+    [
+      "19",
+      "Patrick Franziska",
+      "36911",
+      "M"
+    ],
+    [
+      "20",
+      "Jang Woojin",
+      "36912",
+      "M"
+    ],
+    [
+      "21",
+      "Liam Pitchford",
+      "36913",
+      "M"
+    ],
+    [
+      "22",
+      "Mattias Falck",
+      "36914",
+      "M"
+    ],
+    [
+      "23",
+      "Ovidiu Ionescu",
+      "36915",
+      "M"
+    ],
+    [
+      "24",
+      "Timo Boll",
+      "36916",
+      "M"
+    ],
+    [
+      "25",
+      "Andrej Gacina",
+      "36917",
+      "M"
+    ],
+    [
+      "26",
+      "Alvaro Robles",
+      "36918",
+      "M"
+    ]
+  ]
+}

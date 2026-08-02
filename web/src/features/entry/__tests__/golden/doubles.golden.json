@@ -1,0 +1,258 @@
+[
+  {
+    "entryType": "Doubles",
+    "seeding": 1,
+    "club": "CHN",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Fan Zhendong",
+          "dateOfBirth": "36893",
+          "gender": "M"
+        },
+        {
+          "name": "Wang Chuqin",
+          "dateOfBirth": "36906",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "seeding": 2,
+    "club": "CHN",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Ma Long",
+          "dateOfBirth": "36894",
+          "gender": "M"
+        },
+        {
+          "name": "Liang Jingkun",
+          "dateOfBirth": "36907",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "seeding": 3,
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Tomokazu Harimoto",
+          "dateOfBirth": "36895",
+          "gender": "M"
+        },
+        {
+          "name": "Lin Gaoyuan",
+          "dateOfBirth": "36908",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "seeding": 4,
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Dang Qiu",
+          "dateOfBirth": "36896",
+          "gender": "M"
+        },
+        {
+          "name": "Lin Yun-Ju",
+          "dateOfBirth": "36909",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "club": "EUR",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Felix Lebrun",
+          "dateOfBirth": "36897",
+          "gender": "M"
+        },
+        {
+          "name": "Truls Moregard",
+          "dateOfBirth": "36910",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "club": "EUR",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Darko Jorgic",
+          "dateOfBirth": "36898",
+          "gender": "M"
+        },
+        {
+          "name": "Patrick Franziska",
+          "dateOfBirth": "36911",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "club": "KOR",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Lee Sangsu",
+          "dateOfBirth": "36899",
+          "gender": "M"
+        },
+        {
+          "name": "Jang Woojin",
+          "dateOfBirth": "36912",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Quadri Aruna",
+          "dateOfBirth": "36900",
+          "gender": "M"
+        },
+        {
+          "name": "Liam Pitchford",
+          "dateOfBirth": "36913",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Anton Kallberg",
+          "dateOfBirth": "36901",
+          "gender": "M"
+        },
+        {
+          "name": "Mattias Falck",
+          "dateOfBirth": "36914",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Koki Niwa",
+          "dateOfBirth": "36902",
+          "gender": "M"
+        },
+        {
+          "name": "Ovidiu Ionescu",
+          "dateOfBirth": "36915",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Simon Gauzy",
+          "dateOfBirth": "36903",
+          "gender": "M"
+        },
+        {
+          "name": "Timo Boll",
+          "dateOfBirth": "36916",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Kristian Karlsson",
+          "dateOfBirth": "36904",
+          "gender": "M"
+        },
+        {
+          "name": "Andrej Gacina",
+          "dateOfBirth": "36917",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  },
+  {
+    "entryType": "Doubles",
+    "singlesEntry": null,
+    "doublesEntry": {
+      "players": [
+        {
+          "name": "Jonathan Groth",
+          "dateOfBirth": "36905",
+          "gender": "M"
+        },
+        {
+          "name": "Alvaro Robles",
+          "dateOfBirth": "36918",
+          "gender": "M"
+        }
+      ]
+    },
+    "teamEntry": null
+  }
+]
