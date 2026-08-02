@@ -141,6 +141,47 @@ func buildOracleSinglesEntries(n int) []model.Entry {
 	return entries
 }
 
+// ---------------------------------------------------------------------------
+// Draft schedule workbook cell-value oracle (matches sheet)
+// ---------------------------------------------------------------------------
+
+func TestOracleDraftMatchesValues(t *testing.T) {
+	tournament := buildOracleTournament()
+	tournament2, err := GenerateRoundsForTournament(tournament)
+	require.NoError(t, err)
+
+	book, err := CreateDraftSchedule(tournament2)
+	require.NoError(t, err)
+
+	// Capture matches sheet rows with RawCellValue (matches excelize GetRows behavior)
+	rows, err := book.GetRows(matchesSheetName)
+	require.NoError(t, err)
+
+	// Convert to [][]string for JSON (GetRows already returns [][]string,
+	// but some trailing nil entries may exist — trim them)
+	cleanRows := make([][]string, 0, len(rows))
+	for _, row := range rows {
+		cleanRows = append(cleanRows, row)
+	}
+
+	path := filepath.Join(oracleGoldenDir(), "draft_matches.golden.json")
+	if *oracleUpdate {
+		data, _ := json.MarshalIndent(cleanRows, "", "  ")
+		data = append(data, '\n')
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+		require.NoError(t, os.WriteFile(path, data, 0644))
+		t.Logf("updated %s", path)
+		return
+	}
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err, "golden file %s must exist; run with -update to create", path)
+
+	var expected [][]string
+	require.NoError(t, json.Unmarshal(data, &expected))
+	require.Equal(t, expected, cleanRows, "matches sheet rows must match golden")
+}
+
 func TestOracleScheduleMatches(t *testing.T) {
 	tournament := buildOracleTournament()
 
