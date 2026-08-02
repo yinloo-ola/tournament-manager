@@ -3,7 +3,7 @@
 Plan: docs/plans/2026-08-01-pure-frontend-slice2-entry-import-implementation.md
 Branch: feature/pure-frontend-slice2-entry-import
 Started: 2026-08-01T06:00:00Z
-Last updated: 2026-08-01T06:50:00Z
+Last updated: 2026-08-01T07:00:00Z
 Setup: done
 
 | # | Status | Requirement | Commit |
@@ -13,4 +13,4 @@ Setup: done
 | 3 | ✅ done | Doubles import | 5e2d91f |
 | 4 | ✅ done | Team import | 5b47417 |
 | 5 | ✅ done | CategoryCard + TournamentView wiring | aef09b4 |
-| 6 | ⬜ pending | Structural cleanup — drop legacy client functions | — |
+| 6 | ✅ done | Structural cleanup — drop legacy client functions | 108044e |
