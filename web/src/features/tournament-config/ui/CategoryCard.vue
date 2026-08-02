@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { readWorkbook } from '@/shared/excel/readWorkbook'
-import { importSinglesEntries } from '@/features/entry/domain/importSingles'
+import { importSinglesEntries, type EntryLike } from '@/features/entry/domain/importSingles'
 import { importDoublesEntries } from '@/features/entry/domain/importDoubles'
 import { importTeamEntries } from '@/features/entry/domain/importTeam'
 import LabeledInput from '@/widgets/LabeledInput.vue'
@@ -23,25 +23,32 @@ async function onFileSelected(event: any) {
 
   const selectedFile: File = event.target.files[0]
 
+  // Snapshot entryType + team bounds ONCE, before any await, so the guards,
+  // the importer dispatch, and the importer args all use consistent values —
+  // a mid-read UI change cannot run the wrong importer (TOCTOU).
+  const entryType = category.value.entryType
+  const minPlayers = category.value.minPlayers
+  const maxPlayers = category.value.maxPlayers
+
   // Check the category entryType and call the appropriate local importer.
   // Only readWorkbook is async (ExcelJS is Promise-based); the importers are
   // synchronous and throw inside the try/catch, so their Error.message
   // surfaces directly via alert. Never await the importer — that would turn
   // the throw into an unhandled rejection.
-  switch (category.value.entryType) {
+  switch (entryType) {
     case EntryType.Singles:
     case EntryType.Doubles:
     case EntryType.Team: {
-      if (category.value.entryType === EntryType.Team) {
-        if (!category.value.minPlayers || !category.value.maxPlayers) {
+      if (entryType === EntryType.Team) {
+        if (!minPlayers || !maxPlayers) {
           alert('Please set minimum and maximum players for team')
           return
         }
-        if (category.value.minPlayers < 1 || category.value.maxPlayers < 1) {
+        if (minPlayers < 1 || maxPlayers < 1) {
           alert('Minimum and maximum players must be greater than 0')
           return
         }
-        if (category.value.minPlayers > category.value.maxPlayers) {
+        if (minPlayers > maxPlayers) {
           alert('Minimum players must be less than maximum players')
           return
         }
@@ -49,8 +56,8 @@ async function onFileSelected(event: any) {
 
       try {
         const workbook = await readWorkbook(selectedFile)
-        let data
-        switch (category.value.entryType) {
+        let data: EntryLike[]
+        switch (entryType) {
           case EntryType.Singles:
             data = importSinglesEntries(workbook)
             break
@@ -58,11 +65,7 @@ async function onFileSelected(event: any) {
             data = importDoublesEntries(workbook)
             break
           case EntryType.Team:
-            data = importTeamEntries(
-              workbook,
-              category.value.minPlayers!,
-              category.value.maxPlayers!
-            )
+            data = importTeamEntries(workbook, minPlayers!, maxPlayers!)
             break
         }
         emit('playersImported', data)
