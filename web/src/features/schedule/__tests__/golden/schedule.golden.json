@@ -1,0 +1,495 @@
+{
+  "startTime": "2025-03-22T09:00:00Z",
+  "timeSlots": [
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": 0,
+            "entry2Idx": 1,
+            "datetime": "2025-03-22T09:00:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "MS",
+            "groupIdx": 0,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 2,
+            "entry2Idx": 3,
+            "datetime": "2025-03-22T09:00:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "MS",
+            "groupIdx": 0,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 4,
+            "entry2Idx": 5,
+            "datetime": "2025-03-22T09:00:00Z",
+            "durationMinutes": 30,
+            "table": "T3",
+            "categoryShortName": "MS",
+            "groupIdx": 1,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 6,
+            "entry2Idx": 7,
+            "datetime": "2025-03-22T09:00:00Z",
+            "durationMinutes": 30,
+            "table": "T4",
+            "categoryShortName": "MS",
+            "groupIdx": 1,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": 0,
+            "entry2Idx": 2,
+            "datetime": "2025-03-22T09:30:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "MS",
+            "groupIdx": 0,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 1,
+            "entry2Idx": 3,
+            "datetime": "2025-03-22T09:30:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "MS",
+            "groupIdx": 0,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 4,
+            "entry2Idx": 6,
+            "datetime": "2025-03-22T09:30:00Z",
+            "durationMinutes": 30,
+            "table": "T3",
+            "categoryShortName": "MS",
+            "groupIdx": 1,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 5,
+            "entry2Idx": 7,
+            "datetime": "2025-03-22T09:30:00Z",
+            "durationMinutes": 30,
+            "table": "T4",
+            "categoryShortName": "MS",
+            "groupIdx": 1,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": 0,
+            "entry2Idx": 3,
+            "datetime": "2025-03-22T10:00:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "MS",
+            "groupIdx": 0,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 1,
+            "entry2Idx": 2,
+            "datetime": "2025-03-22T10:00:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "MS",
+            "groupIdx": 0,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 4,
+            "entry2Idx": 7,
+            "datetime": "2025-03-22T10:00:00Z",
+            "durationMinutes": 30,
+            "table": "T3",
+            "categoryShortName": "MS",
+            "groupIdx": 1,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 5,
+            "entry2Idx": 6,
+            "datetime": "2025-03-22T10:00:00Z",
+            "durationMinutes": 30,
+            "table": "T4",
+            "categoryShortName": "MS",
+            "groupIdx": 1,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": 0,
+            "entry2Idx": 1,
+            "datetime": "2025-03-22T10:30:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "WS",
+            "groupIdx": 0,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 2,
+            "entry2Idx": 3,
+            "datetime": "2025-03-22T10:30:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "WS",
+            "groupIdx": 0,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 4,
+            "entry2Idx": 5,
+            "datetime": "2025-03-22T10:30:00Z",
+            "durationMinutes": 30,
+            "table": "T3",
+            "categoryShortName": "WS",
+            "groupIdx": 1,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 6,
+            "entry2Idx": 7,
+            "datetime": "2025-03-22T10:30:00Z",
+            "durationMinutes": 30,
+            "table": "T4",
+            "categoryShortName": "WS",
+            "groupIdx": 1,
+            "roundIdx": 0,
+            "round": 0,
+            "matchIdx": 0
+          }
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": 0,
+            "entry2Idx": 2,
+            "datetime": "2025-03-22T11:00:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "WS",
+            "groupIdx": 0,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 1,
+            "entry2Idx": 3,
+            "datetime": "2025-03-22T11:00:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "WS",
+            "groupIdx": 0,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 4,
+            "entry2Idx": 6,
+            "datetime": "2025-03-22T11:00:00Z",
+            "durationMinutes": 30,
+            "table": "T3",
+            "categoryShortName": "WS",
+            "groupIdx": 1,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 5,
+            "entry2Idx": 7,
+            "datetime": "2025-03-22T11:00:00Z",
+            "durationMinutes": 30,
+            "table": "T4",
+            "categoryShortName": "WS",
+            "groupIdx": 1,
+            "roundIdx": 1,
+            "round": 0,
+            "matchIdx": 0
+          }
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": 0,
+            "entry2Idx": 3,
+            "datetime": "2025-03-22T11:30:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "WS",
+            "groupIdx": 0,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 1,
+            "entry2Idx": 2,
+            "datetime": "2025-03-22T11:30:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "WS",
+            "groupIdx": 0,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 4,
+            "entry2Idx": 7,
+            "datetime": "2025-03-22T11:30:00Z",
+            "durationMinutes": 30,
+            "table": "T3",
+            "categoryShortName": "WS",
+            "groupIdx": 1,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": 5,
+            "entry2Idx": 6,
+            "datetime": "2025-03-22T11:30:00Z",
+            "durationMinutes": 30,
+            "table": "T4",
+            "categoryShortName": "WS",
+            "groupIdx": 1,
+            "roundIdx": 2,
+            "round": 0,
+            "matchIdx": 0
+          }
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": -1,
+            "entry2Idx": -1,
+            "datetime": "2025-03-22T12:00:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "MS",
+            "groupIdx": -1,
+            "roundIdx": 0,
+            "round": 4,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": -1,
+            "entry2Idx": -1,
+            "datetime": "2025-03-22T12:00:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "MS",
+            "groupIdx": -1,
+            "roundIdx": 0,
+            "round": 4,
+            "matchIdx": 1
+          }
+        },
+        {
+          "match": null
+        },
+        {
+          "match": null
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": -1,
+            "entry2Idx": -1,
+            "datetime": "2025-03-22T12:30:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "MS",
+            "groupIdx": -1,
+            "roundIdx": 0,
+            "round": 2,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": null
+        },
+        {
+          "match": null
+        },
+        {
+          "match": null
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": -1,
+            "entry2Idx": -1,
+            "datetime": "2025-03-22T13:00:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "WS",
+            "groupIdx": -1,
+            "roundIdx": 0,
+            "round": 4,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": {
+            "entry1Idx": -1,
+            "entry2Idx": -1,
+            "datetime": "2025-03-22T13:00:00Z",
+            "durationMinutes": 30,
+            "table": "T2",
+            "categoryShortName": "WS",
+            "groupIdx": -1,
+            "roundIdx": 0,
+            "round": 4,
+            "matchIdx": 1
+          }
+        },
+        {
+          "match": null
+        },
+        {
+          "match": null
+        }
+      ]
+    },
+    {
+      "tables": [
+        {
+          "match": {
+            "entry1Idx": -1,
+            "entry2Idx": -1,
+            "datetime": "2025-03-22T13:30:00Z",
+            "durationMinutes": 30,
+            "table": "T1",
+            "categoryShortName": "WS",
+            "groupIdx": -1,
+            "roundIdx": 0,
+            "round": 2,
+            "matchIdx": 0
+          }
+        },
+        {
+          "match": null
+        },
+        {
+          "match": null
+        },
+        {
+          "match": null
+        }
+      ]
+    }
+  ]
+}
