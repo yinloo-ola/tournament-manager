@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { apiImportSinglesEntry, apiImportDoublesEntry, apiImportTeamEntry } from '@/client/client'
+import { readWorkbook } from '@/shared/excel/readWorkbook'
+import { importSinglesEntries } from '@/features/entry/domain/importSingles'
+import { importDoublesEntries } from '@/features/entry/domain/importDoubles'
+import { importTeamEntries } from '@/features/entry/domain/importTeam'
 import LabeledInput from '@/widgets/LabeledInput.vue'
 import { EntryType } from '@/types/types'
 import OutlinedButton from '@/widgets/OutlinedButton.vue'
@@ -12,57 +15,62 @@ import router from '@/router'
 
 const isDebug = ref(false)
 const file = ref<HTMLInputElement | null>(null)
-function onFileSelected(event: any) {
+async function onFileSelected(event: any) {
   if (event.target.files.length === 0) {
     alert('No files selected')
     return
   }
 
-  // Check the category entryType and call the appropriate API function
+  const selectedFile: File = event.target.files[0]
+
+  // Check the category entryType and call the appropriate local importer.
+  // Only readWorkbook is async (ExcelJS is Promise-based); the importers are
+  // synchronous and throw inside the try/catch, so their Error.message
+  // surfaces directly via alert. Never await the importer — that would turn
+  // the throw into an unhandled rejection.
   switch (category.value.entryType) {
     case EntryType.Singles:
-      apiImportSinglesEntry(event.target.files[0])
-        .then((data) => {
-          emit('playersImported', data)
-        })
-        .catch((error) => {
-          alert(error.message)
-        })
-      break
     case EntryType.Doubles:
-      apiImportDoublesEntry(event.target.files[0])
-        .then((data) => {
-          emit('playersImported', data)
-        })
-        .catch((error) => {
-          alert(error.message)
-        })
+    case EntryType.Team: {
+      if (category.value.entryType === EntryType.Team) {
+        if (!category.value.minPlayers || !category.value.maxPlayers) {
+          alert('Please set minimum and maximum players for team')
+          return
+        }
+        if (category.value.minPlayers < 1 || category.value.maxPlayers < 1) {
+          alert('Minimum and maximum players must be greater than 0')
+          return
+        }
+        if (category.value.minPlayers > category.value.maxPlayers) {
+          alert('Minimum players must be less than maximum players')
+          return
+        }
+      }
+
+      try {
+        const workbook = await readWorkbook(selectedFile)
+        let data
+        switch (category.value.entryType) {
+          case EntryType.Singles:
+            data = importSinglesEntries(workbook)
+            break
+          case EntryType.Doubles:
+            data = importDoublesEntries(workbook)
+            break
+          case EntryType.Team:
+            data = importTeamEntries(
+              workbook,
+              category.value.minPlayers!,
+              category.value.maxPlayers!
+            )
+            break
+        }
+        emit('playersImported', data)
+      } catch (error) {
+        alert((error as Error).message)
+      }
       break
-    case EntryType.Team:
-      if (!category.value.minPlayers || !category.value.maxPlayers) {
-        alert('Please set minimum and maximum players for team')
-        return
-      }
-      if (category.value.minPlayers < 1 || category.value.maxPlayers < 1) {
-        alert('Minimum and maximum players must be greater than 0')
-        return
-      }
-      if (category.value.minPlayers > category.value.maxPlayers) {
-        alert('Minimum players must be less than maximum players')
-        return
-      }
-      apiImportTeamEntry(
-        event.target.files[0],
-        category.value.minPlayers,
-        category.value.maxPlayers
-      )
-        .then((data) => {
-          emit('playersImported', data)
-        })
-        .catch((error) => {
-          alert(error.message)
-        })
-      break
+    }
     default:
       alert('Please select an entry type before importing')
       return
