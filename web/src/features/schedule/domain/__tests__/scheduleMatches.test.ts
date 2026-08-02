@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import {
-  scheduleMatches,
-  type Schedule,
-  type ScheduledMatch
-} from '../scheduleMatches'
+import { scheduleMatches, type Schedule, type ScheduledMatch } from '../scheduleMatches'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
 import { Entry, type Tournament } from '@/shared/model'
 
@@ -18,16 +14,18 @@ function buildSinglesEntries(n: number): Entry[] {
   const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry']
   const entries: Entry[] = []
   for (let i = 0; i < n; i++) {
-    entries.push(Entry.from({
-      entryType: 'Singles',
-      singlesEntry: {
-        player: {
-          name: names[i % names.length],
-          dateOfBirth: '2000-01-01',
-          gender: 'M'
+    entries.push(
+      Entry.from({
+        entryType: 'Singles',
+        singlesEntry: {
+          player: {
+            name: names[i % names.length],
+            dateOfBirth: '2000-01-01',
+            gender: 'M'
+          }
         }
-      }
-    }))
+      })
+    )
   }
   return entries
 }

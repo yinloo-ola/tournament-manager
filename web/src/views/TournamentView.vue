@@ -6,20 +6,17 @@ import TournamentDraw from '@/features/draw/ui/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
-import { type Group, type KnockoutRound, type Tournament, Entry, EntryType } from '@/types/types'
-import {
-  dateInYyyyMmDdHhMmSs,
-  injectEntriesTournament
-} from '@/calculator/tournament'
-import {
-  apiExportRoundRobinExcel,
-  apiExportScoresheetWithTemplate
-} from '@/client/client'
+import { type Group, type Tournament, Entry, EntryType } from '@/types/types'
+import { dateInYyyyMmDdHhMmSs, injectEntriesTournament } from '@/calculator/tournament'
+import { apiExportRoundRobinExcel, apiExportScoresheetWithTemplate } from '@/client/client'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/features/draw/domain/groups'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
 import { scheduleMatches } from '@/features/schedule/domain/scheduleMatches'
-import { createDraftScheduleWorkbook, workbookToBuffer } from '@/features/schedule/excel/draftScheduleWorkbook'
+import {
+  createDraftScheduleWorkbook,
+  workbookToBuffer
+} from '@/features/schedule/excel/draftScheduleWorkbook'
 import { importFinalScheduleFromBuffer } from '@/features/schedule/domain/importFinalSchedule'
 import { tournament } from '@/store/state'
 import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
@@ -204,7 +201,8 @@ function finalScheduleFileSelected(event: Event) {
     alert('No file selected')
     return
   }
-  file.arrayBuffer()
+  file
+    .arrayBuffer()
     .then(async (buffer: ArrayBuffer) => {
       const result = await importFinalScheduleFromBuffer(new Uint8Array(buffer))
       const ok = importFinalSchedule(

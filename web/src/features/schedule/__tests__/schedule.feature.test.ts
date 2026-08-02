@@ -13,7 +13,10 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { scheduleMatches } from '@/features/schedule/domain/scheduleMatches'
-import { createDraftScheduleWorkbook, workbookToBuffer } from '@/features/schedule/excel/draftScheduleWorkbook'
+import {
+  createDraftScheduleWorkbook,
+  workbookToBuffer
+} from '@/features/schedule/excel/draftScheduleWorkbook'
 import { importFinalScheduleFromBuffer } from '@/features/schedule/domain/importFinalSchedule'
 import { importFinalSchedule as mergeFinalSchedule } from '@/calculator/schedule'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
@@ -23,16 +26,18 @@ function buildSinglesEntries(n: number): Entry[] {
   const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry']
   const entries: Entry[] = []
   for (let i = 0; i < n; i++) {
-    entries.push(Entry.from({
-      entryType: 'Singles',
-      singlesEntry: {
-        player: {
-          name: names[i % names.length],
-          dateOfBirth: '2000-01-01',
-          gender: 'M'
+    entries.push(
+      Entry.from({
+        entryType: 'Singles',
+        singlesEntry: {
+          player: {
+            name: names[i % names.length],
+            dateOfBirth: '2000-01-01',
+            gender: 'M'
+          }
         }
-      }
-    }))
+      })
+    )
   }
   return entries
 }

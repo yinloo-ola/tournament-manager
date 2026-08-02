@@ -19,7 +19,7 @@
  */
 
 import ExcelJS from 'exceljs'
-import type { Tournament, Category, Entry, Player } from '@/shared/model'
+import type { Tournament, Player } from '@/shared/model'
 import { type Schedule, type ScheduledMatch, maxTableCount } from '../domain/scheduleMatches'
 import { generateColors, ColorMode } from './color'
 
@@ -132,8 +132,16 @@ function populateSchedule(
 
   // --- Matches header ---
   const matchHeaders = [
-    'SN', 'Category', 'Round', 'Group', 'KO Round', 'Match',
-    'Date Time', 'Table', 'EntryID1', 'EntryID2'
+    'SN',
+    'Category',
+    'Round',
+    'Group',
+    'KO Round',
+    'Match',
+    'Date Time',
+    'Table',
+    'EntryID1',
+    'EntryID2'
   ]
   matchHeaders.forEach((h, i) => {
     const cell = wm.getCell(1, i + 1)
@@ -169,6 +177,7 @@ function populateSchedule(
         wm.getCell(matchesRow, 6).value = match.matchIdx + 1
       }
       wm.getCell(matchesRow, 7).value = match.dateTime
+      Object.assign(wm.getCell(matchesRow, 7), { style: dtStyle })
       wm.getCell(matchesRow, 8).value = match.table
       if (match.entry1Idx >= 0 && match.entry2Idx >= 0) {
         wm.getCell(matchesRow, 9).value = match.entry1Idx + 1
@@ -176,19 +185,16 @@ function populateSchedule(
       }
       matchesRow++
 
-      // Schedule cell with hyperlink
+      // Schedule cell with hyperlink — link to the row just written
       const displayText = matchName(match)
-      const matchLink = `${MATCHES_SHEET}!A${sn}` // sn already incremented, equals matchesRow (pre-increment)
+      const matchLink = `${MATCHES_SHEET}!A${matchesRow - 1}`
       const matchCell = ws.getCell(slotIdx + 2, tableIdx + 2)
       matchCell.value = { text: displayText, hyperlink: matchLink }
-      Object.assign(matchCell, { style: matchStyle(colorMap.get(match.categoryShortName) ?? '#FFFFFF') })
+      Object.assign(matchCell, {
+        style: matchStyle(colorMap.get(match.categoryShortName) ?? '#FFFFFF')
+      })
     })
   })
-
-  // Apply datetime style to column A (rows 2+)
-  for (let r = 2; r <= schedule.timeSlots.length + 1; r++) {
-    Object.assign(ws.getCell(r, 1), { style: dtStyle })
-  }
 
   // Column widths
   ws.getColumn(1).width = 16
@@ -205,7 +211,10 @@ function populateSchedule(
 }
 
 /** Port of model.TimeSlot.StartTimeAndDuration */
-function slotStartTimeAndDuration(slot: { tables: (ScheduledMatch | null)[] }): { start: Date; duration: number } {
+function slotStartTimeAndDuration(slot: { tables: (ScheduledMatch | null)[] }): {
+  start: Date
+  duration: number
+} {
   let start = new Date(Date.UTC(3000, 0, 1, 0, 0, 0))
   let duration = 0
   for (const match of slot.tables) {
@@ -224,10 +233,7 @@ function slotStartTimeAndDuration(slot: { tables: (ScheduledMatch | null)[] }): 
 // Populate Tournament Info sheet — port of populateTournamentInfoSheet
 // ---------------------------------------------------------------------------
 
-function populateTournamentInfoSheet(
-  wi: ExcelJS.Worksheet,
-  tournament: Tournament
-): void {
+function populateTournamentInfoSheet(wi: ExcelJS.Worksheet, tournament: Tournament): void {
   const hdrStyle = headerStyle()
   const dtStyle = dateTimeStyle()
 
@@ -249,9 +255,15 @@ function populateTournamentInfoSheet(
 
   // Category Details Header
   const categoryHeaders = [
-    'Category Name', 'Short Name', 'Entry Type', 'Duration (Mins)',
-    'Entries/Grp Main', 'Entries/Grp Remainder', 'Qualified/Group',
-    'Min Players/Entry', 'Max Players/Entry'
+    'Category Name',
+    'Short Name',
+    'Entry Type',
+    'Duration (Mins)',
+    'Entries/Grp Main',
+    'Entries/Grp Remainder',
+    'Qualified/Group',
+    'Min Players/Entry',
+    'Max Players/Entry'
   ]
   categoryHeaders.forEach((h, i) => {
     const cell = wi.getCell(row, i + 1)
@@ -287,10 +299,7 @@ function populateTournamentInfoSheet(
 // Populate category entry sheets — port of populateCategoryEntrySheets
 // ---------------------------------------------------------------------------
 
-function populateCategoryEntrySheets(
-  wb: ExcelJS.Workbook,
-  tournament: Tournament
-): void {
+function populateCategoryEntrySheets(wb: ExcelJS.Workbook, tournament: Tournament): void {
   const hdrStyle = headerStyle()
 
   for (const category of tournament.categories) {
@@ -299,8 +308,14 @@ function populateCategoryEntrySheets(
 
     // Headers
     const entryHeaders = [
-      'Entry ID', 'Team Name', 'Seeding', 'Club',
-      'Player SN', 'Player Name', 'Player DOB', 'Player Gender'
+      'Entry ID',
+      'Team Name',
+      'Seeding',
+      'Club',
+      'Player SN',
+      'Player Name',
+      'Player DOB',
+      'Player Gender'
     ]
     entryHeaders.forEach((h, i) => {
       const cell = ws.getCell(1, i + 1)

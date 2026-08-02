@@ -15,7 +15,7 @@
 
 export enum ColorMode {
   Dark = 0,
-  Light = 1,
+  Light = 1
 }
 
 /**
@@ -39,12 +39,7 @@ export function hslToHex(h: number, s: number, l: number): string {
     b = hueToRGB(p, q, h - 120)
   }
 
-  return (
-    '#' +
-    toHexByte(r) +
-    toHexByte(g) +
-    toHexByte(b)
-  )
+  return '#' + toHexByte(r) + toHexByte(g) + toHexByte(b)
 }
 
 /** Go's int(r*255) truncates toward zero; Math.floor matches for positive values. */

@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ExcelJS from 'exceljs'
-import { createDraftScheduleWorkbook, matchName, generateCategoryGroupColorMap } from '../draftScheduleWorkbook'
+import {
+  createDraftScheduleWorkbook,
+  matchName,
+  generateCategoryGroupColorMap
+} from '../draftScheduleWorkbook'
 import { scheduleMatches, type ScheduledMatch } from '../../domain/scheduleMatches'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
 import { Entry, type Tournament } from '@/shared/model'
@@ -15,16 +19,18 @@ function buildSinglesEntries(n: number): Entry[] {
   const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry']
   const entries: Entry[] = []
   for (let i = 0; i < n; i++) {
-    entries.push(Entry.from({
-      entryType: 'Singles',
-      singlesEntry: {
-        player: {
-          name: names[i % names.length],
-          dateOfBirth: '2000-01-01',
-          gender: 'M'
+    entries.push(
+      Entry.from({
+        entryType: 'Singles',
+        singlesEntry: {
+          player: {
+            name: names[i % names.length],
+            dateOfBirth: '2000-01-01',
+            gender: 'M'
+          }
         }
-      }
-    }))
+      })
+    )
   }
   return entries
 }
@@ -284,45 +290,80 @@ describe('createDraftScheduleWorkbook', () => {
   describe('matchName', () => {
     it('should format group matches as <cat> Grp<n>', () => {
       const m: ScheduledMatch = {
-        entry1Idx: 0, entry2Idx: 1, dateTime: new Date(),
-        durationMinutes: 30, table: 'T1', categoryShortName: 'MS',
-        groupIdx: 0, roundIdx: 0, round: 0, matchIdx: 0
+        entry1Idx: 0,
+        entry2Idx: 1,
+        dateTime: new Date(),
+        durationMinutes: 30,
+        table: 'T1',
+        categoryShortName: 'MS',
+        groupIdx: 0,
+        roundIdx: 0,
+        round: 0,
+        matchIdx: 0
       }
       expect(matchName(m)).toBe('MS Grp1')
     })
 
     it('should format knockout final as <cat> F', () => {
       const m: ScheduledMatch = {
-        entry1Idx: 0, entry2Idx: 1, dateTime: new Date(),
-        durationMinutes: 30, table: 'T1', categoryShortName: 'MS',
-        groupIdx: -1, roundIdx: 0, round: 2, matchIdx: 0
+        entry1Idx: 0,
+        entry2Idx: 1,
+        dateTime: new Date(),
+        durationMinutes: 30,
+        table: 'T1',
+        categoryShortName: 'MS',
+        groupIdx: -1,
+        roundIdx: 0,
+        round: 2,
+        matchIdx: 0
       }
       expect(matchName(m)).toBe('MS F')
     })
 
     it('should format knockout semifinal as <cat> SF', () => {
       const m: ScheduledMatch = {
-        entry1Idx: 0, entry2Idx: 1, dateTime: new Date(),
-        durationMinutes: 30, table: 'T1', categoryShortName: 'MS',
-        groupIdx: -1, roundIdx: 0, round: 4, matchIdx: 0
+        entry1Idx: 0,
+        entry2Idx: 1,
+        dateTime: new Date(),
+        durationMinutes: 30,
+        table: 'T1',
+        categoryShortName: 'MS',
+        groupIdx: -1,
+        roundIdx: 0,
+        round: 4,
+        matchIdx: 0
       }
       expect(matchName(m)).toBe('MS SF')
     })
 
     it('should format knockout quarterfinal as <cat> QF', () => {
       const m: ScheduledMatch = {
-        entry1Idx: 0, entry2Idx: 1, dateTime: new Date(),
-        durationMinutes: 30, table: 'T1', categoryShortName: 'MS',
-        groupIdx: -1, roundIdx: 0, round: 8, matchIdx: 0
+        entry1Idx: 0,
+        entry2Idx: 1,
+        dateTime: new Date(),
+        durationMinutes: 30,
+        table: 'T1',
+        categoryShortName: 'MS',
+        groupIdx: -1,
+        roundIdx: 0,
+        round: 8,
+        matchIdx: 0
       }
       expect(matchName(m)).toBe('MS QF')
     })
 
     it('should format other knockout rounds as <cat> R<n>', () => {
       const m: ScheduledMatch = {
-        entry1Idx: 0, entry2Idx: 1, dateTime: new Date(),
-        durationMinutes: 30, table: 'T1', categoryShortName: 'MS',
-        groupIdx: -1, roundIdx: 0, round: 16, matchIdx: 0
+        entry1Idx: 0,
+        entry2Idx: 1,
+        dateTime: new Date(),
+        durationMinutes: 30,
+        table: 'T1',
+        categoryShortName: 'MS',
+        groupIdx: -1,
+        roundIdx: 0,
+        round: 16,
+        matchIdx: 0
       }
       expect(matchName(m)).toBe('MS R16')
     })
@@ -370,12 +411,11 @@ describe('createDraftScheduleWorkbook', () => {
       // Verify row count (golden includes header row)
       // TS matches sheet may have fewer populated rows than Go (trailing empty cells differ)
       // but the match data rows should be the same
-      const matchCount = 28 // 12 MS grp + 12 WS grp + 2 MS SF + 1 MS F + 2 WS SF + 1 WS F = 30
-      // Actually: MS grp: 2 groups * 3 rounds * 2 matches = 12
-      //           WS grp: 12
-      //           MS KO: SF(2) + F(1) = 3
-      //           WS KO: SF(2) + F(1) = 3
-      //           Total = 30 matches, +1 header = 31 rows
+      // MS grp: 2 groups × 3 rounds × 2 matches = 12
+      // WS grp: 12
+      // MS KO: SF(2) + F(1) = 3
+      // WS KO: SF(2) + F(1) = 3
+      // Total = 30 matches, +1 header = 31 rows
       expect(golden.length).toBe(31)
 
       // Compare each match row (skip header, skip datetime col 7)

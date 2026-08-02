@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import ExcelJS from 'exceljs'
 import { importFinalScheduleFromBuffer } from '../importFinalSchedule'
 import { createDraftScheduleWorkbook, workbookToBuffer } from '../../excel/draftScheduleWorkbook'
 import { scheduleMatches } from '../scheduleMatches'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
 import { Entry, type Tournament } from '@/shared/model'
+
+const headers = [
+  'SN', 'Category', 'Round', 'Group', 'KO Round', 'Match',
+  'Date Time', 'Table', 'EntryID1', 'EntryID2'
+]
 
 // ---------------------------------------------------------------------------
 // Test helpers — same tournament as other tests
@@ -16,16 +19,18 @@ function buildSinglesEntries(n: number): Entry[] {
   const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry']
   const entries: Entry[] = []
   for (let i = 0; i < n; i++) {
-    entries.push(Entry.from({
-      entryType: 'Singles',
-      singlesEntry: {
-        player: {
-          name: names[i % names.length],
-          dateOfBirth: '2000-01-01',
-          gender: 'M'
+    entries.push(
+      Entry.from({
+        entryType: 'Singles',
+        singlesEntry: {
+          player: {
+            name: names[i % names.length],
+            dateOfBirth: '2000-01-01',
+            gender: 'M'
+          }
         }
-      }
-    }))
+      })
+    )
   }
   return entries
 }
@@ -137,8 +142,19 @@ describe('importFinalScheduleFromBuffer', () => {
       const wm = wb.addWorksheet('matches')
 
       // Matches header
-      const headers = ['SN', 'Category', 'Round', 'Group', 'KO Round', 'Match', 'Date Time', 'Table', 'EntryID1', 'EntryID2']
-      headers.forEach((h, i) => wm.getCell(1, i + 1).value = h)
+      const headers = [
+        'SN',
+        'Category',
+        'Round',
+        'Group',
+        'KO Round',
+        'Match',
+        'Date Time',
+        'Table',
+        'EntryID1',
+        'EntryID2'
+      ]
+      headers.forEach((h, i) => (wm.getCell(1, i + 1).value = h))
 
       // Schedule header
       ws.getCell(1, 1).value = 'Date/Time'
@@ -168,7 +184,7 @@ describe('importFinalScheduleFromBuffer', () => {
       const ws = wb.addWorksheet('schedule')
       const wm = wb.addWorksheet('matches')
 
-      headers.forEach((h, i) => wm.getCell(1, i + 1).value = h)
+      headers.forEach((h, i) => (wm.getCell(1, i + 1).value = h))
       ws.getCell(1, 1).value = 'Date/Time'
       ws.getCell(1, 2).value = 'T1'
 
@@ -196,7 +212,9 @@ describe('importFinalScheduleFromBuffer', () => {
       const wb = new ExcelJS.Workbook()
       wb.addWorksheet('other')
       const buffer = new Uint8Array(await wb.xlsx.writeBuffer())
-      await expect(importFinalScheduleFromBuffer(buffer)).rejects.toThrow('sheet schedule does not exist')
+      await expect(importFinalScheduleFromBuffer(buffer)).rejects.toThrow(
+        'sheet schedule does not exist'
+      )
     })
   })
 
@@ -228,5 +246,3 @@ describe('importFinalScheduleFromBuffer', () => {
     })
   })
 })
-
-const headers = ['SN', 'Category', 'Round', 'Group', 'KO Round', 'Match', 'Date Time', 'Table', 'EntryID1', 'EntryID2']

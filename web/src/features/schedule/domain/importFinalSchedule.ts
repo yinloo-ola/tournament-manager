@@ -59,7 +59,15 @@ function getCellStr(ws: ExcelJS.Worksheet, row: number, col: number): string {
 function getMatchFromHyperlink(
   hyperlink: string,
   wb: ExcelJS.Workbook
-): { category: string; roundIdx: number; groupIdx: number; entry1Idx: number; entry2Idx: number; round: number; matchIdx: number } | null {
+): {
+  category: string
+  roundIdx: number
+  groupIdx: number
+  entry1Idx: number
+  entry2Idx: number
+  round: number
+  matchIdx: number
+} | null {
   // Split "matches!A5" → sheetName="matches", cellAddr="A5"
   const exclamationIdx = hyperlink.indexOf('!')
   if (exclamationIdx === -1) return null
@@ -79,12 +87,12 @@ function getMatchFromHyperlink(
 
   // Read columns: B=Category, C=Round, D=Group, E=KO Round, F=KO Match,
   //               I=EntryID1, J=EntryID2
-  const category = getCellStr(wm, row, 2)  // B
-  const round = getCellInt(wm, row, 3)      // C
-  const grp = getCellInt(wm, row, 4)        // D
-  const koRound = getCellInt(wm, row, 5)    // E
-  const koMatch = getCellInt(wm, row, 6)    // F
-  const entry1Idx = getCellInt(wm, row, 9)  // I
+  const category = getCellStr(wm, row, 2) // B
+  const round = getCellInt(wm, row, 3) // C
+  const grp = getCellInt(wm, row, 4) // D
+  const koRound = getCellInt(wm, row, 5) // E
+  const koMatch = getCellInt(wm, row, 6) // F
+  const entry1Idx = getCellInt(wm, row, 9) // I
   const entry2Idx = getCellInt(wm, row, 10) // J
 
   return {
@@ -147,12 +155,16 @@ function formCategoriesGroupsMap(matches: ExtractedMatch[]): Record<string, Grou
   // Build result: category → Group[]
   const result: Record<string, Group[]> = {}
   for (const [categoryName, groupMap] of categoryMap) {
-    const groups: Group[] = []
     const maxGroupIdx = Math.max(...groupMap.keys())
+    const groups: Group[] = new Array(maxGroupIdx + 1)
 
     for (let g = 0; g <= maxGroupIdx; g++) {
       const roundMap = groupMap.get(g)
-      if (!roundMap) continue
+      if (!roundMap) {
+        // Fill missing group with empty structure (prevents sparse-array crash in merge)
+        groups[g] = { entriesIdx: [], rounds: [] }
+        continue
+      }
 
       const maxRoundIdx = Math.max(...roundMap.keys())
       const rounds: Match[][] = []
@@ -185,9 +197,11 @@ function formCategoriesGroupsMap(matches: ExtractedMatch[]): Record<string, Grou
  * Port of Go's `formCategoriesKnockoutRoundsMap`. Groups knockout matches by
  * category → round, sorts rounds descending (biggest first), matches by matchIdx.
  */
-function formCategoriesKnockoutRoundsMap(matches: ExtractedMatch[]): Record<string, KnockoutRound[]> {
-  // categoryMap: category → round → Match[]
-  const categoryMap = new Map<string, Map<number, Match[]>>()
+function formCategoriesKnockoutRoundsMap(
+  matches: ExtractedMatch[]
+): Record<string, KnockoutRound[]> {
+  // categoryMap: category → round → { match, matchIdx }[]
+  const categoryMap = new Map<string, Map<number, { match: Match; matchIdx: number }[]>>()
 
   for (const match of matches) {
     if (!categoryMap.has(match.categoryShortName)) {
@@ -198,11 +212,14 @@ function formCategoriesKnockoutRoundsMap(matches: ExtractedMatch[]): Record<stri
       roundMap.set(match.round, [])
     }
     roundMap.get(match.round)!.push({
-      entry1Idx: match.entry1Idx,
-      entry2Idx: match.entry2Idx,
-      datetime: match.dateTime.toISOString(),
-      durationMinutes: match.durationMinutes,
-      table: match.table
+      match: {
+        entry1Idx: match.entry1Idx,
+        entry2Idx: match.entry2Idx,
+        datetime: match.dateTime.toISOString(),
+        durationMinutes: match.durationMinutes,
+        table: match.table
+      },
+      matchIdx: match.matchIdx
     })
   }
 
@@ -211,13 +228,10 @@ function formCategoriesKnockoutRoundsMap(matches: ExtractedMatch[]): Record<stri
     // Sort rounds descending (biggest first)
     const rounds = [...roundMap.keys()].sort((a, b) => b - a)
     const knockoutRounds: KnockoutRound[] = rounds.map((round) => {
-      const matchesInRound = roundMap.get(round)!
-      // Sort matches by matchIdx
-      matchesInRound.sort((a, b) => {
-        // matchIdx isn't stored on the Match type — it's implicit in order
-        return 0 // already in insertion order
-      })
-      return { round, matches: matchesInRound }
+      const matchesWithIdx = roundMap.get(round)!
+      // Sort matches by matchIdx (matching Go's formCategoriesKnockoutRoundsMap)
+      matchesWithIdx.sort((a, b) => a.matchIdx - b.matchIdx)
+      return { round, matches: matchesWithIdx.map((m) => m.match) }
     })
     result[categoryName] = knockoutRounds
   }
@@ -237,9 +251,7 @@ function formCategoriesKnockoutRoundsMap(matches: ExtractedMatch[]): Record<stri
  * @param buffer - The `.xlsx` file as a Uint8Array
  * @returns Groups and knockout rounds maps keyed by category shortName
  */
-export async function importFinalScheduleFromBuffer(
-  buffer: Uint8Array
-): Promise<ImportedSchedule> {
+export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise<ImportedSchedule> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buffer)
 
