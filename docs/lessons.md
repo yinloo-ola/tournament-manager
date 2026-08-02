@@ -20,6 +20,10 @@ Reusable patterns and pitfalls. Generic rules only — strip domain specifics.
 ## Parsing & ingestion
 - **Validate untrusted documents at the ingestion boundary, not inside the permissive factory.** `parse` (which ingests files / IDB records) should enforce the canonical shape and throw a typed `ParseError`; the constructor/factory (`Entry.from`) is also used for *trusted* in-memory objects, so making it strict breaks those call sites. Keep the factory permissive; let the entry point be strict. Same rule applies to any "from wire" function.
 
+## ExcelJS internals
+- **ExcelJS's `_columns` array is 0-indexed; the public API (`getColumn(n)`) is 1-based.** The internal `worksheet._columns` stores Column objects at index `n-1`, but each Column's `.number` is `n`. When iterating `_columns` directly (e.g. for a deep-copy helper), start at index 0, not 1 — otherwise the first column (often the only one with a custom width) is silently skipped.
+- **`mergeCells` propagates the master cell's style to all cells in the range by default.** When cloning a worksheet that has merges, non-master merge cells in the clone get the master's style, which may differ from the source's individual cell styles. For style-comparison tests, skip non-master merge cells (`cell.type === ValueType.Merge`).
+
 ## File System Access API
 - **The pickers take a single options object, not an array.** `showOpenFilePicker([{...}])` silently drops the `types` filter; pass `showOpenFilePicker({ types: [...] })`.
 - **In-place writes leak an exclusive lock if `close()` is skipped.** Wrap `createWritable()`/`write()`/`close()` in `try/finally`, or the next write to the same handle fails with `NoModificationAllowedError`.

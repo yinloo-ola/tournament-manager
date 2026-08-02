@@ -7,7 +7,8 @@ import ExcelJS from 'exceljs'
  * ExcelJS has no built-in `copySheet`/`CopySheet`. This helper replicates
  * Go's `excelize.CopySheet` (a `deepcopy.Copy` of the entire worksheet XML):
  * every cell's value **and** full style object, all merged-cell ranges,
- * column widths/properties, and row heights/properties.
+ * column widths/properties, row heights/properties, and worksheet-level
+ * print settings (pageSetup, headerFooter, properties, views).
  *
  * Style objects are deep-cloned (JSON round-trip) so the clone and source
  * share no references — mutating one never bleeds into the other.
@@ -17,7 +18,12 @@ export function cloneSheet(
   targetWorkbook: ExcelJS.Workbook,
   newName: string
 ): ExcelJS.Worksheet {
-  const target = targetWorkbook.addWorksheet(newName)
+  const target = targetWorkbook.addWorksheet(newName, {
+    properties: deepClone(source.properties),
+    pageSetup: deepClone(source.pageSetup),
+    headerFooter: deepClone(source.headerFooter),
+    views: deepClone(source.views),
+  })
 
   copyColumns(source, target)
   copyRows(source, target)
@@ -88,7 +94,11 @@ function copyRows(source: ExcelJS.Worksheet, target: ExcelJS.Worksheet): void {
 function copyMerges(source: ExcelJS.Worksheet, target: ExcelJS.Worksheet): void {
   const merges = source.model.merges ?? []
   for (const range of merges) {
-    target.mergeCells(range)
+    // mergeCellsWithoutStyle preserves per-cell styles that were deep-cloned
+    // in copyRows. The default mergeCells would overwrite slave cells' styles
+    // with the master's — destroying per-cell borders (e.g. the rightmost
+    // cell in a merged title losing its right border).
+    target.mergeCellsWithoutStyle(range)
   }
 }
 
@@ -109,6 +119,16 @@ function cloneValue(value: ExcelJS.CellValue): ExcelJS.CellValue {
     return JSON.parse(JSON.stringify(value))
   }
   return value
+}
+
+/**
+ * Deep-clone a plain object via JSON round-trip.
+ * Used for worksheet-level properties (pageSetup, headerFooter, views)
+ * which contain only JSON-serializable values.
+ */
+function deepClone<T>(value: T | undefined | null): T | undefined {
+  if (value === undefined || value === null) return undefined
+  return JSON.parse(JSON.stringify(value))
 }
 
 /**

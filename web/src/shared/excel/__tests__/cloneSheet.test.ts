@@ -264,6 +264,48 @@ describe('cloneSheet', () => {
       expect(reReadClone.getColumn(1).width).toBe(reReadSrc.getColumn(1).width)
       expect(reReadClone.getRow(1).height).toBe(reReadSrc.getRow(1).height)
     })
+
+    it('should clone worksheet-level print settings (pageSetup, headerFooter)', () => {
+      const wb = new ExcelJS.Workbook()
+      const src = wb.addWorksheet('src', {
+        pageSetup: {
+          paperSize: 9,
+          orientation: 'portrait' as const,
+          fitToPage: true,
+          fitToHeight: 0,
+          scale: 77,
+        },
+        headerFooter: {
+          oddHeader: '&C&A',
+          oddFooter: '&CPage &P of &N',
+        },
+      })
+      src.getCell('A1').value = 'x'
+
+      const clone = cloneSheet(src, wb, 'clone')
+
+      expect(clone.pageSetup.paperSize).toBe(9)
+      expect(clone.pageSetup.orientation).toBe('portrait')
+      expect(clone.pageSetup.fitToPage).toBe(true)
+      expect(clone.pageSetup.scale).toBe(77)
+      expect(clone.headerFooter.oddHeader).toBe('&C&A')
+      expect(clone.headerFooter.oddFooter).toBe('&CPage &P of &N')
+    })
+
+    it('should preserve pageSetup on real template through clone', async () => {
+      const buf = readTemplateBuffer()
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buf)
+
+      const src = wb.getWorksheet('MS')!
+      cloneSheet(src, wb, 'MS-clone')
+      const clone = wb.getWorksheet('MS-clone')!
+
+      // MS template has scale=77, fitToHeight=0, portrait
+      expect(clone.pageSetup.orientation).toBe(src.pageSetup.orientation)
+      expect(clone.pageSetup.scale).toBe(src.pageSetup.scale)
+      expect(clone.pageSetup.fitToHeight).toBe(src.pageSetup.fitToHeight)
+    })
   })
 
   // -------------------------------------------------------------------------
@@ -308,15 +350,12 @@ describe('cloneSheet', () => {
       })
       expect(valueCount).toBeGreaterThan(0) // ensure we actually iterated cells
 
-      // Every styled cell's style matches — skip non-master merge cells,
-      // whose styles are overwritten by the mergeCells operation propagating
-      // the master's style to the entire range.
+      // Every styled cell's style matches — now that we use
+      // mergeCellsWithoutStyle, even non-master merge cells retain their
+      // individually-cloned styles.
       let styleCount = 0
       src.eachRow({ includeEmpty: true }, (row, rowNumber) => {
         row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          // Skip non-master merge cells (merge propagates master style)
-          if (cell.isMerged && cell.type === ExcelJS.ValueType.Merge) return
-
           const srcStyle = cell.style
           // Only check cells that have non-default styles
           if (
@@ -341,11 +380,10 @@ describe('cloneSheet', () => {
       await wb.xlsx.load(buf)
 
       const src = wb.getWorksheet('MD')!
-      const clone = cloneSheet(src, wb, 'MD-clone')
 
       // Serialize clone-only into a fresh workbook and re-read
       const wb2 = new ExcelJS.Workbook()
-      const clone2 = cloneSheet(src, wb2, 'MD')
+      cloneSheet(src, wb2, 'MD')
       const outBuf = await wb2.xlsx.writeBuffer()
 
       const wb3 = new ExcelJS.Workbook()
