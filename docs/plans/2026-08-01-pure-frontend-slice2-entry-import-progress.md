@@ -9,8 +9,8 @@ Setup: done
 | # | Status | Requirement | Commit |
 |---|--------|-------------|--------|
 | 1 | ✅ done | readWorkbook — raw-value ExcelJS wrapper + regression baselines | da69aa6 |
-| 2 | 🔄 in-progress | Singles import | — |
-| 3 | ⬜ pending | Doubles import | — |
+| 2 | ✅ done | Singles import | 075f250 |
+| 3 | 🔄 in-progress | Doubles import | — |
 | 4 | ⬜ pending | Team import | — |
 | 5 | ⬜ pending | CategoryCard + TournamentView wiring | — |
 | 6 | ⬜ pending | Structural cleanup — drop legacy client functions | — |
