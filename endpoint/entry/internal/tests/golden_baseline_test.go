@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"os"
@@ -111,7 +112,7 @@ func TestGoldenSinglesImport(t *testing.T) {
 	f, err := os.Open(fixturePath("Men Singles.xlsx"))
 	require.NoError(t, err)
 	defer f.Close()
-	entries, err := internal.ImportSinglesEntries(t.Context(), f)
+	entries, err := internal.ImportSinglesEntries(context.Background(), f)
 	require.NoError(t, err)
 	path := filepath.Join(goldenDir(), "singles.golden.json")
 	if *update {
@@ -130,7 +131,7 @@ func TestGoldenDoublesImport(t *testing.T) {
 	f, err := os.Open(fixturePath("Mens Doubles.xlsx"))
 	require.NoError(t, err)
 	defer f.Close()
-	entries, err := internal.ImportDoublesEntries(t.Context(), f)
+	entries, err := internal.ImportDoublesEntries(context.Background(), f)
 	require.NoError(t, err)
 	path := filepath.Join(goldenDir(), "doubles.golden.json")
 	if *update {
@@ -149,7 +150,7 @@ func TestGoldenTeamImport(t *testing.T) {
 	f, err := os.Open(fixturePath("Mens Team.xlsx"))
 	require.NoError(t, err)
 	defer f.Close()
-	entries, err := internal.ImportTeamEntries(t.Context(), f, 3, 3)
+	entries, err := internal.ImportTeamEntries(context.Background(), f, 3, 3)
 	require.NoError(t, err)
 	path := filepath.Join(goldenDir(), "team.golden.json")
 	if *update {
