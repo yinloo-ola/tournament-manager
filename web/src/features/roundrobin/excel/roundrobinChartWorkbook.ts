@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs'
-import type { Tournament, Category, Entry, EntryEmptyIdx } from '@/shared/model'
+import type { Tournament, Category, Entry } from '@/shared/model'
 
 const GREY_FILL = 'FFA0A0A0'
 const BLACK_FILL = 'FF000000'
