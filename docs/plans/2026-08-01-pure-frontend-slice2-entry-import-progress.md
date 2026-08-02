@@ -12,5 +12,5 @@ Setup: done
 | 2 | ✅ done | Singles import | 075f250 |
 | 3 | ✅ done | Doubles import | 5e2d91f |
 | 4 | ✅ done | Team import | 5b47417 |
-| 5 | 🔎 review | CategoryCard + TournamentView wiring | 06ef08c |
+| 5 | ✅ done | CategoryCard + TournamentView wiring | aef09b4 |
 | 6 | ⬜ pending | Structural cleanup — drop legacy client functions | — |
