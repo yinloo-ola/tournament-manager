@@ -8,7 +8,9 @@ import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
 import { type Group, type Tournament, Entry, EntryType } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, injectEntriesTournament } from '@/calculator/tournament'
-import { apiExportRoundRobinExcel, apiExportScoresheetWithTemplate } from '@/client/client'
+import { createRobinCharts } from '@/features/roundrobin/excel/roundrobinChartWorkbook'
+import { exportScoresheets } from '@/features/scoresheet/excel/scoresheetWorkbook'
+import ExcelJS from 'exceljs'
 import { importFinalSchedule } from '@/calculator/schedule'
 import { calculatorGroups, getGroup } from '@/features/draw/domain/groups'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
@@ -166,8 +168,16 @@ function exportScoresheetWithTemplateSelected(event: Event) {
     return
   }
 
-  apiExportScoresheetWithTemplate(tournament.value, input.files[0])
-    .then((blob) => {
+  input.files[0]
+    .arrayBuffer()
+    .then(async (buffer: ArrayBuffer) => {
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      exportScoresheets(tournament.value, wb)
+      const outBuffer = await workbookToBuffer(wb)
+      const blob = new Blob([outBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
       const a = document.createElement('a')
       const file = window.URL.createObjectURL(blob)
       a.href = file
@@ -248,19 +258,23 @@ function onReaderLoad(event: ProgressEvent<FileReader>) {
 
 // We're now using direct function calls in the template
 
-function exportRoundRobin() {
-  apiExportRoundRobinExcel(tournament.value)
-    .then((blob) => {
-      const a = document.createElement('a')
-      const file = window.URL.createObjectURL(blob)
-      a.href = file
-      a.download = `${tournament.value.name}_rr_chart_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
-      a.click()
-      window.URL.revokeObjectURL(file)
+async function exportRoundRobin() {
+  try {
+    const wb = createRobinCharts(tournament.value)
+    const buffer = await workbookToBuffer(wb)
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
-    .catch((e: Error) => {
-      alert(e.message)
-    })
+    const a = document.createElement('a')
+    const file = window.URL.createObjectURL(blob)
+    a.href = file
+    a.download = `${tournament.value.name}_rr_chart_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
+    a.click()
+    window.URL.revokeObjectURL(file)
+  } catch (e: unknown) {
+    const error = e as Error
+    alert(error.message)
+  }
 }
 
 async function exportDraftSchedule() {
