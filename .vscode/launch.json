@@ -5,14 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Start HTTP",
-            "type": "go",
+            "name": "Launch Frontend (vite dev)",
+            "type": "node",
             "request": "launch",
-            "mode": "auto",
-            "program": "./cmd",
-            "env": {
-                "GIN_MODE": "debug"
-            }
+            "runtimeExecutable": "npx",
+            "runtimeArgs": ["vite", "--host"],
+            "cwd": "${workspaceFolder}/web"
         }
     ]
 }
