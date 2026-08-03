@@ -5,7 +5,7 @@ import { readWorkbook } from '@/shared/excel/readWorkbook'
 import { importTeamEntries } from '../importTeam'
 
 function fixtureBuffer(name: string): Uint8Array {
-  return readFileSync(resolve(process.cwd(), '../testdata', name))
+  return readFileSync(resolve(process.cwd(), 'testdata', name))
 }
 
 describe('importTeamEntries', () => {

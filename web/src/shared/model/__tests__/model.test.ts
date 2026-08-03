@@ -270,7 +270,7 @@ describe('canonical model — serialize()', () => {
 
 describe('canonical model — grounding with real fixture', () => {
   it('parses testdata/tournament.json, rehydrates entries, and is lossless + stable', () => {
-    const path = resolve(process.cwd(), '../testdata/tournament.json')
+    const path = resolve(process.cwd(), 'testdata/tournament.json')
     const json = readFileSync(path, 'utf-8')
     const parsed = parse(json)
     // exhaustive rehydration across the real document
@@ -344,7 +344,7 @@ describe('canonical model — parse() rejects malformed documents', () => {
   })
 
   it('throws ParseError on a Team entry missing teamName (regression guard for the old name/teamName drift)', () => {
-    const path = resolve(process.cwd(), '../testdata/tournament.invalid.json')
+    const path = resolve(process.cwd(), 'testdata/tournament.invalid.json')
     const json = readFileSync(path, 'utf-8')
     expect(() => parse(json)).toThrow(ParseError)
     expect(() => parse(json)).toThrow(/teamName/)

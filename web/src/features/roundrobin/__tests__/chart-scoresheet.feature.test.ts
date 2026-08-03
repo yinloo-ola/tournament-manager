@@ -19,7 +19,7 @@ import { exportScoresheets } from '@/features/scoresheet/excel/scoresheetWorkboo
  */
 
 function readTemplateBuffer(): Buffer {
-  return readFileSync(resolve(process.cwd(), '../testdata/scoresheet template.xlsx'))
+  return readFileSync(resolve(process.cwd(), 'testdata/scoresheet template.xlsx'))
 }
 
 function buildFeatureTournament(): Tournament {

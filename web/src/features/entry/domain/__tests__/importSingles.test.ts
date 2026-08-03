@@ -6,7 +6,7 @@ import { importSinglesEntries } from '../importSingles'
 import type { EntryLike } from '../importSingles'
 
 function fixtureBuffer(name: string): Uint8Array {
-  const path = resolve(process.cwd(), '../testdata', name)
+  const path = resolve(process.cwd(), 'testdata', name)
   return readFileSync(path)
 }
 

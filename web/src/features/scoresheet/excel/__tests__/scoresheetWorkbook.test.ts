@@ -9,7 +9,7 @@ import { exportScoresheets } from '../scoresheetWorkbook'
 // Helpers — build test data
 // -------------------------------------------------------------------------
 function readTemplateBuffer(): Buffer {
-  return readFileSync(resolve(process.cwd(), '../testdata/scoresheet template.xlsx'))
+  return readFileSync(resolve(process.cwd(), 'testdata/scoresheet template.xlsx'))
 }
 
 function makeSinglesEntries(names: string[]): Entry[] {

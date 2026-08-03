@@ -8,7 +8,7 @@ import { importTeamEntries } from '@/features/entry/domain/importTeam'
 import { Entry } from '@/shared/model'
 
 function fixtureBuffer(name: string): Uint8Array {
-  return readFileSync(resolve(process.cwd(), '../testdata', name))
+  return readFileSync(resolve(process.cwd(), 'testdata', name))
 }
 
 function loadGolden(name: string): unknown {

@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { readWorkbook } from '../readWorkbook'
 
 function fixtureBuffer(name: string): Uint8Array {
-  const path = resolve(process.cwd(), '../testdata', name)
+  const path = resolve(process.cwd(), 'testdata', name)
   return readFileSync(path)
 }
 

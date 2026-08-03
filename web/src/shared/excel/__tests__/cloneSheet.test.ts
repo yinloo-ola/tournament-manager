@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 import { cloneSheet } from '../cloneSheet'
 
 function readTemplateBuffer(): Buffer {
-  return readFileSync(resolve(process.cwd(), '../testdata/scoresheet template.xlsx'))
+  return readFileSync(resolve(process.cwd(), 'testdata/scoresheet template.xlsx'))
 }
 
 /**

@@ -6,7 +6,7 @@ import { importDoublesEntries } from '../importDoubles'
 import type { EntryLike } from '../importSingles'
 
 function fixtureBuffer(name: string): Uint8Array {
-  return readFileSync(resolve(process.cwd(), '../testdata', name))
+  return readFileSync(resolve(process.cwd(), 'testdata', name))
 }
 
 describe('importDoublesEntries', () => {
