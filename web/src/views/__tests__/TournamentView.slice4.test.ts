@@ -52,18 +52,20 @@ describe('TournamentView wiring (R4)', () => {
     })
 
     it('should not call fetch in exportRoundRobin', () => {
-      const section = viewSource.substring(
-        viewSource.indexOf('function exportRoundRobin'),
-        viewSource.indexOf('async function exportDraftSchedule')
-      )
+      const start = viewSource.indexOf('function exportRoundRobin')
+      const end = viewSource.indexOf('async function exportDraftSchedule')
+      expect(start, 'exportRoundRobin marker must exist').toBeGreaterThan(-1)
+      expect(end, 'exportDraftSchedule marker must exist').toBeGreaterThan(-1)
+      const section = viewSource.substring(start, end)
       expect(section).not.toContain('fetch')
     })
 
     it('should not call fetch in scoresheet handler', () => {
-      const section = viewSource.substring(
-        viewSource.indexOf('exportScoresheetWithTemplateSelected'),
-        viewSource.indexOf('const finalScheduleFile')
-      )
+      const start = viewSource.indexOf('exportScoresheetWithTemplateSelected')
+      const end = viewSource.indexOf('const finalScheduleFile')
+      expect(start, 'scoresheet handler marker must exist').toBeGreaterThan(-1)
+      expect(end, 'finalScheduleFile marker must exist').toBeGreaterThan(-1)
+      const section = viewSource.substring(start, end)
       expect(section).not.toContain('fetch')
     })
   })

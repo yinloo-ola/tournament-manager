@@ -185,8 +185,9 @@ function exportScoresheetWithTemplateSelected(event: Event) {
       a.click()
       window.URL.revokeObjectURL(file)
     })
-    .catch((e: Error) => {
-      alert(e.message)
+    .catch((e: unknown) => {
+      const error = e as Error
+      alert(error.message)
     })
 
   if (exportScoresheetWithTemplateFile.value) {
