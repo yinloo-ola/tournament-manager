@@ -7,6 +7,8 @@ import UnoCSS from 'unocss/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // GitHub Pages serves from /tournament-manager/ (project page)
+  base: '/tournament-manager/',
   plugins: [vue(), VueDevTools(), UnoCSS()],
   resolve: {
     alias: {
