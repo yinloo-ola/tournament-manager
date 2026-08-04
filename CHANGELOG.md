@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-04
+
 ### Added — pure-frontend rewrite (Slice 0: foundation)
 - **Canonical model** (`web/src/shared/model`): types, the `Entry` class, and `serialize`/`parse`/`rehydrate` as the single source of truth. `types.ts` is now a re-export shim (existing `@/types/types` imports unchanged).
 - **Document store** (`web/src/app/documentStore`): the reactive tournament document ref + `newTournament()`. Drop-in successor to the old `store/state.ts`.
