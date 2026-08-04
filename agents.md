@@ -7,6 +7,7 @@ Pure-frontend tournament management tool for racquet sports. Vue 3 + TypeScript 
 ## Tech Stack
 
 - **Frontend**: Vue 3 (Composition API), TypeScript, Pinia, UnoCSS, Vite
+- **Design system**: Material 3 — token layer (`src/styles/tokens.css`) + UnoCSS theme bridge; hand-rolled widgets, no component library
 - **Excel**: ExcelJS (in-browser .xlsx read/write)
 - **Storage**: File System Access API (.json files) + IndexedDB autosave
 - **Deployment**: Static site (GitHub Pages) — `vite build` → `web/dist/`
@@ -26,10 +27,11 @@ web/
       schedule/          → Schedule generation + draft .xlsx export + final import
       roundrobin/        → Round-robin chart .xlsx export
       scoresheet/        → Scoresheet template clone + substitution
-    shared/              → Cross-cutting: model (single source of truth), excel helpers
+    shared/              → Cross-cutting: model (single source of truth), excel helpers, ui (toast composable)
     store/state.ts       → Global reactive ref<Tournament>
+    styles/tokens.css    → Material 3 design tokens (the only place hex lives)
     views/               → Page-level Vue components
-    widgets/             → Reusable UI primitives
+    widgets/             → Reusable M3-styled UI primitives (buttons, inputs, dialogs, menus, snackbar, tables)
   testdata/              → Test fixtures
 docs/                    → Architecture, functionality, AI agent guide, lessons
 

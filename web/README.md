@@ -6,7 +6,9 @@ logic runs in the browser — **no backend, no server**. Excel import/export use
 [ExcelJS](https://github.com/exceljs/exceljs) entirely client-side.
 
 Built with **Vue 3** (Composition API) · **TypeScript** · **Pinia** ·
-**UnoCSS** · **Vite**. Deployed as a static site to GitHub Pages.
+**UnoCSS** · **Vite**, with a **Material 3** design-token system
+(`src/styles/tokens.css` + UnoCSS theme bridge). Deployed as a static site to
+GitHub Pages.
 
 ## Getting started
 

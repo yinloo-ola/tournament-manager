@@ -61,7 +61,8 @@ The codebase uses a **feature-sliced** architecture under `web/src/features/`, w
 | **State** | Single reactive `ref<Tournament>` in `store/state.ts`. No Pinia actions/getters — logic lives in feature modules. |
 | **Excel** | All Excel read/write uses **ExcelJS** (not excelize or tealeg/xlsx — those were the former Go libraries, now deleted). |
 | **No fetch** | There are **zero** `fetch()` calls in app code. All operations are synchronous local functions or use browser APIs (File System Access, Blob download). |
-| **Styling** | UnoCSS utility classes. |
+| **Styling** | UnoCSS utility classes bound to **Material 3 semantic color roles** via the theme bridge in `uno.config.ts`. Tokens (the only place hex lives) are in `src/styles/tokens.css` as CSS variables. Use `bg-primary`, `text-on-surface-variant`, `border-outline-variant`, etc. — **never hardcode hex or Tailwind color names** (`bg-blue-600`, etc.). Motion uses `--md-duration-*` / `--md-easing-*` tokens with `prefers-reduced-motion` support. |
+| **Feedback** | All user-facing success/error messages use **M3 snackbars** via `useToast()` (`shared/ui/toast.ts`) — `toast.success(...)`, `toast.error(...)`, `toast.info(...)`. **Never use `alert()`** — there are zero `alert()` calls in the codebase; adding one is a regression. |
 | **Testing** | Vitest. Tests live in `__tests__/` dirs next to each module. Golden baselines in `__tests__/golden/`. Test fixtures in `web/testdata/`. |
 
 ---
@@ -80,6 +81,12 @@ The codebase uses a **feature-sliced** architecture under `web/src/features/`, w
 | `features/scoresheet/excel/scoresheetWorkbook.ts` | Scoresheet template clone + substitution |
 | `shared/excel/cloneSheet.ts` | Deep-copy worksheet helper (ExcelJS has no copySheet) |
 | `shared/excel/readWorkbook.ts` | ExcelJS → `string[][]` raw cell values |
+| `styles/tokens.css` | **Material 3 design tokens** — seed color, tonal surfaces, elevation, shape, motion, typography. The only place hex lives. |
+| `uno.config.ts` | UnoCSS theme bridge — binds M3 role names (`primary`, `on-surface-variant`, …) to CSS vars so `bg-primary` etc. generate as utilities |
+| `shared/ui/toast.ts` | `useToast()` composable — snackbar singleton. Use `toast.success/error/info` for all user feedback. |
+| `widgets/SnackbarHost.vue` | M3 snackbar host (mounted once in `App.vue`; renders the toast queue) |
+| `widgets/MatchesTable.vue` | Shared six-column match data table (used by Group + Knockout tabs) |
+| `features/matches/domain/roundName.ts` | Knockout round size → display name (2=Final, 4=Semi-finals, …) |
 | `app/documentStore.ts` | Document open/save orchestration |
 
 ---
@@ -95,6 +102,10 @@ The codebase uses a **feature-sliced** architecture under `web/src/features/`, w
 4. **Knockout round ordering**: KnockoutRounds are ordered largest-round-first (e.g., R16, QF, SF, F). The `Round` field stores the round *size*, not the round number.
 
 5. **No server**: Do not add `fetch()` calls or API endpoints. All features must work offline in the browser.
+
+6. **No `alert()`**: All user feedback goes through `useToast()` snackbars. There are zero `alert()` calls — adding one is a regression. The snackbar is non-blocking, accessible (`role="status"`), and auto-dismisses.
+
+7. **No hardcoded colors**: Use M3 token utilities (`bg-primary`, `text-on-surface-variant`, etc.), never raw hex or Tailwind color names. Hex lives only in `src/styles/tokens.css`.
 
 ---
 
@@ -123,6 +134,8 @@ npm run test:run     # vitest run (all tests)
 2. Test with fixtures in `web/testdata/` and compare against golden baselines in `__tests__/golden/`.
 
 ### Adding a new UI component
-1. Check if a suitable widget exists in `widgets/` first.
-2. Use `<script setup lang="ts">` with UnoCSS.
-3. Keep business logic in feature modules, not in components.
+1. Check if a suitable widget exists in `widgets/` first — the M3-styled primitives (buttons, inputs, dialogs, menus, tables, snackbar) cover most needs.
+2. Use `<script setup lang="ts">` with UnoCSS **M3 token utilities** (`bg-primary`, `text-on-surface-variant`, `border-outline-variant`, `rounded-lg`, `elevation-1`, etc.). Never hardcode hex or Tailwind color names.
+3. For buttons, use the existing widgets with their variant/tone props: `SimpleButton` (`variant="filled|tonal:text"`), `OutlinedButton` (`tone="primary|error"`). Only sizing/layout should be styled by the caller.
+4. Surface user feedback via `useToast()` (`toast.success/error/info`) — **never `alert()`**.
+5. Keep business logic in feature modules (`features/<name>/domain/`), not in components.
