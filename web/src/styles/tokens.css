@@ -18,55 +18,64 @@
  * Consumed as UnoCSS utilities (bg-primary, text-on-surface, ...) via the
  * theme.colors mapping in uno.config.ts, and as the typography/elevation/
  * shape classes defined at the bottom of this file.
+ *
+ * Color tokens are stored as space-separated RGB channels
+ * (e.g. `--md-on-surface: 26 27 34`), NOT hex. This is the format UnoCSS
+ * needs so the `/N` opacity modifier works: it rewrites `bg-on-surface/12`
+ * to `rgb(var(--md-on-surface) / 12%)`. With a hex value the modifier was
+ * silently dropped, producing solid colors (a disabled Matches button
+ * rendered solid near-black; an outlined button's hover tint rendered solid
+ * blue and hid the blue label). Direct CSS usage must wrap in `rgb(...)`,
+ * e.g. `border: 1px solid rgb(var(--md-outline-variant))`.
  */
 
 :root {
   /* ---- Primary (blue, brand) ------------------------------------------- */
-  --md-primary: #1a56db;
-  --md-on-primary: #ffffff;
-  --md-primary-container: #d6e2ff;
-  --md-on-primary-container: #001a41;
+  --md-primary: 26 86 219;            /* #1a56db */
+  --md-on-primary: 255 255 255;       /* #ffffff */
+  --md-primary-container: 214 226 255; /* #d6e2ff */
+  --md-on-primary-container: 0 26 65;  /* #001a41 */
 
   /* ---- Secondary (muted blue-grey) ------------------------------------- */
-  --md-secondary: #555f71;
-  --md-on-secondary: #ffffff;
-  --md-secondary-container: #d9e3f8;
-  --md-on-secondary-container: #121c2b;
+  --md-secondary: 85 95 113;          /* #555f71 */
+  --md-on-secondary: 255 255 255;     /* #ffffff */
+  --md-secondary-container: 217 227 248; /* #d9e3f8 */
+  --md-on-secondary-container: 18 28 43; /* #121c2b */
 
   /* ---- Tertiary (bronze-gold — thematic for medals/qualifiers) --------- */
-  --md-tertiary: #735a2c;
-  --md-on-tertiary: #ffffff;
-  --md-tertiary-container: #ffdda4;
-  --md-on-tertiary-container: #251a00;
+  --md-tertiary: 115 90 44;          /* #735a2c */
+  --md-on-tertiary: 255 255 255;     /* #ffffff */
+  --md-tertiary-container: 255 221 164; /* #ffdda4 */
+  --md-on-tertiary-container: 37 26 0;  /* #251a00 */
 
   /* ---- Error ----------------------------------------------------------- */
-  --md-error: #ba1a1a;
-  --md-on-error: #ffffff;
-  --md-error-container: #ffdad6;
-  --md-on-error-container: #410002;
+  --md-error: 186 26 26;             /* #ba1a1a */
+  --md-on-error: 255 255 255;        /* #ffffff */
+  --md-error-container: 255 218 214; /* #ffdad6 */
+  --md-on-error-container: 65 0 2;   /* #410002 */
 
   /* ---- Surfaces (neutral, blue-tinted) --------------------------------- */
-  --md-background: #fdfbff;
-  --md-on-background: #1a1b22;
-  --md-surface: #fdfbff;
-  --md-on-surface: #1a1b22;
-  --md-surface-variant: #e1e2ec;
-  --md-on-surface-variant: #45464f;
+  --md-background: 253 251 255;      /* #fdfbff */
+  --md-on-background: 26 27 34;      /* #1a1b22 */
+  --md-surface: 253 251 255;         /* #fdfbff */
+  --md-on-surface: 26 27 34;         /* #1a1b22 */
+  --md-surface-variant: 225 226 236; /* #e1e2ec */
+  --md-on-surface-variant: 69 70 79; /* #45464f */
 
-  --md-surface-container-lowest: #ffffff;
-  --md-surface-container-low: #f5f3fa;
-  --md-surface-container: #efedf4;
-  --md-surface-container-high: #eae8ef;
-  --md-surface-container-highest: #e4e2e9;
+  --md-surface-container-lowest: 255 255 255; /* #ffffff */
+  --md-surface-container-low: 245 243 250;    /* #f5f3fa */
+  --md-surface-container: 239 237 244;        /* #efedf4 */
+  --md-surface-container-high: 234 232 239;   /* #eae8ef */
+  --md-surface-container-highest: 228 226 233; /* #e4e2e9 */
 
   /* ---- Outline --------------------------------------------------------- */
-  --md-outline: #767680;
-  --md-outline-variant: #c6c6d0;
+  --md-outline: 118 118 128;         /* #767680 */
+  --md-outline-variant: 198 198 208; /* #c6c6d0 */
 
   /* ---- Inverse (e.g. dark snackbars on a light UI) --------------------- */
-  --md-inverse-surface: #2f3036;
-  --md-inverse-on-surface: #f1f0f7;
-  --md-inverse-primary: #b0c6ff;
+  --md-inverse-surface: 47 48 54;    /* #2f3036 */
+  --md-inverse-on-surface: 241 240 247; /* #f1f0f7 */
+  --md-inverse-primary: 176 198 255; /* #b0c6ff */
 
   /* ---- Elevation (M3 levels 0–5) --------------------------------------- */
   --md-elevation-0: none;
