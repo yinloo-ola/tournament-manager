@@ -208,4 +208,34 @@ describe('scheduleMatches', () => {
     // Total: 10 slots
     expect(schedule.timeSlots).toHaveLength(10)
   })
+
+  it('should throw a clear error when numTables is 0 (the newTournament default)', () => {
+    // Regression: with numTables=0, slots got empty `tables` arrays and matches
+    // landed in sparse-array holes, so iterating them threw the opaque
+    // "Cannot read properties of undefined (reading 'dateTime')" from deep in
+    // the scheduler/export path instead of a user-facing message.
+    const tournament: Tournament = {
+      name: 'Zero Tables',
+      numTables: 0,
+      startTime: '2025-03-22T09:00',
+      categories: [
+        {
+          name: 'MS',
+          shortName: 'MS',
+          entryType: 'Singles',
+          durationMinutes: 30,
+          entriesPerGrpMain: 4,
+          entriesPerGrpRemainder: 0,
+          numQualifiedPerGroup: 2,
+          entries: buildSinglesEntries(4),
+          groups: [{ entriesIdx: [0, 1, 2, 3], rounds: [] }],
+          knockoutRounds: []
+        }
+      ]
+    }
+    generateRoundsForTournament(tournament)
+    expect(() => scheduleMatches(tournament)).toThrowError(
+      /Number of Tables must be greater than 0/
+    )
+  })
 })

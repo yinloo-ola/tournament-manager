@@ -255,6 +255,12 @@ function getSlotsForCategoryKnockout(
  * `durationMinutes` after the last slot's start time.
  */
 export function scheduleMatches(tournament: Tournament): Schedule {
+  if (tournament.numTables <= 0) {
+    // numTables=0 is the newTournament() default; without this guard, slots get
+    // empty `tables` arrays, matches land in sparse-array holes, and iterating
+    // them throws "Cannot read properties of undefined (reading 'dateTime')".
+    throw new Error('Number of Tables must be greater than 0 to generate a schedule.')
+  }
   const startDate = parseStartTimeUTC(tournament.startTime)
   const schedule: Schedule = {
     startTime: startDate,
