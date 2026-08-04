@@ -340,6 +340,7 @@ function updateGroups(groups: Group[]) {
       type="file"
       name=""
       id=""
+      data-test="input-load"
       ref="tournamentFile"
       @change="onTournamentFileSelected"
       accept=".json"
@@ -347,6 +348,7 @@ function updateGroups(groups: Group[]) {
     />
     <input
       type="file"
+      data-test="input-scoresheet-template"
       ref="exportScoresheetWithTemplateFile"
       @change="exportScoresheetWithTemplateSelected"
       accept=".xlsx"
@@ -356,6 +358,7 @@ function updateGroups(groups: Group[]) {
       type="file"
       name="finalScheduleFile"
       id="finalScheduleFile"
+      data-test="input-final-schedule"
       class="hidden"
       ref="finalScheduleFile"
       accept=".xlsx"

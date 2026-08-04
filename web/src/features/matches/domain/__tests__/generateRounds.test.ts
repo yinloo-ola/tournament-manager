@@ -89,6 +89,51 @@ describe('generateGroupRounds', () => {
   it('should return an empty array for a single entry (no matches, no throw)', () => {
     expect(generateGroupRounds([0], 30)).toEqual([])
   })
+
+  it('generates a complete round-robin for an ODD group size (3 players + bye)', () => {
+    // Regression: the JS port used float division where Go used integer
+    // division, so odd group sizes undercounted rounds and isRoundValid()
+    // threw 'generateGroupRounds encounter error'. With a bye appended, 3
+    // players must yield 3 rounds of exactly 1 real match each (the bye pair is
+    // dropped), covering all 3 pairings exactly once.
+    const rounds = generateGroupRounds([0, 1, 2], 30)
+    expect(rounds).toHaveLength(3)
+    const pairs = rounds
+      .map((r) => ({ entry1Idx: r[0].entry1Idx, entry2Idx: r[0].entry2Idx }))
+      .map((p) =>
+        p.entry1Idx < p.entry2Idx ? [p.entry1Idx, p.entry2Idx] : [p.entry2Idx, p.entry1Idx]
+      )
+    expect(pairs).toEqual(
+      expect.arrayContaining([
+        [0, 1],
+        [0, 2],
+        [1, 2]
+      ])
+    )
+    // No match references the virtual bye entry.
+    for (const round of rounds) {
+      for (const m of round) {
+        expect(m.entry1Idx).not.toBe(EntryByeIdx)
+        expect(m.entry2Idx).not.toBe(EntryByeIdx)
+      }
+    }
+  })
+
+  it('generates a complete round-robin for 5 players + bye (10 matches, 5 rounds)', () => {
+    const rounds = generateGroupRounds([0, 1, 2, 3, 4], 30)
+    expect(rounds).toHaveLength(5)
+    const seen = new Set<string>()
+    let total = 0
+    for (const round of rounds) {
+      for (const m of round) {
+        const key = [m.entry1Idx, m.entry2Idx].sort((a, b) => a - b).join('-')
+        expect(seen.has(key)).toBe(false)
+        seen.add(key)
+        total++
+      }
+    }
+    expect(total).toBe(10)
+  })
 })
 
 describe('getRoundMatches', () => {

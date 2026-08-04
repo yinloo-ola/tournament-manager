@@ -176,8 +176,13 @@ export function generateGroupRounds(entriesIdx: number[], matchDurationMinutes: 
   const players = entriesIdx.slice()
   let numPlayers = players.length
   const numMatches = (numPlayers * (numPlayers - 1)) / 2
-  const numMatchesPerRound = numPlayers / 2
-  const numRounds = numMatches / numMatchesPerRound
+  // Integer division (Go used integer `/`; the JS port must floor). For even
+  // group sizes this is identical to plain division, so even-size golden
+  // outputs are unchanged. For ODD sizes a bye is appended below, and flooring
+  // keeps numMatchesPerRound/numRounds whole (e.g. 3 players -> 1 match/round
+  // over 3 rounds) so isRoundValid() does not reject the valid schedule.
+  const numMatchesPerRound = Math.floor(numPlayers / 2)
+  const numRounds = Math.floor(numMatches / numMatchesPerRound)
 
   if (numPlayers % 2 === 1) {
     players.push(EntryByeIdx)

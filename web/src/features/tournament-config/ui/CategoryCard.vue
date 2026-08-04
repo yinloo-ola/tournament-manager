@@ -113,6 +113,7 @@ const hasEntries = computed(() => {
 
 <template>
   <div
+    data-test="category-card"
     class="relative flex flex-col border border-gray-200 rounded-lg border-solid bg-gray-100 p-3 shadow-sm hover:shadow-xl"
   >
     <div @click="emit('remove')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
@@ -194,12 +195,14 @@ const hasEntries = computed(() => {
         type="file"
         name="inputfile"
         id="inputfile"
+        data-test="input-entries"
         class="hidden"
         ref="file"
         accept=".xlsx"
         @change="onFileSelected"
       />
       <OutlinedButton
+        data-test="do-draw"
         @click="emit('startDraw')"
         class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white"
         :disabled="category.entries.length === 0"
@@ -207,6 +210,7 @@ const hasEntries = computed(() => {
         DO DRAW
       </OutlinedButton>
       <OutlinedButton
+        data-test="import-entries"
         @click="file?.click()"
         class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white"
         :disabled="!isEntryTypeSelected"
@@ -216,6 +220,7 @@ const hasEntries = computed(() => {
     </div>
     <div class="pb-1 pt-4">
       <SimpleButton
+        data-test="matches"
         @click="router.push(`/tournament/matches/${category.shortName}`)"
         class="h-10 w-full rounded-lg bg-blue-600 text-center text-white"
         :disabled="!hasEntries"
