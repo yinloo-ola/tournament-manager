@@ -4,3 +4,6 @@ tmp/
 
 # pi-subagents review/session artifacts
 .pi-subagents/
+
+# ZCode agent session/scratch state
+.zcode/

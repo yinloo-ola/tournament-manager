@@ -67,4 +67,38 @@ describe('CategoryCard', () => {
     expect(wrapper.emitted('playerCountChanged')).toBeTruthy()
     expect(wrapper.emitted('playerCountChanged')![0][0]).toBe('main')
   })
+
+  // Matches button → router.push(`/tournament/matches/${shortName}`). shortName
+  // is the routing key; empty pushes `/tournament/matches/`, which the catch-all
+  // route redirects to the home launcher — discarding the user's place in setup.
+  // The button must therefore stay disabled until a Short Form is entered.
+  describe('Matches button', () => {
+    function matchesButton(wrapper: ReturnType<typeof mount>) {
+      return wrapper.findAll('button').filter((b) => b.text().includes('Matches'))[0]
+    }
+
+    it('is disabled when the category has no Short Form', () => {
+      const cat = structuredClone(baseCategory)
+      cat.shortName = ''
+      cat.entries = [new Entry(EntryType.Singles)] // entries present (no entries also disables)
+      const wrapper = mount(CategoryCard, { props: { modelValue: cat } })
+      expect(matchesButton(wrapper).attributes('disabled')).toBeDefined()
+    })
+
+    it('is disabled when the category has no entries', () => {
+      const cat = structuredClone(baseCategory)
+      cat.shortName = 'MS'
+      cat.entries = []
+      const wrapper = mount(CategoryCard, { props: { modelValue: cat } })
+      expect(matchesButton(wrapper).attributes('disabled')).toBeDefined()
+    })
+
+    it('is enabled when both a Short Form and entries are present', () => {
+      const cat = structuredClone(baseCategory)
+      cat.shortName = 'MS'
+      cat.entries = [new Entry(EntryType.Singles)]
+      const wrapper = mount(CategoryCard, { props: { modelValue: cat } })
+      expect(matchesButton(wrapper).attributes('disabled')).toBeUndefined()
+    })
+  })
 })

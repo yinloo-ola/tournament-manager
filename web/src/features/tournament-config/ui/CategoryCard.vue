@@ -113,6 +113,13 @@ const hasEntries = computed(() => {
   return category.value.entries && category.value.entries.length > 0
 })
 
+// shortName is the routing key for the Matches view (it's the :shortName route
+// param and the lookup in MatchesView). An empty short name makes the button
+// push `/tournament/matches/`, which falls through to the catch-all route and
+// dumps the user on the home launcher — so the button must stay disabled until
+// a short name is set.
+const hasShortName = computed(() => !!category.value.shortName)
+
 // Lifecycle status: a lightweight signal of where this category is in the
 // configure → import → draw flow, surfaced on the card so the grid gives the
 // user orientation at a glance (was previously invisible).
@@ -256,7 +263,8 @@ const lifecycle = computed(() => {
         data-test="matches"
         @click="router.push(`/tournament/matches/${category.shortName}`)"
         class="w-full"
-        :disabled="!hasEntries"
+        :disabled="!hasEntries || !hasShortName"
+        :title="!hasShortName ? 'Enter a Short Form for this category first' : undefined"
       >
         Matches
       </SimpleButton>
