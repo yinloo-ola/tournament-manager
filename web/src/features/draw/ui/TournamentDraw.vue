@@ -10,6 +10,9 @@ import { EntryEmptyIdx, type Category, type Group } from '@/types/types'
 import { computed, onMounted, ref } from 'vue'
 import SimpleButton from '../../../widgets/SimpleButton.vue'
 import PlayersChooser from './PlayersChooser.vue'
+import { useToast } from '@/shared/ui/toast'
+
+const { toast } = useToast()
 import { getPlayerDisplay } from '@/calculator/player_display'
 import { clearDraw, doDraw } from '@/features/draw/domain/draw'
 import OutlinedButton from '@/widgets/OutlinedButton.vue'
@@ -111,7 +114,7 @@ async function autoDraw() {
     seededPlayersWithIndices.length + otherPlayersWithIndices.length !==
     props.category.entries.length
   ) {
-    alert("Something's wrong. Please check player list")
+    toast.error("Something's wrong. Please check player list")
   }
 
   clearDraw(props.category.entryType, groups.value)
@@ -119,38 +122,38 @@ async function autoDraw() {
 
   // Pass the arrays with index information to doDraw
   doDraw(groups.value, seededPlayersWithIndices, otherPlayersWithIndices, sleep.value).catch(
-    (e: any) => alert(e.message)
+    (e: any) => toast.error(e.message)
   )
   emit('groups-updated', groups.value)
 }
 </script>
 
 <template>
-  <div class="relative h-full w-full overflow-y-auto rounded-xl">
-    <div class="h-12 flex justify-between border-0 border-solid bg-blue-300 outline-none">
-      <div class="flex flex-col justify-center px-4 font-black">Draw for {{ category?.name }}</div>
+  <div class="relative h-full w-full overflow-y-auto">
+    <div class="flex h-12 items-center justify-between bg-surface-container-high">
+      <div class="flex flex-col justify-center px-4 title-large text-on-surface">Draw for {{ category?.name }}</div>
       <div class="mr-14 flex items-center justify-between gap-x-4">
         <input
           type="number"
           placeholder="sleep"
           v-model="sleep"
-          class="w-13 rounded border-none bg-blue-200 pl-1 outline-none"
+          class="w-13 rounded-xs border border-outline-variant bg-surface px-2 py-1 text-sm text-on-surface outline-none focus:border-primary"
         />
-        <SimpleButton class="bg-blue-700 px-5 text-white" @click="autoDraw">AUTO DRAW</SimpleButton>
-        <OutlinedButton class="border-red-700 px-5 text-red-700" @click="clearDrawClicked">
+        <SimpleButton variant="filled" @click="autoDraw">AUTO DRAW</SimpleButton>
+        <OutlinedButton tone="error" @click="clearDrawClicked">
           CLEAR DRAW</OutlinedButton
         >
       </div>
     </div>
-    <div class="h-17/18 flex flex-row">
+    <div class="flex h-17/18 flex-row">
       <div
-        class="max-h-[calc(100vh-7rem)] w-64 flex flex-col overflow-y-auto border-0 border-r border-solid bg-blue-100 pb-2"
+        class="flex w-64 max-h-[calc(100vh-7rem)] flex-col overflow-y-auto border-r border-outline-variant bg-surface-container-low pb-2"
       >
-        <div class="border-0 border-solid bg-blue-200 p-3 font-black">Players</div>
+        <div class="title-medium p-3 text-on-surface">Players</div>
         <div
-          class="mx-3 border-0 border-b border-blue-200 border-solid py-1 decoration-2 decoration-blue-700"
+          class="mx-3 border-b border-outline-variant py-1 body-medium"
           :class="{
-            'line-through': chosenPlayersIndices[i]
+            'line-through text-on-surface-variant': chosenPlayersIndices[i]
           }"
           v-for="(player, i) in players"
           :key="'player-' + i"
@@ -159,22 +162,22 @@ async function autoDraw() {
         </div>
       </div>
       <div
-        class="grid max-h-[calc(100vh-7rem)] w-full gap-4 overflow-y-auto bg-blue-200 p-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
+        class="grid w-full max-h-[calc(100vh-7rem)] gap-4 overflow-y-auto bg-surface-container p-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
         <div
           v-for="(grp, i) in groups"
           :key="'group-' + i"
-          class="flex flex-col border border-blue-200 rounded-lg border-solid bg-blue-100 p-2 shadow-sm hover:shadow-md"
+          class="flex flex-col rounded-md border border-outline-variant bg-surface-container-low p-2 elevation-1 transition-shadow duration-short ease-standard hover:elevation-2"
         >
-          <div class="py-2">Group {{ i + 1 }}</div>
+          <div class="title-small py-2 text-primary">Group {{ i + 1 }}</div>
           <div
             v-for="(entryIdx, j) in grp.entriesIdx"
             :key="'player-in-group-' + i + '-' + j"
             class="flex items-center py-3"
           >
-            <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2" />
-            <span> {{ j + 1 }}.</span>
-            <span class="px-2">{{
+            <div @click="choosePlayer(i, j)" class="i-line-md-edit cursor-pointer px-2 text-on-surface-variant" />
+            <span class="body-medium"> {{ j + 1 }}.</span>
+            <span class="body-medium px-2">{{
               entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length
                 ? getPlayerDisplay(category.entries[entryIdx])
                 : ''
@@ -184,7 +187,7 @@ async function autoDraw() {
                 entryIdx !== EntryEmptyIdx && entryIdx >= 0 && entryIdx < category.entries.length
               "
               @click="unselectPlayer(i, j)"
-              class="i-line-md-account-delete cursor-pointer px-2"
+              class="i-line-md-account-delete cursor-pointer px-2 text-error"
             />
           </div>
         </div>

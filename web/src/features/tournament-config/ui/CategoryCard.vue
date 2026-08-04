@@ -12,12 +12,14 @@ import type { Category } from '@/types/types'
 import { isGroupEmpty } from '@/features/draw/domain/groups'
 import SimpleButton from '@/widgets/SimpleButton.vue'
 import router from '@/router'
+import { useToast } from '@/shared/ui/toast'
 
+const { toast } = useToast()
 const isDebug = ref(false)
 const file = ref<HTMLInputElement | null>(null)
 async function onFileSelected(event: any) {
   if (event.target.files.length === 0) {
-    alert('No files selected')
+    toast.error('No files selected')
     return
   }
 
@@ -33,23 +35,23 @@ async function onFileSelected(event: any) {
   // Check the category entryType and call the appropriate local importer.
   // Only readWorkbook is async (ExcelJS is Promise-based); the importers are
   // synchronous and throw inside the try/catch, so their Error.message
-  // surfaces directly via alert. Never await the importer — that would turn
-  // the throw into an unhandled rejection.
+  // surfaces directly via the toast. Never await the importer — that would
+  // turn the throw into an unhandled rejection.
   switch (entryType) {
     case EntryType.Singles:
     case EntryType.Doubles:
     case EntryType.Team: {
       if (entryType === EntryType.Team) {
         if (!minPlayers || !maxPlayers) {
-          alert('Please set minimum and maximum players for team')
+          toast.error('Please set minimum and maximum players for team')
           return
         }
         if (minPlayers < 1 || maxPlayers < 1) {
-          alert('Minimum and maximum players must be greater than 0')
+          toast.error('Minimum and maximum players must be greater than 0')
           return
         }
         if (minPlayers > maxPlayers) {
-          alert('Minimum players must be less than maximum players')
+          toast.error('Minimum players must be less than maximum players')
           return
         }
       }
@@ -69,13 +71,14 @@ async function onFileSelected(event: any) {
             break
         }
         emit('playersImported', data)
+        toast.success(`Imported ${data.length} entries`)
       } catch (error) {
-        alert((error as Error).message)
+        toast.error((error as Error).message)
       }
       break
     }
     default:
-      alert('Please select an entry type before importing')
+      toast.error('Please select an entry type before importing')
       return
   }
 
@@ -109,15 +112,44 @@ const isEntryTypeSelected = computed(() => {
 const hasEntries = computed(() => {
   return category.value.entries && category.value.entries.length > 0
 })
+
+// Lifecycle status: a lightweight signal of where this category is in the
+// configure → import → draw flow, surfaced on the card so the grid gives the
+// user orientation at a glance (was previously invisible).
+const lifecycle = computed(() => {
+  if (!hasEntries.value) {
+    return { label: 'No entries imported', tone: 'pending' as const }
+  }
+  if (!category.value.groups || isGroupEmpty(category.value.groups)) {
+    return { label: `${category.value.entries.length} entries · draw pending`, tone: 'pending' as const }
+  }
+  return { label: `Draw done · ${category.value.entries.length} entries`, tone: 'done' as const }
+})
 </script>
 
 <template>
   <div
     data-test="category-card"
-    class="relative flex flex-col border border-gray-200 rounded-lg border-solid bg-gray-100 p-3 shadow-sm hover:shadow-xl"
+    class="relative flex flex-col rounded-lg bg-surface-container-low p-4 elevation-1 transition-all duration-short ease-standard hover:elevation-2"
   >
-    <div @click="emit('remove')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
-    <div class="h-0.5"></div>
+    <!-- Remove (ghost icon, top-right) -->
+    <button
+      @click="emit('remove')"
+      title="Remove category"
+      class="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border-0 bg-transparent text-on-surface-variant opacity-60 transition-all duration-short ease-standard hover:bg-error-container hover:text-on-error-container hover:opacity-100 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      <span class="i-line-md-close"></span>
+    </button>
+
+    <!-- Lifecycle status chip (the UX win: at-a-glance progress signal) -->
+    <div class="mb-3 flex items-center gap-1.5">
+      <span
+        class="inline-block h-2 w-2 rounded-full"
+        :class="lifecycle.tone === 'done' ? 'bg-primary' : 'bg-outline'"
+      ></span>
+      <span class="body-small text-on-surface-variant">{{ lifecycle.label }}</span>
+    </div>
+
     <LabeledSelect
       name="entryType"
       label="Entry Type"
@@ -204,7 +236,7 @@ const hasEntries = computed(() => {
       <OutlinedButton
         data-test="do-draw"
         @click="emit('startDraw')"
-        class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white"
+        class="w-full"
         :disabled="category.entries.length === 0"
       >
         DO DRAW
@@ -212,7 +244,7 @@ const hasEntries = computed(() => {
       <OutlinedButton
         data-test="import-entries"
         @click="file?.click()"
-        class="border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white"
+        class="w-full"
         :disabled="!isEntryTypeSelected"
       >
         IMPORT ENTRIES
@@ -220,9 +252,10 @@ const hasEntries = computed(() => {
     </div>
     <div class="pb-1 pt-4">
       <SimpleButton
+        variant="filled"
         data-test="matches"
         @click="router.push(`/tournament/matches/${category.shortName}`)"
-        class="h-10 w-full rounded-lg bg-blue-600 text-center text-white"
+        class="w-full"
         :disabled="!hasEntries"
       >
         Matches
@@ -235,7 +268,7 @@ const hasEntries = computed(() => {
           Round {{ r + 1 }}
           <div v-for="(match, m) in round" :key="'match-' + g + '-' + r + '-' + m" class="px-2">
             M{{ m + 1 }}
-            <p class="text-red-700">{{ match.datetime }} on {{ match.table }}</p>
+            <p class="text-error">{{ match.datetime }} on {{ match.table }}</p>
             <p>
               {{ category.entries[match.entry1Idx] }} vs {{ category.entries[match.entry2Idx] }}
               {{ match.durationMinutes }}

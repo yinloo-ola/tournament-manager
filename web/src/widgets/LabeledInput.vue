@@ -1,20 +1,25 @@
 <script setup lang="ts">
+/**
+ * M3 filled text field — the underline style. Border-bottom instead of full
+ * border; label floats on focus/value. Kept the working peer mechanics, only
+ * swapped hardcoded grays/blues for tokens.
+ */
 defineProps(['label', 'type', 'name', 'readonly'])
 const model = defineModel()
 </script>
 
 <template>
-  <div class="relative z-0 mt-3">
+  <div class="relative mt-4">
     <input
       :type
       :name
       :readonly
       v-model="model"
-      class="peer block w-full appearance-none border-0 border-b border-gray-500 bg-transparent px-0 py-2.5 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0"
-      placeholder=""
+      placeholder=" "
+      class="peer block w-full appearance-none border-0 border-b bg-transparent px-0 pt-4 pb-1 text-sm text-on-surface outline-none transition-colors duration-short ease-standard border-outline focus:border-2 focus:border-primary placeholder-shown:pt-3.5 placeholder-shown:pb-2.5"
     />
     <label
-      class="absolute top-3 origin-[0] transform text-sm text-gray-500 duration-300 peer-focus:left-0 -z-10 peer-focus:scale-75 peer-not-placeholder-shown:scale-75 peer-focus:text-blue-600 peer-focus:-translate-y-6 peer-not-placeholder-shown:-translate-y-6 peer-focus:dark:text-blue-500"
+      class="pointer-events-none absolute left-0 top-3.5 origin-[0] bg-transparent px-1 text-sm text-on-surface-variant transition-all duration-short ease-standard peer-focus:top-0 peer-focus:scale-75 peer-focus:text-primary peer-not-placeholder-shown:top-0 peer-not-placeholder-shown:scale-75 peer-not-placeholder-shown:text-primary"
       >{{ label }}</label
     >
   </div>

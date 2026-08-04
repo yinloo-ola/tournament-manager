@@ -5,11 +5,20 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
+      // Home is the launcher — the empty state of the single app-bar shell
+      // (decision 01). It is the landing route and the catch-all, so any
+      // unmatched hash drops the user back at the launcher rather than a
+      // blank page.
+      path: '/',
+      name: 'home',
+      component: () => import('../views/HomeView.vue')
+    },
+    {
       path: '/tournament',
       name: 'tournament',
       // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
+      // this generates a separate chunk (About.[hash].js) that is
+      // lazy-loaded when the route is visited.
       component: () => import('../views/TournamentView.vue')
     },
     {
@@ -26,7 +35,9 @@ const router = createRouter({
           next()
         }
       }
-    }
+    },
+    // Any other path → back to the launcher.
+    { path: '/:pathMatch(.*)*', redirect: '/' }
   ]
 })
 

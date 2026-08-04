@@ -11,17 +11,26 @@ const emit = defineEmits(['playerChosen', 'close'])
 
 <template>
   <div
-    class="relative flex flex-col border border-gray-300 rounded-xl border-solid bg-purple-200 shadow-lg"
+    class="relative flex flex-col rounded-lg border border-outline-variant bg-surface elevation-3"
   >
-    <div @click="emit('close')" class="i-line-md-close absolute right-3 top-3 cursor-pointer" />
-    <div class="border border-0 border-solid px-3 py-2 font-black">Choose a Player</div>
-    <div class="flex flex-col overflow-y-auto rounded-b-xl bg-purple-100 px-3">
+    <button
+      @click="emit('close')"
+      aria-label="Close"
+      class="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border-0 bg-transparent text-on-surface-variant cursor-pointer transition-colors duration-short ease-standard hover:bg-surface-container-high hover:text-on-surface"
+    >
+      <span class="i-line-md-close"></span>
+    </button>
+    <div class="title-medium px-3 py-2 text-on-surface">Choose a Player</div>
+    <div class="flex flex-col overflow-y-auto rounded-b-lg bg-surface-container-low px-3">
       <div
-        class="border border-0 border-b border-purple-200 border-solid py-1"
+        class="border-b border-outline-variant py-1"
         v-for="(player, i) in players"
         :key="i"
       >
-        <div class="cursor-pointer py-2" @click="emit('playerChosen', i)">
+        <div
+          class="body-medium cursor-pointer rounded-xs py-2 px-2 text-on-surface transition-colors duration-short ease-standard hover:bg-surface-container-high"
+          @click="emit('playerChosen', i)"
+        >
           {{ getPlayerDisplay(player) }}
         </div>
       </div>

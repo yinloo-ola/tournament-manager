@@ -15,9 +15,14 @@ vi.mock('@/shared/excel/readWorkbook', () => ({
 import { readWorkbook } from '@/shared/excel/readWorkbook'
 const readWorkbookMock = vi.mocked(readWorkbook)
 
+// Toast is mocked so error surfacing is observable without the host.
+const toastErrorSpy = vi.fn()
+vi.mock('@/shared/ui/toast', () => ({
+  useToast: () => ({ toast: { error: toastErrorSpy, success: vi.fn(), info: vi.fn() } })
+}))
+
 // fetch is mocked to prove the local pipeline never calls the server.
 const fetchSpy = vi.fn()
-const alertSpy = vi.fn()
 
 const singlesWorkbook: Record<string, string[][]> = {
   entries: [
@@ -86,10 +91,9 @@ function selectFile(wrapper: ReturnType<typeof mount>, fileName = 'fixture.xlsx'
 
 beforeEach(() => {
   fetchSpy.mockClear()
-  alertSpy.mockClear()
+  toastErrorSpy.mockClear()
   readWorkbookMock.mockReset()
   ;(globalThis as { fetch: unknown }).fetch = fetchSpy
-  ;(globalThis as { alert: unknown }).alert = alertSpy
   readWorkbookMock.mockResolvedValue(singlesWorkbook)
 })
 
@@ -166,7 +170,7 @@ describe('CategoryCard entry import (R5)', () => {
     await nextTick()
     await nextTick()
 
-    expect(alertSpy).toHaveBeenCalledWith('sheet entries does not exist')
+    expect(toastErrorSpy).toHaveBeenCalledWith('sheet entries does not exist')
     expect(wrapper.emitted('playersImported')).toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
@@ -188,7 +192,7 @@ describe('CategoryCard entry import (R5)', () => {
     await nextTick()
     await nextTick()
 
-    expect(alertSpy).toHaveBeenCalledWith(
+    expect(toastErrorSpy).toHaveBeenCalledWith(
       'Minimum players must be less than maximum players'
     )
     expect(readWorkbookMock).not.toHaveBeenCalled()

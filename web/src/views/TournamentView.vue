@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import CategoryCard from '@/features/tournament-config/ui/CategoryCard.vue'
 import TournamentInfo from '@/features/tournament-config/ui/TournamentInfo.vue'
 import TournamentDraw from '@/features/draw/ui/TournamentDraw.vue'
 import DropdownMenu from '../widgets/DropdownMenu.vue'
 import MenuItem from '../widgets/MenuItem.vue'
 import ModalDialog from '../widgets/ModalDialog.vue'
+import SimpleButton from '../widgets/SimpleButton.vue'
 import { type Group, type Tournament, Entry, EntryType } from '@/types/types'
 import { dateInYyyyMmDdHhMmSs, injectEntriesTournament } from '@/calculator/tournament'
 import { createRobinCharts } from '@/features/roundrobin/excel/roundrobinChartWorkbook'
@@ -23,6 +25,10 @@ import { importFinalScheduleFromBuffer } from '@/features/schedule/domain/import
 import { tournament } from '@/store/state'
 import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
 import { saveFileSink } from '@/features/tournament-doc/storage/fileAccess'
+import { useToast } from '@/shared/ui/toast'
+
+const router = useRouter()
+const { toast } = useToast()
 
 function addCategory() {
   tournament.value.categories.push({
@@ -33,8 +39,8 @@ function addCategory() {
     entriesPerGrpRemainder: 4,
     entries: [],
     groups: [],
-    durationMinutes: 0,
     knockoutRounds: [],
+    durationMinutes: 0,
     numQualifiedPerGroup: 0
   })
 }
@@ -108,7 +114,7 @@ function startDraw(idx: number) {
     tournament.value.categories[idx].entriesPerGrpMain -
     tournament.value.categories[idx].entriesPerGrpRemainder
   if (Math.abs(diff) !== 1) {
-    alert(
+    toast.error(
       'Difference between "Players Per Group (Main)" and "Players Per Group (Remainder)" should be 1'
     )
     return
@@ -132,12 +138,12 @@ function drawDone(groups: Array<Group>) {
     generateRoundsForTournament(tournament.value)
   } catch (e: unknown) {
     const error = e as Error
-    alert(error.message)
+    toast.error(error.message)
   }
 }
 
 function showAlert(msg: string) {
-  alert(msg)
+  toast.error(msg)
 }
 
 async function saveTournament() {
@@ -145,7 +151,7 @@ async function saveTournament() {
     const result = await saveTournamentDocument(saveFileSink())
     if (!result.saved) return // user cancelled the save picker
     if (result.downloaded) {
-      showAlert('Saved as a download — the original file was not updated.')
+      toast.info('Saved as a download — the original file was not updated.')
     }
   } catch (e) {
     showAlert(e instanceof Error ? e.message : 'Save failed')
@@ -156,15 +162,15 @@ const exportScoresheetWithTemplateFile = ref<HTMLInputElement | null>(null)
 function exportScoresheetWithTemplateSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (input === null) {
-    alert('No file selected')
+    toast.error('No file selected')
     return
   }
   if (input.files == null || input.files?.length === 0) {
-    alert('No file selected')
+    toast.error('No file selected')
     return
   }
   if (input.files[0] == null) {
-    alert('No file selected')
+    toast.error('No file selected')
     return
   }
 
@@ -184,10 +190,11 @@ function exportScoresheetWithTemplateSelected(event: Event) {
       a.download = `${tournament.value.name}_scoresheet_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
       a.click()
       window.URL.revokeObjectURL(file)
+      toast.success('Scoresheets exported')
     })
     .catch((e: unknown) => {
       const error = e as Error
-      alert(error.message)
+      toast.error(error.message)
     })
 
   if (exportScoresheetWithTemplateFile.value) {
@@ -199,17 +206,17 @@ const finalScheduleFile = ref<HTMLInputElement | null>(null)
 function finalScheduleFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
   if (input === null) {
-    alert('No file selected')
+    toast.error('No file selected')
     return
   }
   const files = input.files
   if (files == null || files?.length === 0) {
-    alert('No file selected')
+    toast.error('No file selected')
     return
   }
   const file = files[0]
   if (file == null) {
-    alert('No file selected')
+    toast.error('No file selected')
     return
   }
   file
@@ -222,13 +229,15 @@ function finalScheduleFileSelected(event: Event) {
         tournament.value
       )
       if (!ok) {
+        // schedule.ts returned false (e.g. no group data found for a category)
+        toast.error('Could not import final schedule — check the category/group data.')
         return
       }
-      alert('Final schedule imported successfully')
+      toast.success('Final schedule imported successfully')
     })
     .catch((error) => {
       console.error('Error importing final schedule:', error)
-      alert('Error importing final schedule: ' + error.message)
+      toast.error('Error importing final schedule: ' + error.message)
     })
 
   if (finalScheduleFile.value) {
@@ -240,7 +249,7 @@ const tournamentFile = ref<HTMLInputElement | null>(null)
 function onTournamentFileSelected(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files?.length === 0) {
-    alert('No files selected')
+    toast.error('No files selected')
     return
   }
   const reader = new FileReader()
@@ -272,9 +281,10 @@ async function exportRoundRobin() {
     a.download = `${tournament.value.name}_rr_chart_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
     a.click()
     window.URL.revokeObjectURL(file)
+    toast.success('Round-robin charts exported')
   } catch (e: unknown) {
     const error = e as Error
-    alert(error.message)
+    toast.error(error.message)
   }
 }
 
@@ -283,7 +293,7 @@ async function exportDraftSchedule() {
     generateRoundsForTournament(tournament.value)
   } catch (e: unknown) {
     const error = e as Error
-    alert(error.message)
+    toast.error(error.message)
     return
   }
   try {
@@ -299,47 +309,67 @@ async function exportDraftSchedule() {
     a.download = `${tournament.value.name}_draft_schedule_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.xlsx`
     a.click()
     window.URL.revokeObjectURL(file)
+    toast.success('Draft schedule exported')
   } catch (e: unknown) {
     const error = e as Error
-    alert(error.message)
+    toast.error(error.message)
   }
 }
 
 function updateGroups(groups: Group[]) {
   tournament.value.categories[drawIndex.value].groups = groups
 }
+
+function goHome() {
+  router.push('/')
+}
 </script>
 
 <template>
-  <main class="flex flex-col">
-    <header class="flex items-center justify-between bg-lime-200 shadow-xl">
-      <div class="px-4 text-2xl text-lime-900 font-800">
-        Tournament Manager <span class="px-4 font-black">{{ tournament.name }}</span>
-      </div>
-      <div class="px-3 py-2">
-        <DropdownMenu
-          buttonClass="i-line-md-menu-fold-left h-8 w-8 bg-lime-900 text-white
-          transition-all duration-200
-          hover:cursor-pointer active:scale-90"
-        >
-          <MenuItem label="SAVE" @click="saveTournament()" />
-          <MenuItem label="LOAD" @click="tournamentFile?.click()" />
-          <MenuItem divider />
-          <MenuItem label="EXPORT RR CHARTS" wide @click="exportRoundRobin()" />
-          <MenuItem label="EXPORT DRAFT SCHEDULE" wide @click="exportDraftSchedule()" />
-          <MenuItem label="IMPORT FINAL SCHEDULE" wide @click="finalScheduleFile?.click()" />
-          <MenuItem
-            label="EXPORT SCORESHEET WITH TEMPLATE"
-            wide
-            @click="exportScoresheetWithTemplateFile?.click()"
-          />
-        </DropdownMenu>
-      </div>
+  <div class="flex min-h-screen flex-col">
+    <!-- App bar (decision 01): brand + tournament name on the left,
+         Save (prominent filled) + Document ▾ menu on the right.
+         The 6 actions previously buried in a hamburger are now surfaced. -->
+    <header class="sticky top-0 z-20 flex items-center gap-2 px-4 py-3 elevation-1 bg-surface-container">
+      <button
+        @click="goHome"
+        title="Back to launcher"
+        class="flex h-10 w-10 items-center justify-center rounded-full border-0 bg-transparent text-on-surface-variant transition-all duration-short ease-standard hover:bg-surface-container-high hover:text-on-surface cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <span class="i-line-md-arrow-left text-xl"></span>
+      </button>
+      <span class="text-xl">🏆</span>
+      <span class="title-large text-on-surface-variant">Tournament Manager</span>
+      <span class="title-large text-primary truncate">{{ tournament.name }}</span>
+
+      <span class="flex-1"></span>
+
+      <!-- Surfaced actions (decision 01) -->
+      <SimpleButton variant="filled" @click="saveTournament()">
+        <span class="i-line-md-document-list"></span>
+        Save
+      </SimpleButton>
+      <DropdownMenu
+        buttonClass="inline-flex items-center gap-2 rounded-full border-0 bg-primary-container px-6 h-10 text-sm font-medium tracking-[0.1px] text-on-primary-container transition-all duration-short ease-standard hover:elevation-1 active:scale-[.97] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        menuClass="absolute right-0 z-50 w-64 flex flex-col gap-1 rounded-sm bg-surface-container elevation-2 p-2"
+      >
+        <template #button-content>
+          <span>Document</span>
+          <span class="i-line-md-chevron-small-down text-lg"></span>
+        </template>
+        <MenuItem label="Load tournament…" @click="tournamentFile?.click()" />
+        <MenuItem divider />
+        <MenuItem label="Export round-robin charts" wide @click="exportRoundRobin()" />
+        <MenuItem label="Export draft schedule" wide @click="exportDraftSchedule()" />
+        <MenuItem label="Import final schedule…" wide @click="finalScheduleFile?.click()" />
+        <MenuItem divider />
+        <MenuItem label="Export scoresheets (with template)" wide @click="exportScoresheetWithTemplateFile?.click()" />
+      </DropdownMenu>
     </header>
+
+    <!-- Hidden file inputs (unchanged mechanism) -->
     <input
       type="file"
-      name=""
-      id=""
       data-test="input-load"
       ref="tournamentFile"
       @change="onTournamentFileSelected"
@@ -364,13 +394,31 @@ function updateGroups(groups: Group[]) {
       accept=".xlsx"
       @change="finalScheduleFileSelected"
     />
-    <div class="flex flex-col pb-4">
-      <div class="flex flex-col gap-3 p-4">
+
+    <!-- Content -->
+    <main class="mx-auto w-full max-w-[1600px] flex-1 px-6 py-6">
+      <!-- Tournament info form -->
+      <section class="mb-6 rounded-lg bg-surface px-6 py-5 elevation-1">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>
+      </section>
+
+      <!-- Categories section header -->
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="title-large text-on-surface">Categories</h2>
+        <SimpleButton variant="tonal" @click="addCategory">
+          <span class="i-line-md-plus"></span>
+          Add category
+        </SimpleButton>
       </div>
 
+      <!-- Category cards grid, or empty state -->
+      <div v-if="tournament.categories.length === 0" class="flex flex-col items-center gap-3 rounded-lg border border-dashed border-outline-variant bg-surface-container-low px-6 py-12 text-center">
+        <span class="text-4xl opacity-40">🗂️</span>
+        <p class="body-medium text-on-surface-variant">No categories yet — add one to get started.</p>
+      </div>
       <div
-        class="grid gap-4 px-4 2xl:grid-cols-5 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 xl:grid-cols-4"
+        v-else
+        class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
       >
         <template v-for="(category, i) in tournament.categories" :key="i">
           <CategoryCard
@@ -383,10 +431,11 @@ function updateGroups(groups: Group[]) {
           ></CategoryCard>
         </template>
       </div>
-    </div>
+    </main>
+
     <ModalDialog
       v-model="showDrawModal"
-      content-class="bg-blue-200 max-h-[95vh] max-w-[95vw] min-w-4/5"
+      content-class="bg-surface-container-high max-h-[95vh] max-w-[95vw] min-w-4/5"
     >
       <TournamentDraw
         v-if="drawIndex >= 0"
@@ -395,29 +444,5 @@ function updateGroups(groups: Group[]) {
       >
       </TournamentDraw>
     </ModalDialog>
-  </main>
+  </div>
 </template>
-
-<style>
-.bounce-enter-active {
-  animation: bounce-in 0.3s;
-}
-
-.bounce-leave-active {
-  animation: bounce-in 0.3s reverse;
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: scale(0);
-  }
-
-  70% {
-    transform: scale(1.05);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-</style>

@@ -29,7 +29,9 @@
 #   * Hash routing + IndexedDB autosave mean reloads resume state, so Phase 0
 #     clears the autosave stores and forces a real reload for a clean slate.
 #   * window.confirm is forced true and window.alert is captured to
-#     window.__lastAlert so JS-dialog flows are deterministic.
+#     window.__lastAlert so JS-dialog flows are deterministic. Toast feedback
+#     (M3 SnackbarHost, [role="status"]) is captured to window.__lastToast via
+#     a MutationObserver, since success/error messages migrated off alert().
 #   * Click-triggered blob downloads (RR chart, draft schedule) are captured
 #     with `download <sel> <path>`. Upload-triggered blob downloads
 #     (scoresheet, save) cannot be caught by a later wait, so the shim wraps
@@ -64,11 +66,20 @@ cap_reset(){ pv "(()=>{[...document.querySelectorAll('a#__cap_download')].forEac
 read -r -d '' SHIM <<'JS' || true
 (() => {
   window.__lastAlert = null;
+  window.__lastToast = null;
   window.confirm = () => true;
   window.alert = (m) => { window.__lastAlert = String(m); };
   try { delete window.showSaveFilePicker; } catch(e) {}
   try { delete window.showOpenFilePicker; } catch(e) {}
   window.__capReady = false; window.__capName = ''; window.__capReplay = false;
+  // Toast capture: the M3 SnackbarHost renders [role="status"][aria-live] and
+  // auto-dismisses after 4s. A MutationObserver records the latest toast text
+  // into __lastToast, mirroring the old __lastAlert pattern for alert()-based
+  // feedback that has since migrated to non-blocking toasts.
+  new MutationObserver(() => {
+    const el = document.querySelector('[role="status"][aria-live="polite"]');
+    if (el && el.textContent) window.__lastToast = el.textContent.trim();
+  }).observe(document.body, { childList: true, subtree: true });
   const origCreate = URL.createObjectURL;
   URL.createObjectURL = function(blob) {
     const url = origCreate.apply(this, arguments);
@@ -110,7 +121,7 @@ pass "clean slate + shim installed"
 # --- 1. configuration ------------------------------------------------------
 phase "1. Tournament + Singles category configuration"
 $AB fill "input[name='tournament']" "Test Cup" >/dev/null
-$AB fill "input[name='categories'][type='number']:not([readonly])" "4" >/dev/null
+$AB fill "input[name='tables']" "4" >/dev/null
 $AB fill "input[name='category']" "Men's Singles" >/dev/null
 $AB fill "input[name='categoryShort']" "MS" >/dev/null
 $AB fill "input[name='durationMinutes']" "30" >/dev/null
@@ -127,15 +138,15 @@ n="$(pv "document.querySelector(\"input[name='playerCount']\").value")"
 
 # --- 3. draw + rounds ------------------------------------------------------
 phase "3. Draw + round generation"
-pv "window.__lastAlert=null" >/dev/null
+pv "window.__lastToast=null;window.__lastAlert=null" >/dev/null
 $AB click "button[data-test='do-draw']" >/dev/null
 sleep 1
 $AB fill "input[placeholder='sleep']" "0" >/dev/null
 $AB click "text=AUTO DRAW" >/dev/null
 sleep 3
-$AB click "button:has(.i-line-md-close)" >/dev/null      # close modal -> drawDone -> generateRounds
+$AB click "button[aria-label='Close dialog']" >/dev/null      # close modal -> drawDone -> generateRounds
 sleep 1
-a="$(pv "window.__lastAlert||''")"
+a="$(pv "window.__lastToast||window.__lastAlert||''")"
 { [ -z "$a" ] || ! [[ "$a" =~ (error|should|difference|encounter) ]]; } && pass "draw + rounds generated" || fail "draw error: $a"
 
 # --- 4. matches view -------------------------------------------------------
@@ -145,7 +156,7 @@ sleep 1
 gm="$(pv "document.body.textContent.includes('Group Matches')?'yes':'no'")"
 $AB click "text=Groups" >/dev/null
 g1="$(pv "document.body.textContent.includes('Group 1')?'yes':'no'")"
-$AB click "text=Knockout Matches" >/dev/null
+$AB click "text=Knockout" >/dev/null
 ko="$(pv "/Knockout/.test(document.body.textContent)?'yes':'no'")"
 $AB open "$APP" --load networkidle >/dev/null
 echo "$SHIM" | $AB eval --stdin >/dev/null     # re-install after reload
@@ -153,22 +164,30 @@ echo "$SHIM" | $AB eval --stdin >/dev/null     # re-install after reload
 
 # --- 5. RR charts ----------------------------------------------------------
 phase "5. Export round-robin charts"
-$AB click "button.i-line-md-menu-fold-left" >/dev/null
-$AB download "text=EXPORT RR CHARTS" "$OUT/rr.xlsx" >/dev/null
+$AB click "text=Document" >/dev/null
+$AB download "text=Export round-robin charts" "$OUT/rr.xlsx" >/dev/null
 [ -s "$OUT/rr.xlsx" ] && pass "rr.xlsx ($(wc -c <"$OUT/rr.xlsx") B)" || fail "RR chart export"
 
 # --- 6. draft schedule -----------------------------------------------------
 phase "6. Export draft schedule"
-$AB click "button.i-line-md-menu-fold-left" >/dev/null
-$AB download "text=EXPORT DRAFT SCHEDULE" "$OUT/draft.xlsx" >/dev/null
+$AB click "text=Document" >/dev/null
+$AB download "text=Export draft schedule" "$OUT/draft.xlsx" >/dev/null
 [ -s "$OUT/draft.xlsx" ] && pass "draft.xlsx ($(wc -c <"$OUT/draft.xlsx") B)" || fail "draft schedule export"
 
 # --- 7. import final schedule ---------------------------------------------
 phase "7. Import final schedule"
-pv "window.__lastAlert=null" >/dev/null
+# Let any prior toast (phase 6's "Draft schedule exported") auto-dismiss first,
+# so __lastToast captures only this phase's result.
+sleep 4
+pv "window.__lastToast=null;window.__lastAlert=null" >/dev/null
 $AB upload "input[data-test='input-final-schedule']" "$OUT/draft.xlsx" >/dev/null
-sleep 2
-a="$(pv "window.__lastAlert||''")"
+# The import is async (ExcelJS parse + merge); poll for the toast up to 8s.
+a=""
+for _ in $(seq 1 16); do
+  sleep 0.5
+  a="$(pv "window.__lastToast||window.__lastAlert||''")"
+  [ -n "$a" ] && break
+done
 [ "$a" = "Final schedule imported successfully" ] && pass "final schedule merged" || fail "final schedule ($a)"
 
 # --- 8. scoresheet (upload-triggered blob) --------------------------------
@@ -182,8 +201,7 @@ $AB download "a#__cap_download" "$OUT/scoresheet.xlsx" >/dev/null
 # --- 9. save (download fallback) ------------------------------------------
 phase "9. Save tournament"
 cap_reset >/dev/null
-$AB click "button.i-line-md-menu-fold-left" >/dev/null
-$AB click "text=SAVE" >/dev/null
+$AB click "text=Save" >/dev/null
 $AB wait --fn "window.__capReady===true" --timeout 10000 >/dev/null
 $AB download "a#__cap_download" "$OUT/saved.json" >/dev/null
 if [ -s "$OUT/saved.json" ] && node -e 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))' "$OUT/saved.json" 2>/dev/null; then
@@ -212,9 +230,10 @@ md="$(echo "$counts" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("en
 
 # --- 12. add / remove category --------------------------------------------
 phase "12. Add / remove category"
-$AB click "text=ADD CATEGORY" >/dev/null
+$AB click "text=Add category" >/dev/null
 c="$(pv "document.querySelectorAll('[data-test=category-card]').length")"
-$AB click ":nth-match(div.i-line-md-close, $c)" >/dev/null      # remove the just-added card
+# Remove the last (just-added) card via its title'd remove button, scoped inside the card.
+$AB click "[data-test=category-card]:last-of-type button[title='Remove category']" >/dev/null
 c2="$(pv "document.querySelectorAll('[data-test=category-card]').length")"
 [ "$c" = "$(( ${c2:-0} + 1 ))" ] && pass "add ($c) then remove ($c2)" || fail "add/remove ($c -> $c2)"
 

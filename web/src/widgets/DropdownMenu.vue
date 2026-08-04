@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, provide } from 'vue';
+import { ref, onMounted, onUnmounted, provide } from 'vue'
 
 defineProps<{
-  buttonClass?: string;
-  menuClass?: string;
-  buttonIcon?: string;
-}>();
+  buttonClass?: string
+  menuClass?: string
+  buttonIcon?: string
+}>()
 
-const showMenu = ref(false);
-const menuRef = ref<HTMLElement | null>(null);
-const buttonRef = ref<HTMLElement | null>(null);
+const showMenu = ref(false)
+const menuRef = ref<HTMLElement | null>(null)
+const buttonRef = ref<HTMLElement | null>(null)
 
 function toggleMenu() {
-  showMenu.value = !showMenu.value;
+  showMenu.value = !showMenu.value
 }
 
 function closeMenu() {
-  showMenu.value = false;
+  showMenu.value = false
 }
 
 // Close the menu when a menu item is clicked
@@ -24,13 +24,13 @@ function closeMenuOnItemClick(event: MouseEvent) {
   // Only close if the click is directly on a menu item, not on a divider
   if ((event.target as HTMLElement).classList.contains('cursor-pointer')) {
     setTimeout(() => {
-      showMenu.value = false;
-    }, 100); // Small delay to allow the click event to complete
+      showMenu.value = false
+    }, 100) // Small delay to allow the click event to complete
   }
 }
 
 // Provide the closeMenu function to child components
-provide('closeMenu', closeMenu);
+provide('closeMenu', closeMenu)
 
 function handleClickOutside(event: MouseEvent) {
   if (
@@ -40,17 +40,17 @@ function handleClickOutside(event: MouseEvent) {
     !menuRef.value.contains(event.target as Node) &&
     !buttonRef.value.contains(event.target as Node)
   ) {
-    showMenu.value = false;
+    showMenu.value = false
   }
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
+  document.addEventListener('click', handleClickOutside)
+})
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
@@ -58,10 +58,16 @@ onUnmounted(() => {
     <button ref="buttonRef" @click="toggleMenu" :class="buttonClass">
       <slot name="button-content"></slot>
     </button>
-    <Transition name="bounce">
-      <div v-if="showMenu" ref="menuRef"
-        :class="menuClass || 'absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 border border-gray-300 rounded-lg border-solid bg-gray-200 p-2 shadow-xl'"
-        @click="closeMenuOnItemClick">
+    <Transition name="md-menu">
+      <div
+        v-if="showMenu"
+        ref="menuRef"
+        :class="
+          menuClass ||
+          'absolute right-0 z-50 mr-4 w-fit flex flex-col gap-1 rounded-sm bg-surface-container elevation-2 p-2'
+        "
+        @click="closeMenuOnItemClick"
+      >
         <slot></slot>
       </div>
     </Transition>
@@ -69,25 +75,17 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.bounce-enter-active {
-  animation: bounce-in 0.3s;
+/* M3 menu motion: scale from the top-right origin (the anchor) + fade. */
+.md-menu-enter-active,
+.md-menu-leave-active {
+  transition:
+    opacity var(--md-duration-short) var(--md-easing-decelerated),
+    transform var(--md-duration-short) var(--md-easing-decelerated);
+  transform-origin: top right;
 }
-
-.bounce-leave-active {
-  animation: bounce-in 0.3s reverse;
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: scale(0);
-  }
-
-  70% {
-    transform: scale(1.05);
-  }
-
-  100% {
-    transform: scale(1);
-  }
+.md-menu-enter-from,
+.md-menu-leave-to {
+  opacity: 0;
+  transform: scale(0.92);
 }
 </style>

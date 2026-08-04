@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { type Match } from '@/types/types'
+import { type Match, EntryByeIdx, EntryEmptyIdx } from '@/types/types'
 import { formatDate, formatTime } from '@/calculator/date'
+import { roundName } from '@/features/matches/domain/roundName'
+import MatchesTable from '@/widgets/MatchesTable.vue'
 
 const props = defineProps({
   category: {
@@ -28,79 +30,79 @@ const knockoutMatches = computed(() => {
     return a.table.localeCompare(b.table, undefined, { numeric: true, sensitivity: 'base' })
   })
 })
+
+// Rounds for the bracket view, largest-first (as stored).
+const bracketRounds = computed(() => props.category?.knockoutRounds ?? [])
+
+function entryName(idx: number): string {
+  if (idx === EntryByeIdx) return 'BYE'
+  if (idx === EntryEmptyIdx) return '—'
+  return props.category?.entries[idx]?.name || 'NA'
+}
+
+function isSlotEmpty(idx: number): boolean {
+  return idx === EntryEmptyIdx || idx === EntryByeIdx
+}
 </script>
 
 <template>
-  <div class="p-4">
-    <table
-      class="min-w-full border border-lime-200 rounded-lg border-solid divide-y divide-gray-200"
-    >
-      <thead class="sticky top-0 z-10 border bg-lime-50">
-        <tr>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Round
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Table
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Date
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Time
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Player 1
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Player 2
-          </th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <tr
-          v-for="match in knockoutMatches"
-          :key="match.datetime"
-          class="transition-colors duration-150 hover:bg-lime-50"
+  <div class="space-y-6">
+    <!-- Visual bracket: rounds as columns of match cards -->
+    <div v-if="bracketRounds.length > 0" class="overflow-x-auto pb-2">
+      <div class="flex gap-6 min-w-fit">
+        <div
+          v-for="(kRound, rIdx) in bracketRounds"
+          :key="rIdx"
+          class="flex flex-col"
         >
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ match.round }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ match.table }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ formatDate(match.datetime) }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ formatTime(match.datetime) }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-            {{ props.category?.entries[match.entry1Idx]?.name || 'NA' }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-            {{ props.category?.entries[match.entry2Idx]?.name || 'NA' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          <h4 class="title-small text-on-surface-variant uppercase tracking-wide mb-3 text-center">
+            {{ roundName(kRound.round) }}
+          </h4>
+          <div class="flex flex-col gap-2 flex-1">
+            <div
+              v-for="(match, mIdx) in kRound.matches"
+              :key="mIdx"
+              class="rounded-md border border-outline-variant bg-surface elevation-1 px-3 py-2 w-52"
+              :class="{ 'opacity-60': isSlotEmpty(match.entry1Idx) && isSlotEmpty(match.entry2Idx) }"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="body-medium truncate"
+                  :class="isSlotEmpty(match.entry1Idx) ? 'text-on-surface-variant' : 'text-on-surface font-medium'"
+                >{{ entryName(match.entry1Idx) }}</span>
+              </div>
+              <div class="my-1 h-px bg-outline-variant"></div>
+              <div class="flex items-center justify-between gap-2">
+                <span
+                  class="body-medium truncate"
+                  :class="isSlotEmpty(match.entry2Idx) ? 'text-on-surface-variant' : 'text-on-surface font-medium'"
+                >{{ entryName(match.entry2Idx) }}</span>
+              </div>
+              <div v-if="match.table || match.datetime" class="mt-2 body-small text-on-surface-variant">
+                <span v-if="match.table">{{ match.table }}</span>
+                <span v-if="match.table && match.datetime"> · </span>
+                <span v-if="match.datetime">{{ formatDate(match.datetime) }} {{ formatTime(match.datetime) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div v-if="knockoutMatches.length === 0" class="flex flex-col items-center gap-3 rounded-lg border border-dashed border-outline-variant bg-surface-container-low px-6 py-12 text-center">
+      <span class="text-4xl opacity-40">🏆</span>
+      <p class="body-medium text-on-surface-variant">No knockout bracket yet — complete the group stage draw to generate the bracket.</p>
+    </div>
+
+    <!-- Data table: the accessible / detailed view, and the test contract.
+         tbody > tr with the round number as the first cell. -->
+    <MatchesTable
+      v-if="knockoutMatches.length > 0"
+      :matches="knockoutMatches"
+      :entries="props.category?.entries ?? []"
+      first-column-label="Round"
+      :first-column-value="(m: Match) => m.round!"
+    />
   </div>
 </template>

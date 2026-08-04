@@ -1,0 +1,168 @@
+/*
+ * Material 3 design tokens — Tournament Manager
+ * --------------------------------------------------
+ * Seed: #1A56DB (sport-competition blue)
+ *
+ * Values follow the M3 light-scheme tonal pairing convention:
+ *   primary (tone 40) ↔ on-primary (tone 100)
+ *   primary-container (tone 90) ↔ on-primary-container (tone 10)
+ *   and likewise for secondary / tertiary / error.
+ * Surfaces use the neutral + neutral-variant palettes (slight blue tint
+ * for cohesion with the blue seed).
+ *
+ * Dark mode is NOT shipped, but every token is a CSS variable so a dark
+ * scheme is a future `@media (prefers-color-scheme: dark)` override of
+ * these `:root` values — no component restyle required. Until then the
+ * light values below are the single source of truth.
+ *
+ * Consumed as UnoCSS utilities (bg-primary, text-on-surface, ...) via the
+ * theme.colors mapping in uno.config.ts, and as the typography/elevation/
+ * shape classes defined at the bottom of this file.
+ */
+
+:root {
+  /* ---- Primary (blue, brand) ------------------------------------------- */
+  --md-primary: #1a56db;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #d6e2ff;
+  --md-on-primary-container: #001a41;
+
+  /* ---- Secondary (muted blue-grey) ------------------------------------- */
+  --md-secondary: #555f71;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #d9e3f8;
+  --md-on-secondary-container: #121c2b;
+
+  /* ---- Tertiary (bronze-gold — thematic for medals/qualifiers) --------- */
+  --md-tertiary: #735a2c;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #ffdda4;
+  --md-on-tertiary-container: #251a00;
+
+  /* ---- Error ----------------------------------------------------------- */
+  --md-error: #ba1a1a;
+  --md-on-error: #ffffff;
+  --md-error-container: #ffdad6;
+  --md-on-error-container: #410002;
+
+  /* ---- Surfaces (neutral, blue-tinted) --------------------------------- */
+  --md-background: #fdfbff;
+  --md-on-background: #1a1b22;
+  --md-surface: #fdfbff;
+  --md-on-surface: #1a1b22;
+  --md-surface-variant: #e1e2ec;
+  --md-on-surface-variant: #45464f;
+
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #f5f3fa;
+  --md-surface-container: #efedf4;
+  --md-surface-container-high: #eae8ef;
+  --md-surface-container-highest: #e4e2e9;
+
+  /* ---- Outline --------------------------------------------------------- */
+  --md-outline: #767680;
+  --md-outline-variant: #c6c6d0;
+
+  /* ---- Inverse (e.g. dark snackbars on a light UI) --------------------- */
+  --md-inverse-surface: #2f3036;
+  --md-inverse-on-surface: #f1f0f7;
+  --md-inverse-primary: #b0c6ff;
+
+  /* ---- Elevation (M3 levels 0–5) --------------------------------------- */
+  --md-elevation-0: none;
+  --md-elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md-elevation-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md-elevation-3: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+  --md-elevation-4: 0 2px 3px 0 rgba(0, 0, 0, 0.3), 0 6px 10px 4px rgba(0, 0, 0, 0.15);
+  --md-elevation-5: 0 4px 4px 0 rgba(0, 0, 0, 0.3), 0 8px 12px 6px rgba(0, 0, 0, 0.15);
+
+  /* ---- Shape (corner radii) -------------------------------------------- */
+  --md-shape-none: 0;
+  --md-shape-xs: 4px;
+  --md-shape-sm: 8px;
+  --md-shape-md: 12px;
+  --md-shape-lg: 16px;
+  --md-shape-xl: 28px;
+  --md-shape-full: 9999px;
+
+  /* ---- Motion (M3 easing + durations) ----------------------------------
+   * Motion language: M3 restraint — motion signals state change, never
+   * decorates. Use these tokens (via UnoCSS duration-*/ease-* utilities or
+   * directly in scoped <style>) for: dialog/menu/snackbar enter-exit, hover
+   * and press micro-feedback. Do NOT add route fades, tab transitions, or
+   * list staggers — this is a data tool, not a game.
+   *   - short (200ms):   hover, press, color/state changes
+   *   - medium (300ms):  dialog/snackbar surface motion
+   *   - long (450ms):    reserved for future larger choreography
+   * See the reduced-motion block below: all durations collapse under the
+   * OS-level preference, so prefer these vars over hardcoded values. */
+  --md-duration-short: 200ms;
+  --md-duration-medium: 300ms;
+  --md-duration-long: 450ms;
+  --md-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --md-easing-decelerated: cubic-bezier(0, 0, 0, 1);
+}
+
+/* =======================================================================
+ * Reduced motion — honor the OS-level preference fully.
+ *
+ * Every transition in the app references the --md-duration-* vars above, so
+ * collapsing them here cascades automatically to dialogs, menus, snackbars,
+ * and every transition-* / duration-* UnoCSS utility. The global rules below
+ * additionally neutralize transforms (press-scale, slide-up, scale-in) so
+ * nothing moves — state still changes (the dialog still opens, the snackbar
+ * still appears), just instantly. This is the M3 accessibility baseline.
+ * ======================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --md-duration-short: 0.01ms;
+    --md-duration-medium: 0.01ms;
+    --md-duration-long: 0.01ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =======================================================================
+ * Typography — M3 type roles on Roboto.
+ * Applied as whole classes (e.g. <h1 class="display-small">) rather than
+ * composed utilities, because a type role is a fixed size/weight/tracking
+ * bundle, not a freely composable atom.
+ * ======================================================================= */
+.display-large { font-size: 57px; line-height: 64px; font-weight: 400; letter-spacing: -0.25px; }
+.display-medium { font-size: 45px; line-height: 52px; font-weight: 400; letter-spacing: 0; }
+.display-small { font-size: 36px; line-height: 44px; font-weight: 400; letter-spacing: 0; }
+
+.headline-large { font-size: 32px; line-height: 40px; font-weight: 400; letter-spacing: 0; }
+.headline-medium { font-size: 28px; line-height: 36px; font-weight: 400; letter-spacing: 0; }
+.headline-small { font-size: 24px; line-height: 32px; font-weight: 400; letter-spacing: 0; }
+
+.title-large { font-size: 22px; line-height: 28px; font-weight: 400; letter-spacing: 0; }
+.title-medium { font-size: 16px; line-height: 24px; font-weight: 500; letter-spacing: 0.15px; }
+.title-small { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0.1px; }
+
+.body-large { font-size: 16px; line-height: 24px; font-weight: 400; letter-spacing: 0.5px; }
+.body-medium { font-size: 14px; line-height: 20px; font-weight: 400; letter-spacing: 0.25px; }
+.body-small { font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0.4px; }
+
+.label-large { font-size: 14px; line-height: 20px; font-weight: 500; letter-spacing: 0.1px; }
+.label-medium { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.5px; }
+.label-small { font-size: 11px; line-height: 16px; font-weight: 500; letter-spacing: 0.5px; }
+
+/* =======================================================================
+ * Elevation utility classes — apply an M3 elevation level.
+ * ======================================================================= */
+.elevation-0 { box-shadow: var(--md-elevation-0); }
+.elevation-1 { box-shadow: var(--md-elevation-1); }
+.elevation-2 { box-shadow: var(--md-elevation-2); }
+.elevation-3 { box-shadow: var(--md-elevation-3); }
+.elevation-4 { box-shadow: var(--md-elevation-4); }
+.elevation-5 { box-shadow: var(--md-elevation-5); }

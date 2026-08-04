@@ -30,7 +30,7 @@ export function importFinalSchedule(
         }
       }
     } else {
-      alert(`No group data found for category ${category.name}`)
+      // Domain layer returns false; the caller surfaces the error to the UI.
       return false
     }
 

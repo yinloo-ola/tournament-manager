@@ -37,17 +37,19 @@ vi.mock('@/features/matches/domain/generateRounds', async (importOriginal) => {
     generateRoundsForTournament: vi.fn(actual.generateRoundsForTournament)
   }
 })
+const toastErrorSpy = vi.fn()
+vi.mock('@/shared/ui/toast', () => ({
+  useToast: () => ({ toast: { error: toastErrorSpy, success: vi.fn(), info: vi.fn() } })
+}))
 
 const generateSpy = vi.mocked(generateRoundsForTournament)
 const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
-const alertSpy = vi.fn().mockImplementation(() => {})
 
 beforeEach(() => {
   fetchSpy.mockClear()
-  alertSpy.mockClear()
+  toastErrorSpy.mockClear()
   generateSpy.mockClear()
   ;(globalThis as { fetch: unknown }).fetch = fetchSpy
-  ;(globalThis as { alert: unknown }).alert = alertSpy
 })
 
 function entry(name: string): Entry {
@@ -134,7 +136,7 @@ describe('TournamentView orchestration (R5)', () => {
     await tick()
 
     expect(generateSpy).toHaveBeenCalledTimes(1)
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('not enough players'))
+    expect(toastErrorSpy).toHaveBeenCalledWith(expect.stringContaining('not enough players'))
     // Knockout bracket untouched by the failed generation.
     expect(tournament.value.categories[0].knockoutRounds).toHaveLength(0)
   })

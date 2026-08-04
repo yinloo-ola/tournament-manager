@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { type Match } from '@/types/types'
-import { formatDate, formatTime } from '@/calculator/date'
+import MatchesTable from '@/widgets/MatchesTable.vue'
 
 const props = defineProps({
   category: {
@@ -33,85 +33,23 @@ const groupMatches = computed(() => {
     }
 
     // If datetime is the same, sort by table
-    // First try to sort by the full table string (alphanumeric comparison)
-    // This will properly handle cases like 'T1', 'T2', 'T11', etc.
     return a.table.localeCompare(b.table, undefined, { numeric: true, sensitivity: 'base' })
   })
 })
 </script>
 
 <template>
-  <div class="p-4">
-    <table
-      class="min-w-full border border-lime-200 rounded-lg border-solid divide-y divide-gray-200"
-    >
-      <thead class="sticky top-0 z-10 border bg-lime-50">
-        <tr>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Group
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Table
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Date
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Time
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Player 1
-          </th>
-          <th
-            scope="col"
-            class="px-6 py-3 text-left text-xs text-lime-700 font-medium tracking-wider uppercase"
-          >
-            Player 2
-          </th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <tr
-          v-for="match in groupMatches"
-          :key="match.datetime"
-          class="transition-colors duration-150 hover:bg-lime-50"
-        >
-          <!-- Extracting group information from the match context -->
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ match.groupIdx }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ match.table }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ formatDate(match.datetime) }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-            {{ formatTime(match.datetime) }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-            {{ props.category?.entries[match.entry1Idx]?.name || 'NA' }}
-          </td>
-          <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 font-medium">
-            {{ props.category?.entries[match.entry2Idx]?.name || 'NA' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div>
+    <div v-if="groupMatches.length === 0" class="flex flex-col items-center gap-3 rounded-lg border border-dashed border-outline-variant bg-surface-container-low px-6 py-12 text-center">
+      <span class="text-4xl opacity-40">⚔️</span>
+      <p class="body-medium text-on-surface-variant">No group matches yet — complete the draw to generate the round-robin schedule.</p>
+    </div>
+    <MatchesTable
+      v-else
+      :matches="groupMatches"
+      :entries="props.category?.entries ?? []"
+      first-column-label="Group"
+      :first-column-value="(m: Match) => m.groupIdx!"
+    />
   </div>
 </template>

@@ -160,7 +160,7 @@ const isCellSelected = (rowIndex: number, colIndex: number) => {
 <style scoped>
 .grid-container {
   display: grid;
-  border: 1px solid #ccc;
+  border: 1px solid var(--md-outline-variant);
 }
 
 .grid-row {
@@ -168,7 +168,7 @@ const isCellSelected = (rowIndex: number, colIndex: number) => {
 }
 
 .grid-cell {
-  border: 1px solid #ccc;
+  border: 1px solid var(--md-outline-variant);
   padding: 20px;
   text-align: center;
   min-height: 50px;
@@ -180,6 +180,6 @@ const isCellSelected = (rowIndex: number, colIndex: number) => {
 }
 
 .selected-cell {
-  background-color: lightblue;
+  background-color: var(--md-primary-container);
 }
 </style>

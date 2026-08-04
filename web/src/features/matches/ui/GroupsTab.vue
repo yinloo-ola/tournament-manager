@@ -29,82 +29,65 @@ const getPlayerPoints = (_group: Group, _player: Entry): number => {
 </script>
 
 <template>
-  <div class="p-4 space-y-8">
+  <div class="space-y-8">
+    <div v-if="categoryGroups.length === 0" class="flex flex-col items-center gap-3 rounded-lg border border-dashed border-outline-variant bg-surface-container-low px-6 py-12 text-center">
+      <span class="text-4xl opacity-40">👥</span>
+      <p class="body-medium text-on-surface-variant">No groups yet — complete the draw to allocate entries into groups.</p>
+    </div>
     <div v-for="(group, groupIndex) in categoryGroups" :key="groupIndex" class="overflow-x-auto">
-      <h3 class="mb-3 flex items-center text-lg text-lime-700 font-semibold">
+      <h3 class="title-medium text-primary mb-3 flex items-center gap-2">
+        <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-primary-container px-2 label-small text-on-primary-container">{{ groupIndex + 1 }}</span>
         Group {{ groupIndex + 1 }}
       </h3>
-      <table
-        class="min-w-full border border-lime-200 rounded-lg border-solid shadow-sm divide-y divide-gray-200 divide-solid"
-      >
-        <thead class="bg-lime-50">
+      <table class="min-w-full border-collapse rounded-lg overflow-hidden elevation-1">
+        <thead class="bg-surface-container-high">
           <tr>
-            <th
-              class="border-b border-r border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase"
-            ></th>
-            <th
-              class="border-b border-gray-200 px-4 py-2 text-left text-xs text-gray-500 font-medium tracking-wider uppercase"
-            >
-              Player
-            </th>
+            <th class="border-b border-r border-outline-variant px-4 py-2 text-left label-medium text-on-surface-variant uppercase"></th>
+            <th class="border-b border-outline-variant px-4 py-2 text-left label-medium text-on-surface-variant uppercase">Player</th>
             <!-- Generate columns for each player in the group -->
             <th
               v-for="(_, playerIndex) in group.entriesIdx"
               :key="playerIndex"
-              class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase"
+              class="border-b border-r border-outline-variant px-4 py-2 text-center label-medium text-on-surface-variant uppercase"
             >
               {{ playerIndex + 1 }}
             </th>
-            <th
-              class="border-b border-r border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase"
-            >
-              Points
-            </th>
-            <th
-              class="border-b border-gray-200 px-4 py-2 text-center text-xs text-gray-500 font-medium tracking-wider uppercase"
-            >
-              Position
-            </th>
+            <th class="border-b border-r border-outline-variant px-4 py-2 text-center label-medium text-on-surface-variant uppercase">Pts</th>
+            <th class="border-b border-outline-variant px-4 py-2 text-center label-medium text-on-surface-variant uppercase">Pos</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200 divide-solid">
+        <tbody class="bg-surface divide-y divide-outline-variant">
           <!-- Row for each player in the group -->
           <tr
             v-for="(entryIdx, playerIndex) in group.entriesIdx"
             :key="entryIdx"
-            class="transition-colors duration-150 divide-x divide-gray-200 hover:bg-lime-50"
+            class="transition-colors duration-short ease-standard hover:bg-surface-container"
           >
-            <td
-              class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900 font-medium"
-            >
+            <td class="whitespace-nowrap border-r border-outline-variant px-4 py-2 body-medium text-on-surface font-medium">
               {{ playerIndex + 1 }}
             </td>
-            <td class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-sm text-gray-900">
+            <td class="whitespace-nowrap border-r border-outline-variant px-4 py-2 body-medium text-on-surface">
               {{ props.category?.entries[entryIdx]?.name || 'NA' }}
-              {{
-                props.category?.entries[entryIdx]?.club
-                  ? `(${props.category?.entries[entryIdx]?.club})`
-                  : ''
-              }}
+              <span v-if="props.category?.entries[entryIdx]?.club" class="text-on-surface-variant">
+                ({{ props.category?.entries[entryIdx]?.club }})
+              </span>
             </td>
             <!-- Cell for each player matchup -->
             <td
               v-for="(opponentIdx, opponentIndex) in group.entriesIdx"
               :key="opponentIdx"
-              class="border-r border-gray-200 px-4 py-2 text-center text-sm text-gray-500"
-              :class="{ 'bg-gray-900': playerIndex === opponentIndex }"
+              class="border-r border-outline-variant px-4 py-2 text-center body-medium"
+              :class="playerIndex === opponentIndex ? 'bg-surface-container-high' : 'text-on-surface-variant'"
             >
               <!-- Display match result if not the same player -->
               <span v-if="playerIndex !== opponentIndex">
                 <!-- This would be replaced with actual match results in a real app -->
               </span>
             </td>
-            <td
-              class="whitespace-nowrap border-r border-gray-200 px-4 py-2 text-center text-sm text-gray-900"
-            >
+            <td class="whitespace-nowrap border-r border-outline-variant px-4 py-2 text-center body-medium text-on-surface">
               {{ getPlayerPoints(group, props.category?.entries[entryIdx]!) }}
             </td>
-            <td class="whitespace-nowrap px-4 py-2 text-center text-sm text-lime-700 font-medium">
+            <td class="whitespace-nowrap px-4 py-2 text-center body-medium font-medium text-primary">
               {{ getPlayerPosition(group, props.category?.entries[entryIdx]!) }}
             </td>
           </tr>
