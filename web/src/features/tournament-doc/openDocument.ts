@@ -22,10 +22,28 @@ export class OpenFileError extends Error {
 }
 
 // Open a tournament from a file source: read -> parse -> load into the active
-// document -> record a recent. On a parse failure, throws OpenFileError and
-// LEAVES THE ACTIVE DOCUMENT UNTOUCHED (never clobbers).
+// document -> record a recent. On a read or parse failure, throws OpenFileError
+// and LEAVES THE ACTIVE DOCUMENT UNTOUCHED (never clobbers). Wrapping read
+// failures here (not just parse failures) ensures a raw DOMException — e.g.
+// NotAllowedError when a persisted handle lacks read permission, or a revoked
+// file — surfaces as a user-facing error instead of escaping to Vue's global
+// error handler as an unhandled rejection.
 export async function openTournamentFromFile(source: FileSource): Promise<void> {
-  const file = await source.pickAndRead()
+  let file: OpenedFile | null
+  try {
+    file = await source.pickAndRead()
+  } catch (error) {
+    // A FileSource may throw OpenFileError with a precise message (e.g. read
+    // permission denied on a persisted handle); pass it through unchanged. Any
+    // other failure gets the generic wrapping so nothing escapes to Vue's global
+    // error handler as an unhandled rejection.
+    if (error instanceof OpenFileError) throw error
+    throw new OpenFileError(
+      error instanceof Error
+        ? `Could not open this file: ${error.message}`
+        : 'Could not open this file.'
+    )
+  }
   if (file == null) return // user cancelled — no change
 
   let parsed: Tournament

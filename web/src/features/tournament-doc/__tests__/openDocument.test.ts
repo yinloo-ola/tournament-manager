@@ -64,6 +64,21 @@ describe('openTournamentFromFile', () => {
     expect(tournament.value.name).toBe('Unchanged')
     expect(await listRecents()).toEqual([])
   })
+
+  it('wraps a raw read failure (e.g. NotAllowedError DOMException) as OpenFileError, not an unhandled throw', async () => {
+    // Regression: a DOMException thrown out of pickAndRead (permission denied,
+    // file revoked, etc.) used to propagate uncaught through the async click
+    // handler up to Vue's global error handler (console.error). It must be
+    // surfaced as a user-facing OpenFileError and must not clobber the document.
+    const failing: FileSource = {
+      async pickAndRead() {
+        throw new DOMException("Failed to execute 'getFile' on 'FileSystemFileHandle'", 'NotAllowedError')
+      }
+    }
+    tournament.value.name = 'Keep Me'
+    await expect(openTournamentFromFile(failing)).rejects.toBeInstanceOf(OpenFileError)
+    expect(tournament.value.name).toBe('Keep Me')
+  })
 })
 
 describe('isFileSystemAccessSupported', () => {

@@ -1,4 +1,4 @@
-import type { FileSource, OpenedFile } from '../openDocument'
+import { type FileSource, type OpenedFile, OpenFileError } from '../openDocument'
 import type { FileSink, SaveOutcome } from '../saveDocument'
 import { currentFileHandle } from '@/app/documentStore'
 import { openFileInputSource, downloadText } from './fileFallback'
@@ -35,10 +35,33 @@ export function pickOpenSource(): FileSource {
 export function openFromHandleSource(handle: FileSystemFileHandle, name: string): FileSource {
   return {
     async pickAndRead() {
+      // A FileSystemFileHandle deserialized from IndexedDB starts at permission
+      // 'prompt' and getFile() is rejected with NotAllowedError until read
+      // permission is re-granted. Request it (re-prompting) before touching the
+      // file; if the user denies, surface an explicit message (a true cancel —
+      // dismissing the picker — only happens on the fresh-picker path).
+      if (!(await ensureReadPermission(handle))) {
+        throw new OpenFileError(
+          `Permission to read "${name}" was denied — please re-import the file to reopen it.`
+        )
+      }
       const file = await handle.getFile()
       return { text: await file.text(), name, handle }
     }
   }
+}
+
+// Returns true if read permission is granted (re-prompting if necessary). Mirrors
+// ensureWritePermission but for the read mode used by the open path. Must run
+// inside a user gesture (the click that triggered the open) to be honoured.
+async function ensureReadPermission(handle: FileSystemFileHandle): Promise<boolean> {
+  const opts = { mode: 'read' }
+  const h = handle as unknown as {
+    queryPermission(o: typeof opts): Promise<string>
+    requestPermission(o: typeof opts): Promise<string>
+  }
+  if ((await h.queryPermission(opts)) === 'granted') return true
+  return (await h.requestPermission(opts)) === 'granted'
 }
 
 // ---- Save sink -------------------------------------------------------------
