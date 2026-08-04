@@ -261,6 +261,16 @@ export function scheduleMatches(tournament: Tournament): Schedule {
     // them throws "Cannot read properties of undefined (reading 'dateTime')".
     throw new Error('Number of Tables must be greater than 0 to generate a schedule.')
   }
+  const zeroDurationCategory = tournament.categories.find(c => c.durationMinutes <= 0)
+  if (zeroDurationCategory) {
+    // durationMinutes=0 is the newTournament() default; without this guard, the
+    // slot formula `addMinutes(startTime, durationMinutes * slotIdx)` collapses
+    // every slot onto startTime, producing a schedule where all matches share a
+    // single time instead of a clear, user-facing error.
+    throw new Error(
+      `Match Duration for "${zeroDurationCategory.name}" must be greater than 0 to generate a schedule.`
+    )
+  }
   const startDate = parseStartTimeUTC(tournament.startTime)
   const schedule: Schedule = {
     startTime: startDate,

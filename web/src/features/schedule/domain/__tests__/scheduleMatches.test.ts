@@ -238,4 +238,34 @@ describe('scheduleMatches', () => {
       /Number of Tables must be greater than 0/
     )
   })
+
+  it('should throw a clear error when a category match duration is 0 (the newTournament default)', () => {
+    // Regression: with durationMinutes=0, the slot formula
+    // `addMinutes(startTime, durationMinutes * slotIdx)` collapses every slot
+    // onto startTime, so all matches across all slots landed on the same time
+    // instead of a clear, user-facing error.
+    const tournament: Tournament = {
+      name: 'Zero Duration',
+      numTables: 2,
+      startTime: '2025-03-22T09:00',
+      categories: [
+        {
+          name: 'MS',
+          shortName: 'MS',
+          entryType: 'Singles',
+          durationMinutes: 0,
+          entriesPerGrpMain: 4,
+          entriesPerGrpRemainder: 0,
+          numQualifiedPerGroup: 2,
+          entries: buildSinglesEntries(4),
+          groups: [{ entriesIdx: [0, 1, 2, 3], rounds: [] }],
+          knockoutRounds: []
+        }
+      ]
+    }
+    generateRoundsForTournament(tournament)
+    expect(() => scheduleMatches(tournament)).toThrowError(
+      /Match Duration for "MS" must be greater than 0/
+    )
+  })
 })
