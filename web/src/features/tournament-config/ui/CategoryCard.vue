@@ -137,7 +137,7 @@ const lifecycle = computed(() => {
 <template>
   <div
     data-test="category-card"
-    class="relative flex flex-col rounded-lg bg-surface-container-low p-4 elevation-1 transition-all duration-short ease-standard hover:elevation-2"
+    class="relative flex min-w-0 flex-col rounded-lg bg-surface-container-low p-4 elevation-1 transition-all duration-short ease-standard hover:elevation-2"
   >
     <!-- Remove (ghost icon, top-right) -->
     <button

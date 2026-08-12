@@ -26,7 +26,7 @@ withDefaults(
   <button
     :disabled="disabled"
     :class="[
-      'inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-sm font-medium tracking-[0.1px] transition-all duration-short ease-standard select-none outline-none',
+      'inline-flex items-center justify-center gap-2 rounded-full px-6 h-10 text-sm font-medium tracking-[0.1px] transition-all duration-short ease-standard select-none outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
       variant === 'filled' &&
         'bg-primary text-on-primary hover:elevation-1 focus:elevation-1 active:elevation-0 disabled:bg-on-surface/12 disabled:text-on-surface/38',
       variant === 'tonal' &&

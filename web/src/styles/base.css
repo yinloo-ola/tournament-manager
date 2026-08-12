@@ -1,0 +1,20 @@
+/*
+ * Global base reset (the Tailwind/UnoCSS preflight border defaults that
+ * `@unocss/reset` would normally provide, but this app doesn't import it).
+ *
+ *  - box-sizing: border-box so `w-full` + padding fits inside the parent
+ *    (without it, content-box makes elements overflow by their own padding).
+ *  - border-width: 0 + border-style: solid so the `border` / `border-b`
+ *    utilities produce flat solid borders. Without the explicit
+ *    border-style, <input> keeps its UA default `border-style: inset`, which
+ *    bevels the focused border into a blue-and-dark edge ("blue and black").
+ *    border-color is left at the CSS initial (currentColor); every bordered
+ *    element in the app pairs the width with an explicit colour utility.
+ */
+*,
+::before,
+::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+}

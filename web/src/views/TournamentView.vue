@@ -339,31 +339,32 @@ function goHome() {
         <span class="i-line-md-arrow-left text-xl"></span>
       </button>
       <span class="text-xl">🏆</span>
-      <span class="title-large text-on-surface-variant">Tournament Manager</span>
-      <span class="title-large text-primary truncate">{{ tournament.name }}</span>
+      <span class="title-large hidden text-on-surface-variant sm:inline">Tournament Manager</span>
+      <span class="title-large min-w-0 truncate text-primary">{{ tournament.name }}</span>
 
       <span class="flex-1"></span>
 
       <!-- Surfaced actions (decision 01) -->
       <SimpleButton variant="filled" @click="saveTournament()">
         <span class="i-line-md-document-list"></span>
-        Save
+        <span class="hidden sm:inline">Save</span>
       </SimpleButton>
       <DropdownMenu
         buttonClass="inline-flex items-center gap-2 rounded-full border-0 bg-primary-container px-6 h-10 text-sm font-medium tracking-[0.1px] text-on-primary-container transition-all duration-short ease-standard hover:elevation-1 active:scale-[.97] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary"
         menuClass="absolute right-0 z-50 w-64 flex flex-col gap-1 rounded-sm bg-surface-container elevation-2 p-2"
       >
         <template #button-content>
-          <span>Document</span>
+          <span class="i-line-md-folder-open sm:hidden"></span>
+          <span class="hidden sm:inline">Document</span>
           <span class="i-line-md-chevron-small-down text-lg"></span>
         </template>
-        <MenuItem label="Load tournament…" @click="tournamentFile?.click()" />
+        <MenuItem label="Load tournament" @click="tournamentFile?.click()" />
         <MenuItem divider />
-        <MenuItem label="Export round-robin charts" wide @click="exportRoundRobin()" />
-        <MenuItem label="Export draft schedule" wide @click="exportDraftSchedule()" />
-        <MenuItem label="Import final schedule…" wide @click="finalScheduleFile?.click()" />
+        <MenuItem label="Export round-robin charts" @click="exportRoundRobin()" />
+        <MenuItem label="Export draft schedule" @click="exportDraftSchedule()" />
+        <MenuItem label="Import final schedule" @click="finalScheduleFile?.click()" />
         <MenuItem divider />
-        <MenuItem label="Export scoresheets (with template)" wide @click="exportScoresheetWithTemplateFile?.click()" />
+        <MenuItem label="Export scoresheets (with template)" @click="exportScoresheetWithTemplateFile?.click()" />
       </DropdownMenu>
     </header>
 
@@ -396,7 +397,7 @@ function goHome() {
     />
 
     <!-- Content -->
-    <main class="mx-auto w-full max-w-[1600px] flex-1 px-6 py-6">
+    <main class="mx-auto w-full max-w-[1600px] min-w-0 flex-1 px-6 py-6">
       <!-- Tournament info form -->
       <section class="mb-6 rounded-lg bg-surface px-6 py-5 elevation-1">
         <TournamentInfo v-model="tournament" @addCategory="addCategory"></TournamentInfo>

@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import 'virtual:uno.css'
+import './styles/base.css'
 import './styles/tokens.css'
 
 import App from './App.vue'
