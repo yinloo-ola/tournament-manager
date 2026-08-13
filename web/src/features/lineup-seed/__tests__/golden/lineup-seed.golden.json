@@ -1,0 +1,79 @@
+{
+  "tournamentName": "Lineup Seed Test Cup",
+  "categories": [
+    {
+      "id": "MT",
+      "name": "Men's Team",
+      "shortName": "MT"
+    }
+  ],
+  "teams": [
+    {
+      "id": "MT|Alpha",
+      "name": "Alpha",
+      "club": "Alpha Club"
+    },
+    {
+      "id": "MT|Bravo",
+      "name": "Bravo",
+      "club": "Bravo Club"
+    },
+    {
+      "id": "MT|Charlie",
+      "name": "Charlie"
+    }
+  ],
+  "players": [
+    {
+      "id": "MT|Alpha|Alan|1990-04-01",
+      "teamId": "MT|Alpha",
+      "name": "Alan",
+      "gender": "M",
+      "dateOfBirth": "1990-04-01"
+    },
+    {
+      "id": "MT|Alpha|Alex|1995-09-09",
+      "teamId": "MT|Alpha",
+      "name": "Alex",
+      "gender": "M",
+      "dateOfBirth": "1995-09-09"
+    },
+    {
+      "id": "MT|Bravo|Bob|1988-06-15",
+      "teamId": "MT|Bravo",
+      "name": "Bob",
+      "gender": "M",
+      "dateOfBirth": "1988-06-15"
+    },
+    {
+      "id": "MT|Charlie|Carl|2000-01-01",
+      "teamId": "MT|Charlie",
+      "name": "Carl",
+      "gender": "M",
+      "dateOfBirth": "2000-01-01"
+    }
+  ],
+  "ties": [
+    {
+      "id": "MT|Alpha|MT|Bravo|2026-03-01T09:00",
+      "categoryId": "MT",
+      "scheduledStart": "2026-03-01T09:00",
+      "teamIds": ["MT|Alpha", "MT|Bravo"],
+      "table": "T1"
+    },
+    {
+      "id": "MT|Alpha|MT|Charlie|2026-03-01T10:00",
+      "categoryId": "MT",
+      "scheduledStart": "2026-03-01T10:00",
+      "teamIds": ["MT|Alpha", "MT|Charlie"],
+      "table": "T2"
+    },
+    {
+      "id": "MT|Bravo|MT|Charlie|2026-03-01T11:00",
+      "categoryId": "MT",
+      "scheduledStart": "2026-03-01T11:00",
+      "teamIds": ["MT|Bravo", "MT|Charlie"],
+      "table": "T1"
+    }
+  ]
+}

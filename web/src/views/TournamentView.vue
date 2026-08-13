@@ -22,6 +22,7 @@ import {
   workbookToBuffer
 } from '@/features/schedule/excel/draftScheduleWorkbook'
 import { importFinalScheduleFromBuffer } from '@/features/schedule/domain/importFinalSchedule'
+import { buildLineupSeed } from '@/features/lineup-seed/domain/buildLineupSeed'
 import { tournament } from '@/store/state'
 import { saveTournamentDocument } from '@/features/tournament-doc/saveDocument'
 import { saveFileSink } from '@/features/tournament-doc/storage/fileAccess'
@@ -316,6 +317,24 @@ async function exportDraftSchedule() {
   }
 }
 
+function exportLineupSeed() {
+  try {
+    const seed = buildLineupSeed(tournament.value)
+    const blob = new Blob([JSON.stringify(seed, null, 2)], { type: 'application/json' })
+    const a = document.createElement('a')
+    const file = window.URL.createObjectURL(blob)
+    a.href = file
+    a.download = `${tournament.value.name}_lineup_seed_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.json`
+    a.click()
+    window.URL.revokeObjectURL(file)
+    const hasTeam = tournament.value.categories.some((c) => c.entryType === EntryType.Team)
+    toast.success(hasTeam ? 'Lineup seed exported' : 'Lineup seed exported (no Team categories)')
+  } catch (e: unknown) {
+    const error = e as Error
+    toast.error(error.message)
+  }
+}
+
 function updateGroups(groups: Group[]) {
   tournament.value.categories[drawIndex.value].groups = groups
 }
@@ -362,7 +381,9 @@ function goHome() {
         <MenuItem divider />
         <MenuItem label="Export round-robin charts" @click="exportRoundRobin()" />
         <MenuItem label="Export draft schedule" @click="exportDraftSchedule()" />
-        <MenuItem label="Import final schedule" @click="finalScheduleFile?.click()" />
+          <MenuItem label="Import final schedule" @click="finalScheduleFile?.click()" />
+          <MenuItem divider />
+          <MenuItem label="Export lineup seed" @click="exportLineupSeed()" />
         <MenuItem divider />
         <MenuItem label="Export scoresheets (with template)" @click="exportScoresheetWithTemplateFile?.click()" />
       </DropdownMenu>
