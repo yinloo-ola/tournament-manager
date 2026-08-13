@@ -60,6 +60,30 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
   const players: SeedPlayer[] = []
   const ties: SeedTie[] = []
 
+  // Derived ids assume unique Team-category short names and unique team names
+  // within a category. Fail loudly (the organizer gets the error in the UI)
+  // rather than emitting a seed the consumer's parseSeed would reject.
+  const seenShortNames = new Set<string>()
+  for (const category of tournament.categories) {
+    if (category.entryType !== EntryType.Team) continue
+    if (seenShortNames.has(category.shortName)) {
+      throw new Error(
+        `Duplicate Team category short name "${category.shortName}" — lineup seed requires unique short names.`
+      )
+    }
+    seenShortNames.add(category.shortName)
+    const seenTeamNames = new Set<string>()
+    for (const entry of category.entries) {
+      const teamName = entry.teamEntry?.teamName ?? ''
+      if (seenTeamNames.has(teamName)) {
+        throw new Error(
+          `Duplicate team name "${teamName}" in "${category.shortName}" — lineup seed requires unique team names per category.`
+        )
+      }
+      seenTeamNames.add(teamName)
+    }
+  }
+
   for (const category of tournament.categories) {
     if (category.entryType !== EntryType.Team) continue
 
@@ -109,7 +133,7 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
     }
     for (const knockoutRound of category.knockoutRounds) {
       for (const match of knockoutRound.matches) collectTie(match)
-      }
+    }
   }
 
   return { tournamentName: tournament.name, categories, teams, players, ties }

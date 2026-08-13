@@ -126,4 +126,45 @@ describe('buildLineupSeed', () => {
     expect(new Set(seed.players.map((p) => p.id)).size).toBe(seed.players.length)
     expect(new Set(seed.ties.map((t) => t.id)).size).toBe(seed.ties.length)
   })
+
+  it('collects scheduled ties from knockout rounds too', () => {
+    const tournament = buildFixture()
+    // A scheduled knockout final (entry 0 vs 1) + an unscheduled one (no datetime).
+    tournament.categories[0].knockoutRounds = [
+      {
+        round: 2,
+        matches: [
+          match(0, 1, '2026-03-01T14:00', 'T1'),
+          { entry1Idx: 0, entry2Idx: 2, datetime: '', durationMinutes: 60, table: 'T2' }
+        ]
+      }
+    ]
+    const seed = buildLineupSeed(tournament)
+    // 3 round-robin ties + 1 scheduled knockout tie (the unscheduled one omitted).
+    expect(seed.ties).toHaveLength(4)
+    expect(seed.ties.some((t) => t.scheduledStart === '2026-03-01T14:00')).toBe(true)
+  })
+
+  it('fails loudly on duplicate Team-category short names (avoids an invalid seed)', () => {
+    const tournament = buildFixture()
+    tournament.categories.push({
+      name: 'Other Team',
+      shortName: 'MT', // collides with the fixture's "MT"
+      entryType: EntryType.Team,
+      durationMinutes: 60,
+      entriesPerGrpMain: 2,
+      entriesPerGrpRemainder: 0,
+      numQualifiedPerGroup: 1,
+      entries: [teamEntry('Delta', 'Delta Club', [{ name: 'Dan', gender: 'M', dob: '1990-01-01' }])],
+      groups: [{ entriesIdx: [0], rounds: [] }],
+      knockoutRounds: []
+    })
+    expect(() => buildLineupSeed(tournament)).toThrow(/unique short names/i)
+  })
+
+  it('fails loudly on duplicate team names within a category', () => {
+    const tournament = buildFixture()
+    tournament.categories[0].entries.push(teamEntry('Alpha', 'Other', [])) // duplicate team name
+    expect(() => buildLineupSeed(tournament)).toThrow(/unique team names/i)
+  })
 })

@@ -381,9 +381,9 @@ function goHome() {
         <MenuItem divider />
         <MenuItem label="Export round-robin charts" @click="exportRoundRobin()" />
         <MenuItem label="Export draft schedule" @click="exportDraftSchedule()" />
-          <MenuItem label="Import final schedule" @click="finalScheduleFile?.click()" />
-          <MenuItem divider />
-          <MenuItem label="Export lineup seed" @click="exportLineupSeed()" />
+        <MenuItem label="Import final schedule" @click="finalScheduleFile?.click()" />
+        <MenuItem divider />
+        <MenuItem label="Export lineup seed" @click="exportLineupSeed()" />
         <MenuItem divider />
         <MenuItem label="Export scoresheets (with template)" @click="exportScoresheetWithTemplateFile?.click()" />
       </DropdownMenu>
