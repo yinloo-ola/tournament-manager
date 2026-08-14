@@ -27,7 +27,6 @@ export type EntryLike = {
   } | null
 }
 
-const SINGLES_HEADER_LEN = 6 // SN, Name, Club, Seeding, Date Of Birth, Gender
 const ENTRIES_SHEET = 'entries'
 
 /**
@@ -51,15 +50,18 @@ export function importSinglesEntries(workbook: Record<string, string[][]>): Entr
 
   const entries: EntryLike[] = []
   for (const row of rows.slice(1)) {
-    if (row.length < SINGLES_HEADER_LEN) {
+    // readWorkbook trims trailing blank cells, so rows missing trailing
+    // optionals (DOB, Gender) arrive shorter than the header — the Name is
+    // still valid and must not be skipped.
+    if (row.length < 2) {
       continue
     }
 
     const name = row[1].trim()
-    const club = row[2]
-    const seedingStr = row[3]
-    const dobStr = row[4].trim()
-    const gender = row[5].trim()
+    const club = row[2] ?? ''
+    const seedingStr = row[3] ?? ''
+    const dobStr = (row[4] ?? '').trim()
+    const gender = (row[5] ?? '').trim()
 
     let seeding = 0
     if (seedingStr.trim() !== '') {

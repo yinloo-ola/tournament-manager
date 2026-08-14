@@ -4,7 +4,6 @@ import type { EntryLike } from './importSingles'
 
 const PLAYERS_SHEET = 'players'
 const ENTRIES_SHEET = 'entries'
-const PLAYERS_HEADER_LEN = 4 // SN, Name, Date Of Birth, Gender
 
 /**
  * importDoublesEntries is a synchronous port of Go's
@@ -35,12 +34,15 @@ export function importDoublesEntries(
 
   const playerMap = new Map<string, Player>()
   for (const row of playerRows.slice(1)) {
-    if (row.length < PLAYERS_HEADER_LEN) {
+    // readWorkbook trims trailing blanks, so a player with an empty Gender
+    // (or DOB) arrives shorter — the Name is still valid and must not be
+    // skipped, or the player silently vanishes from the lookup map.
+    if (row.length < 2) {
       continue
     }
     const name = row[1].trim()
-    const dob = row[2].trim()
-    const gender = row[3].trim()
+    const dob = (row[2] ?? '').trim()
+    const gender = (row[3] ?? '').trim()
 
     playerMap.set(name, { name, dateOfBirth: dob, gender })
   }

@@ -105,6 +105,31 @@ describe('importDoublesEntries', () => {
     )
   })
 
+  it('should resolve a player row with trailing blanks trimmed (no Gender)', () => {
+    // readWorkbook trims trailing blank cells — a player missing Gender must
+    // still enter the lookup map, or resolution fails with a misleading
+    // "player not found" error.
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender'],
+        ['1', 'Alice', '36892'],
+        ['2', 'Bob', '36893', 'M']
+      ],
+      entries: [
+        ['SN', 'Player1', 'Player2', 'Club', 'Seeding'],
+        ['1', 'Alice', 'Bob', 'ClubA', '5']
+      ]
+    }
+    const entries = importDoublesEntries(workbook)
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].doublesEntry?.players[0]).toEqual({
+      name: 'Alice',
+      dateOfBirth: '36892',
+      gender: ''
+    })
+  })
+
   it('should throw sheet does not exist for missing sheets', () => {
     expect(() => importDoublesEntries({})).toThrow(
       'sheet players does not exist'
