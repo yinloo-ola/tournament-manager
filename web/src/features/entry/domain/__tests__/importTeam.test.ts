@@ -86,7 +86,7 @@ describe('importTeamEntries', () => {
     )
   })
 
-  it('should skip short rows in entries sheet', () => {
+  it('should import a team row with only SN and Team (trailing blanks trimmed)', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
@@ -97,7 +97,28 @@ describe('importTeamEntries', () => {
       entries: [
         ['SN', 'Team', 'Club', 'Seeding'],
         ['1', 'TeamA', 'ClubX', '5'],
-        ['2', 'Short'] // len < 3, should be skipped
+        ['2', 'TeamA'] // no Club, no Seeding — readWorkbook trims trailing blanks
+      ]
+    }
+    const entries = importTeamEntries(workbook, 3, 3)
+    expect(entries).toHaveLength(2)
+    expect(entries[1].teamEntry?.teamName).toBe('TeamA')
+    expect(entries[1].club).toBeUndefined()
+    expect(entries[1].seeding).toBeUndefined()
+  })
+
+  it('should skip rows with no team name', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+        ['1', 'Alice', '36892', 'F', 'TeamA'],
+        ['2', 'Bob', '36893', 'M', 'TeamA'],
+        ['3', 'Carol', '36894', 'F', 'TeamA']
+      ],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding'],
+        ['1', 'TeamA', 'ClubX', '5'],
+        ['2'] // SN only, no team name
       ]
     }
     const entries = importTeamEntries(workbook, 3, 3)
@@ -125,6 +146,33 @@ describe('importTeamEntries', () => {
     expect(entries[0].seeding).toBeUndefined()
     expect(entries[1].club).toBeUndefined()
     expect(entries[1].seeding).toBeUndefined()
+  })
+
+  it('should include a team player with trailing blanks trimmed (no Gender)', () => {
+    // readWorkbook trims trailing blank cells — a player missing Gender must
+    // still join the team, or the team silently fails its min/max player
+    // count validation.
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+        ['1', 'Alice', '36892', '', 'TeamA'], // interior-blank Gender
+        ['2', 'Bob', '36893', 'M', 'TeamA'],
+        ['3', 'Carol', '36894', 'F', 'TeamA']
+      ],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding'],
+        ['1', 'TeamA', 'ClubX', '5']
+      ]
+    }
+    const entries = importTeamEntries(workbook, 3, 3)
+
+    expect(entries).toHaveLength(1)
+    expect(entries[0].teamEntry?.players).toHaveLength(3)
+    expect(entries[0].teamEntry?.players[0]).toEqual({
+      name: 'Alice',
+      dateOfBirth: '36892',
+      gender: ''
+    })
   })
 
   it('should throw sheet does not exist for missing sheets', () => {

@@ -4,7 +4,6 @@ import type { EntryLike } from './importSingles'
 
 const PLAYERS_SHEET = 'players'
 const ENTRIES_SHEET = 'entries'
-const PLAYERS_HEADER_LEN = 4 // SN, Name, Date Of Birth, Gender
 
 /**
  * importTeamEntries is a synchronous port of Go's
@@ -13,7 +12,7 @@ const PLAYERS_HEADER_LEN = 4 // SN, Name, Date Of Birth, Gender
  * Reads the 'players' sheet to build a team→Player[] map (keyed by team
  * name in column 4), then iterates the 'entries' sheet. Each entry row
  * supplies a team name, which is resolved against the player map. Club
- * and Seeding are optional (Go checks len(row) > 2 and > 3 respectively).
+ * and Seeding are optional (missing trailing cells are treated as empty).
  *
  * Note: the team entries sheet layout differs from doubles — Club is at
  * column 2 and Seeding at column 3 (not 3 and 4 as in doubles).
@@ -38,12 +37,15 @@ export function importTeamEntries(
 
   const teamMap = new Map<string, Player[]>()
   for (const row of playerRows.slice(1)) {
-    if (row.length < PLAYERS_HEADER_LEN) {
+    // readWorkbook trims trailing blanks, so a player with an empty Gender
+    // (or DOB) arrives shorter — the Name is still valid and must not be
+    // skipped, or the player silently vanishes from the team map.
+    if (row.length < 2) {
       continue
     }
     const name = row[1].trim()
-    const dob = row[2].trim()
-    const gender = row[3].trim()
+    const dob = (row[2] ?? '').trim()
+    const gender = (row[3] ?? '').trim()
     const team = (row[4] ?? '').trim()
 
     const players = teamMap.get(team)
@@ -62,21 +64,20 @@ export function importTeamEntries(
 
   const entries: EntryLike[] = []
   for (const row of entryRows.slice(1)) {
-    if (row.length < 3) {
+    // readWorkbook trims trailing blank cells, so a row with only SN + Team
+    // (no Club, no Seeding) arrives as length 2 — the team name is still
+    // valid and must not be skipped.
+    if (row.length < 2) {
       continue
     }
 
     const teamName = row[1].trim()
     let club = ''
     let seeding = 0
-    if (row.length > 2) {
-      club = row[2].trim()
-    }
-    if (row.length > 3) {
-      const seedingStr = row[3].trim()
-      if (seedingStr !== '') {
-        seeding = parseSeeding(seedingStr)
-      }
+    club = (row[2] ?? '').trim()
+    const seedingStr = (row[3] ?? '').trim()
+    if (seedingStr !== '') {
+      seeding = parseSeeding(seedingStr)
     }
 
     // Resolve team players from the map
