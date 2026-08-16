@@ -29,6 +29,16 @@ describe('readWorkbook', () => {
     expect(rows[3][4]).toBe('36894')
   })
 
+  it('should unwrap hyperlink cells to their text (typed emails auto-linkify)', async () => {
+    // A real Excel file: typing an email AutoCorrects to a mailto hyperlink,
+    // which ExcelJS reads as { text, hyperlink } — the reader must surface
+    // the visible text, not "[object Object]".
+    const workbook = await readWorkbook(fixtureBuffer('Team Hyperlink Emails.xlsx'))
+    const rows = workbook['entries']
+    expect(rows[1][4]).toBe('team1@example.com')
+    expect(rows[2][4]).toBe('team2@example.com')
+  })
+
   it('should insert interior blanks and trim trailing blanks (Go row-shape parity)', async () => {
     const workbook = await readWorkbook(fixtureBuffer('Men Singles.xlsx'))
     const rows = workbook['entries']

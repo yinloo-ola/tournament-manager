@@ -89,6 +89,12 @@ function cellToString(value: unknown): string {
     if ('result' in value) {
       return cellToString((value as { result: unknown }).result)
     }
+    // Hyperlink cells: { text: string, hyperlink: string } — Excel stores
+    // typed emails/URLs this way (AutoCorrect linkifies them); the visible
+    // text is the value.
+    if ('text' in value && typeof (value as { text: unknown }).text === 'string') {
+      return (value as { text: string }).text
+    }
     // Rich text: { richText: [{ text: string }, ...] }
     if ('richText' in value) {
       return (value as { richText: { text: string }[] }).richText
