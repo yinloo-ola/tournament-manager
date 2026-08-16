@@ -1,5 +1,6 @@
 import { EntryType, type Player } from '@/shared/model'
-import { parseSeeding } from './parseSeeding'
+import { parseSeedingWithRow } from './parseSeeding'
+import { ENTRIES_SHEET } from './entryLayout'
 
 /**
  * EntryLike is the plain Entry-shaped object produced by importers.
@@ -27,7 +28,6 @@ export type EntryLike = {
   } | null
 }
 
-const ENTRIES_SHEET = 'entries'
 
 /**
  * importSinglesEntries is a synchronous port of Go's
@@ -38,9 +38,13 @@ const ENTRIES_SHEET = 'entries'
  * Name/DOB/Gender, treating Club/Seeding as optional, and producing one
  * EntryLike per data row with entryType 'Singles'.
  *
- * Throws Go-parity error messages:
- *  - "sheet entries does not exist" (missing sheet)
- *  - "failed to parse seeding" (non-integer seeding)
+ * Throws the plain-language message contract (row numbers count the header
+ * as Excel row 1):
+ *  - "Row N: Seeding 'X' isn't a whole number."
+ *
+ * The sheet-existence throw remains a Go-parity internal invariant — the
+ * readEntryWorkbook pre-validation normally delivers the user-facing
+ * "Missing sheet …" message before an importer runs.
  */
 export function importSinglesEntries(workbook: Record<string, string[][]>): EntryLike[] {
   const rows = workbook[ENTRIES_SHEET]
@@ -49,7 +53,10 @@ export function importSinglesEntries(workbook: Record<string, string[][]>): Entr
   }
 
   const entries: EntryLike[] = []
-  for (const row of rows.slice(1)) {
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i]
+    const rowNum = i + 1
+
     // readWorkbook trims trailing blank cells, so rows missing trailing
     // optionals (DOB, Gender) arrive shorter than the header — the Name is
     // still valid and must not be skipped.
@@ -65,7 +72,7 @@ export function importSinglesEntries(workbook: Record<string, string[][]>): Entr
 
     let seeding = 0
     if (seedingStr.trim() !== '') {
-      seeding = parseSeeding(seedingStr)
+      seeding = parseSeedingWithRow(seedingStr, rowNum)
     }
 
     const entry: EntryLike = {

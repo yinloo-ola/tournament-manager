@@ -29,6 +29,12 @@ watch(
 )
 
 onBeforeUnmount(() => clearTimeout(timer))
+
+// The action button runs its handler, then dismisses so the queue advances.
+function runAction(toast: Toast) {
+  toast.onAction?.()
+  dismiss(toast.id)
+}
 </script>
 
 <template>
@@ -49,7 +55,7 @@ onBeforeUnmount(() => clearTimeout(timer))
         <span class="body-medium flex-1">{{ current()!.message }}</span>
         <button
           v-if="current()!.actionLabel"
-          @click="dismiss(current()!.id)"
+          @click="runAction(current()!)"
           class="label-large border-0 bg-transparent cursor-pointer outline-none focus-visible:underline"
           :class="
             current()!.tone === 'error'

@@ -1,9 +1,7 @@
 import { EntryType, type Player } from '@/shared/model'
-import { parseSeeding } from './parseSeeding'
+import { parseSeedingWithRow } from './parseSeeding'
+import { ENTRIES_SHEET, PLAYERS_SHEET } from './entryLayout'
 import type { EntryLike } from './importSingles'
-
-const PLAYERS_SHEET = 'players'
-const ENTRIES_SHEET = 'entries'
 
 /**
  * importTeamEntries is a synchronous port of Go's
@@ -17,12 +15,16 @@ const ENTRIES_SHEET = 'entries'
  * Note: the team entries sheet layout differs from doubles — Club is at
  * column 2 and Seeding at column 3 (not 3 and 4 as in doubles).
  *
- * Throws Go-parity error messages:
- *  - "sheet players does not exist" (missing players sheet)
- *  - "sheet entries does not exist" (missing entries sheet)
- *  - "team <name> not found in players sheet" (no match)
- *  - "team <name> has <n> players, which is not between <min> and <max>"
- *  - "failed to parse seeding" (non-integer seeding)
+ * Throws the plain-language message contract (row numbers count the header
+ * as Excel row 1):
+ *  - "Player 'X' appears twice for team 'T'." (same name under one team)
+ *  - "Row N: Team 'T' isn't in the 'players' sheet."
+ *  - "Team 'T' has N players — allowed: min to max."
+ *  - "Row N: Seeding 'X' isn't a whole number."
+ *
+ * The sheet-existence throws remain Go-parity internal invariants — the
+ * readEntryWorkbook pre-validation normally delivers the user-facing
+ * "Missing sheet …" messages before an importer runs.
  */
 export function importTeamEntries(
   workbook: Record<string, string[][]>,
@@ -50,6 +52,13 @@ export function importTeamEntries(
 
     const players = teamMap.get(team)
     if (players) {
+      // Names identify players within a team — a duplicate would silently
+      // inflate the roster (and player counts feed the min/max check).
+      if (players.some((player) => player.name === name)) {
+        throw new Error(
+          `Player '${name}' appears twice for team '${team}'.`
+        )
+      }
       players.push({ name, dateOfBirth: dob, gender })
     } else {
       teamMap.set(team, [{ name, dateOfBirth: dob, gender }])
@@ -63,7 +72,10 @@ export function importTeamEntries(
   }
 
   const entries: EntryLike[] = []
-  for (const row of entryRows.slice(1)) {
+  for (let i = 1; i < entryRows.length; i++) {
+    const row = entryRows[i]
+    const rowNum = i + 1
+
     // readWorkbook trims trailing blank cells, so a row with only SN + Team
     // (no Club, no Seeding) arrives as length 2 — the team name is still
     // valid and must not be skipped.
@@ -77,19 +89,21 @@ export function importTeamEntries(
     club = (row[2] ?? '').trim()
     const seedingStr = (row[3] ?? '').trim()
     if (seedingStr !== '') {
-      seeding = parseSeeding(seedingStr)
+      seeding = parseSeedingWithRow(seedingStr, rowNum)
     }
 
     // Resolve team players from the map
     const players = teamMap.get(teamName)
     if (!players) {
-      throw new Error(`team ${teamName} not found in players sheet`)
+      throw new Error(
+        `Row ${rowNum}: Team '${teamName}' isn't in the 'players' sheet.`
+      )
     }
 
     // Validate player count
     if (players.length < minPlayers || players.length > maxPlayers) {
       throw new Error(
-        `team ${teamName} has ${players.length} players, which is not between ${minPlayers} and ${maxPlayers}`
+        `Team '${teamName}' has ${players.length} players — allowed: ${minPlayers} to ${maxPlayers}.`
       )
     }
 

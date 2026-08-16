@@ -50,14 +50,16 @@ describe('importSinglesEntries', () => {
     expect(entries[1].seeding).toBeUndefined()
   })
 
-  it('should throw failed to parse seeding on a non-integer seeding', () => {
+  it('should throw the row-numbered seeding message on a non-integer seeding', () => {
     const workbook: Record<string, string[][]> = {
       entries: [
         ['SN', 'Name', 'Club', 'Seeding', 'Date Of Birth', 'Gender'],
         ['1', 'Alice', 'ClubA', 'abc', '36892', 'F']
       ]
     }
-    expect(() => importSinglesEntries(workbook)).toThrow('failed to parse seeding')
+    expect(() => importSinglesEntries(workbook)).toThrow(
+      "Row 2: Seeding 'abc' isn't a whole number."
+    )
 
     const workbook2: Record<string, string[][]> = {
       entries: [
@@ -65,7 +67,23 @@ describe('importSinglesEntries', () => {
         ['1', 'Alice', 'ClubA', '1.5', '36892', 'F']
       ]
     }
-    expect(() => importSinglesEntries(workbook2)).toThrow('failed to parse seeding')
+    expect(() => importSinglesEntries(workbook2)).toThrow(
+      "Row 2: Seeding '1.5' isn't a whole number."
+    )
+  })
+
+  it('should number rows from the header, so the third data row is row 4', () => {
+    const workbook: Record<string, string[][]> = {
+      entries: [
+        ['SN', 'Name', 'Club', 'Seeding', 'Date Of Birth', 'Gender'],
+        ['1', 'Alice', 'ClubA', '1', '36892', 'F'],
+        ['2', 'Bob', 'ClubB', '2', '36893', 'M'],
+        ['3', 'Carol', 'ClubC', 'x', '36894', 'F']
+      ]
+    }
+    expect(() => importSinglesEntries(workbook)).toThrow(
+      "Row 4: Seeding 'x' isn't a whole number."
+    )
   })
 
   it('should preserve an interior-blank optional column', () => {

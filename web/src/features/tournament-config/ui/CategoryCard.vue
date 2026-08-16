@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { readWorkbook } from '@/shared/excel/readWorkbook'
+import { readEntryWorkbook, EntryTemplateError } from '@/features/entry/domain/readEntryWorkbook'
+import { entryTemplateUrl, entryTemplateFilename } from '@/features/entry/domain/entryTemplate'
 import { importSinglesEntries, type EntryLike } from '@/features/entry/domain/importSingles'
 import { importDoublesEntries } from '@/features/entry/domain/importDoubles'
 import { importTeamEntries } from '@/features/entry/domain/importTeam'
@@ -57,7 +58,7 @@ async function onFileSelected(event: any) {
       }
 
       try {
-        const workbook = await readWorkbook(selectedFile)
+        const workbook = await readEntryWorkbook(selectedFile, entryType)
         let data: EntryLike[]
         switch (entryType) {
           case EntryType.Singles:
@@ -73,7 +74,17 @@ async function onFileSelected(event: any) {
         emit('playersImported', data)
         toast.success(`Imported ${data.length} entries`)
       } catch (error) {
-        toast.error((error as Error).message)
+        // Structural problems point at the Entry Template — offer the download
+        // as a toast action; data errors (bad row values) explain themselves.
+        if (error instanceof EntryTemplateError) {
+          toast.error(error.message, {
+            actionLabel: 'Download template',
+            onAction: downloadEntryTemplate,
+            duration: TEMPLATE_ERROR_TOAST_MS
+          })
+        } else {
+          toast.error((error as Error).message)
+        }
       }
       break
     }
@@ -83,6 +94,25 @@ async function onFileSelected(event: any) {
   }
 
   file.value!.value = ''
+}
+
+// Structural failures carry a recoverable action — give them twice the
+// default snackbar time to be read and clicked.
+const TEMPLATE_ERROR_TOAST_MS = 8000
+
+function downloadEntryTemplate() {
+  if (!isEntryTypeSelected.value) {
+    toast.error('Please select an entry type before importing')
+    return
+  }
+  const anchor = document.createElement('a')
+  anchor.href = entryTemplateUrl(category.value.entryType)
+  anchor.download = entryTemplateFilename(
+    category.value.name,
+    category.value.entryType
+  )
+  anchor.click()
+  toast.success('Entry Template downloaded')
 }
 
 function playerCountChanged(countType: string) {
@@ -256,6 +286,16 @@ const lifecycle = computed(() => {
       >
         IMPORT ENTRIES
       </OutlinedButton>
+    </div>
+    <div class="pt-1">
+      <SimpleButton
+        variant="text"
+        data-test="download-template"
+        class="w-full"
+        @click="downloadEntryTemplate"
+      >
+        Download template
+      </SimpleButton>
     </div>
     <div class="pb-1 pt-4">
       <SimpleButton

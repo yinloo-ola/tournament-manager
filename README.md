@@ -8,7 +8,7 @@ Live on GitHub Pages.
 
 - **Event formats**: Singles, Doubles, and Team categories
 - **Tournament structure**: round-robin group stage followed by a single-elimination knockout bracket
-- **Entry import**: read entries (players, pairs, or teams with rosters) from `.xlsx` files, parsed in-browser via ExcelJS
+- **Entry import**: read entries (players, pairs, or teams with rosters) from `.xlsx` files, parsed in-browser via ExcelJS — with a downloadable Entry Template per Entry Type (fill-in sheets, rules, and worked examples) and plain-language, row-numbered error messages for bad uploads
 - **Draw**: weighted random group allocation with seeding priority, zigzag distribution, and club separation
 - **Scheduling**: automatic round and match scheduling against available tables, with draft schedule export/import
 - **Document export**: round-robin charts, schedules, and scoresheets as `.xlsx`

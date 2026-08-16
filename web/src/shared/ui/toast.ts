@@ -13,14 +13,17 @@ export interface ToastOptions {
   tone?: ToastTone
   /** Optional single action button label (M3 allows at most one action). */
   actionLabel?: string
+  /** Runs when the action button is clicked; the toast dismisses after. */
+  onAction?: () => void
   /** Override the auto-dismiss delay (ms). Default 4000; 0 = sticky. */
   duration?: number
 }
 
-export interface Toast extends Required<Omit<ToastOptions, 'actionLabel'>> {
+export interface Toast extends Required<Omit<ToastOptions, 'actionLabel' | 'onAction'>> {
   id: number
   message: string
   actionLabel?: string
+  onAction?: () => void
 }
 
 const queue = ref<Toast[]>([])
@@ -36,6 +39,7 @@ function show(message: string, options: ToastOptions = {}): number {
     message,
     tone: options.tone ?? 'info',
     actionLabel: options.actionLabel,
+    onAction: options.onAction,
     duration: options.duration ?? 4000
   }
   queue.value = [...queue.value, toast]

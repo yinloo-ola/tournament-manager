@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { readWorkbook } from '@/shared/excel/readWorkbook'
+import { readEntryWorkbook } from '@/features/entry/domain/readEntryWorkbook'
 import { importSinglesEntries } from '@/features/entry/domain/importSingles'
 import { importDoublesEntries } from '@/features/entry/domain/importDoubles'
 import { importTeamEntries } from '@/features/entry/domain/importTeam'
-import { Entry } from '@/shared/model'
+import { Entry, EntryType } from '@/shared/model'
 
 function fixtureBuffer(name: string): Uint8Array {
   return readFileSync(resolve(process.cwd(), 'testdata', name))
@@ -35,7 +35,13 @@ beforeEach(() => {
 describe('Feature acceptance: pure-frontend entry import (R1–R5)', () => {
   it('should import all three fixtures to byte-identical Go entries with no server', async () => {
     // ── Singles ──
-    const singlesWorkbook = await readWorkbook(fixtureBuffer('Men Singles.xlsx'))
+    // Routed through readEntryWorkbook so the acceptance seam covers the
+    // pre-validation step real uploads pass through (the fixtures must
+    // satisfy the header contract).
+    const singlesWorkbook = await readEntryWorkbook(
+      fixtureBuffer('Men Singles.xlsx'),
+      EntryType.Singles
+    )
     const singles = importSinglesEntries(singlesWorkbook)
     const singlesRehydrated = projectEntries(
       singles.map((e) => Object.assign(new Entry(e.entryType), e))
@@ -45,7 +51,10 @@ describe('Feature acceptance: pure-frontend entry import (R1–R5)', () => {
     )
 
     // ── Doubles ──
-    const doublesWorkbook = await readWorkbook(fixtureBuffer('Mens Doubles.xlsx'))
+    const doublesWorkbook = await readEntryWorkbook(
+      fixtureBuffer('Mens Doubles.xlsx'),
+      EntryType.Doubles
+    )
     const doubles = importDoublesEntries(doublesWorkbook)
     const doublesRehydrated = projectEntries(
       doubles.map((e) => Object.assign(new Entry(e.entryType), e))
@@ -55,7 +64,10 @@ describe('Feature acceptance: pure-frontend entry import (R1–R5)', () => {
     )
 
     // ── Team (min = max = 3, the golden-safe bound) ──
-    const teamWorkbook = await readWorkbook(fixtureBuffer('Mens Team.xlsx'))
+    const teamWorkbook = await readEntryWorkbook(
+      fixtureBuffer('Mens Team.xlsx'),
+      EntryType.Team
+    )
     const team = importTeamEntries(teamWorkbook, 3, 3)
     const teamRehydrated = projectEntries(
       team.map((e) => Object.assign(new Entry(e.entryType), e))

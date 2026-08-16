@@ -50,7 +50,7 @@ describe('importDoublesEntries', () => {
     expect(entries[0].seeding).toBe(3)
   })
 
-  it('should throw player with SN not found for unknown player', () => {
+  it('should throw the row-numbered unknown-player message', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender'],
@@ -62,7 +62,42 @@ describe('importDoublesEntries', () => {
       ]
     }
     expect(() => importDoublesEntries(workbook)).toThrow(
-      'player with SN Unknown not found in players sheet'
+      "Row 2: Player 'Unknown' isn't in the 'players' sheet."
+    )
+  })
+
+  it('should number unknown-player rows from the header', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender'],
+        ['1', 'Alice', '36892', 'F'],
+        ['2', 'Bob', '36893', 'M']
+      ],
+      entries: [
+        ['SN', 'Player1', 'Player2', 'Club', 'Seeding'],
+        ['1', 'Alice', 'Bob', 'ClubA', '1'],
+        ['2', 'Alice', 'Ghost', 'ClubA', '2']
+      ]
+    }
+    expect(() => importDoublesEntries(workbook)).toThrow(
+      "Row 3: Player 'Ghost' isn't in the 'players' sheet."
+    )
+  })
+
+  it("should fail naming the duplicate when a player appears twice in the players sheet", () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender'],
+        ['1', 'Alice', '36892', 'F'],
+        ['2', 'Alice', '36895', 'F']
+      ],
+      entries: [
+        ['SN', 'Player1', 'Player2', 'Club', 'Seeding'],
+        ['1', 'Alice', 'Bob', 'ClubA', '3']
+      ]
+    }
+    expect(() => importDoublesEntries(workbook)).toThrow(
+      "Player 'Alice' appears twice in the 'players' sheet."
     )
   })
 
@@ -88,7 +123,7 @@ describe('importDoublesEntries', () => {
     expect(entries[1].seeding).toBeUndefined()
   })
 
-  it('should throw failed to parse seeding on non-integer', () => {
+  it('should throw the row-numbered seeding message on non-integer', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender'],
@@ -101,7 +136,7 @@ describe('importDoublesEntries', () => {
       ]
     }
     expect(() => importDoublesEntries(workbook)).toThrow(
-      'failed to parse seeding'
+      "Row 2: Seeding 'abc' isn't a whole number."
     )
   })
 

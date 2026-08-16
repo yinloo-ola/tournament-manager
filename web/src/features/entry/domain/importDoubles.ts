@@ -1,9 +1,7 @@
 import { EntryType, type Player } from '@/shared/model'
-import { parseSeeding } from './parseSeeding'
+import { parseSeedingWithRow } from './parseSeeding'
+import { ENTRIES_SHEET, PLAYERS_SHEET } from './entryLayout'
 import type { EntryLike } from './importSingles'
-
-const PLAYERS_SHEET = 'players'
-const ENTRIES_SHEET = 'entries'
 
 /**
  * importDoublesEntries is a synchronous port of Go's
@@ -17,11 +15,15 @@ const ENTRIES_SHEET = 'entries'
  * Note: Go trims Club in doubles (unlike singles where Club is untrimmed).
  * Go trims Seeding before Atoi (unlike singles where untrimmed is parsed).
  *
- * Throws Go-parity error messages:
- *  - "sheet players does not exist" (missing players sheet)
- *  - "sheet entries does not exist" (missing entries sheet)
- *  - "player with SN <name> not found in players sheet" (no match)
- *  - "failed to parse seeding" (non-integer seeding)
+ * Throws the plain-language message contract (row numbers count the header
+ * as Excel row 1):
+ *  - "Player 'X' appears twice in the 'players' sheet."
+ *  - "Row N: Player 'X' isn't in the 'players' sheet."
+ *  - "Row N: Seeding 'X' isn't a whole number."
+ *
+ * The sheet-existence throws remain Go-parity internal invariants — the
+ * readEntryWorkbook pre-validation normally delivers the user-facing
+ * "Missing sheet …" messages before an importer runs.
  */
 export function importDoublesEntries(
   workbook: Record<string, string[][]>
@@ -44,6 +46,14 @@ export function importDoublesEntries(
     const dob = (row[2] ?? '').trim()
     const gender = (row[3] ?? '').trim()
 
+    // Names are the join key — two same-named rows are indistinguishable,
+    // so duplicates fail loudly instead of the map silently keeping the
+    // last row's details.
+    if (playerMap.has(name)) {
+      throw new Error(
+        `Player '${name}' appears twice in the 'players' sheet.`
+      )
+    }
     playerMap.set(name, { name, dateOfBirth: dob, gender })
   }
 
@@ -54,7 +64,10 @@ export function importDoublesEntries(
   }
 
   const entries: EntryLike[] = []
-  for (const row of entryRows.slice(1)) {
+  for (let i = 1; i < entryRows.length; i++) {
+    const row = entryRows[i]
+    const rowNum = i + 1
+
     if (row.length < 3) {
       continue
     }
@@ -70,7 +83,7 @@ export function importDoublesEntries(
     if (row.length > 4) {
       const seedingStr = row[4].trim()
       if (seedingStr !== '') {
-        seeding = parseSeeding(seedingStr)
+        seeding = parseSeedingWithRow(seedingStr, rowNum)
       }
     }
 
@@ -78,13 +91,13 @@ export function importDoublesEntries(
     const player1 = playerMap.get(player1Name)
     if (!player1) {
       throw new Error(
-        `player with SN ${player1Name} not found in players sheet`
+        `Row ${rowNum}: Player '${player1Name}' isn't in the 'players' sheet.`
       )
     }
     const player2 = playerMap.get(player2Name)
     if (!player2) {
       throw new Error(
-        `player with SN ${player2Name} not found in players sheet`
+        `Row ${rowNum}: Player '${player2Name}' isn't in the 'players' sheet.`
       )
     }
 

@@ -29,9 +29,13 @@ Entries (players, pairs, or teams) are imported from Excel files (.xlsx) parsed 
 |---|---|---|
 | **Singles** | Single sheet named `entries` | SN, Name, Club, Seeding, Date Of Birth, Gender |
 | **Doubles** | Two sheets: `entries` and `players` | `entries`: SN, Player1, Player2, Club, Seeding. `players`: SN, Name, Date Of Birth, Gender |
-| **Team** | Two sheets: `entries` and `players` | `entries`: SN, Team Name, Club, Seeding. `players`: SN, Name, Date Of Birth, Gender, Team (maps players to teams) |
+| **Team** | Two sheets: `entries` and `players` | `entries`: SN, Team, Club, Seeding. `players`: SN, Name, Date Of Birth, Gender, Team (maps players to teams) |
 
-The browser parses the Excel file and produces structured `Entry` objects. Team entries validate that player counts fall within the configured min/max range.
+The browser parses the Excel file and produces structured `Entry` objects.
+
+Every category card offers a **Download template** button beside Import Entries: a static Entry Template workbook for that Entry Type, with headers-only fill-in sheets matching the table above plus a "How to fill" sheet (rules and worked example rows — copied verbatim, they import). The download is named after the category (e.g. `mens-team-entry-template.xlsx`).
+
+Before an importer runs, the upload is pre-validated: it must be a readable .xlsx with the expected sheets, and header labels must match the Entry Template (compared trimmed and case-insensitively — wrong-label files are rejected rather than misread). Data errors fail with row-numbered messages (`Row 7: Seeding '1.5' isn't a whole number.`); duplicate player names and team rosters outside the category's configured min/max range are rejected. Structural failures offer a "Download template" action on their toast.
 
 ### 3. Draw & Group Allocation
 

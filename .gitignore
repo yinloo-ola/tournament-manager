@@ -7,3 +7,6 @@ tmp/
 
 # ZCode agent session/scratch state
 .zcode/
+
+# wayfinder maps, tickets, and specs — planning scratch, not source
+.scratch/

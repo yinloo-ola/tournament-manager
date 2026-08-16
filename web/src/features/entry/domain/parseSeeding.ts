@@ -12,3 +12,15 @@ export function parseSeeding(s: string): number {
   }
   return parseInt(s, 10)
 }
+
+/**
+ * parseSeedingWithRow wraps parseSeeding with the plain-language message
+ * contract importers surface: "Row N: Seeding 'X' isn't a whole number."
+ */
+export function parseSeedingWithRow(s: string, rowNum: number): number {
+  try {
+    return parseSeeding(s)
+  } catch {
+    throw new Error(`Row ${rowNum}: Seeding '${s.trim()}' isn't a whole number.`)
+  }
+}

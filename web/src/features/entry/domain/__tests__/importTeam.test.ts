@@ -52,7 +52,7 @@ describe('importTeamEntries', () => {
     expect(entries[0].seeding).toBe(5)
   })
 
-  it('should throw team not found for unknown team', () => {
+  it('should throw the row-numbered unknown-team message', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
@@ -64,11 +64,11 @@ describe('importTeamEntries', () => {
       ]
     }
     expect(() => importTeamEntries(workbook, 1, 5)).toThrow(
-      'team Unknown not found in players sheet'
+      "Row 2: Team 'Unknown' isn't in the 'players' sheet."
     )
   })
 
-  it('should throw player count error when outside min/max range', () => {
+  it('should throw the allowed-range player count message', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
@@ -82,8 +82,53 @@ describe('importTeamEntries', () => {
     }
     // 2 players, min=3, max=3
     expect(() => importTeamEntries(workbook, 3, 3)).toThrow(
-      'team TeamA has 2 players, which is not between 3 and 3'
+      "Team 'TeamA' has 2 players — allowed: 3 to 3."
     )
+  })
+
+  it("should fail naming the player when a name appears twice under one team", () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+        ['1', 'Alice', '36892', 'F', 'TeamA'],
+        ['2', 'Alice', '36895', 'F', 'TeamA']
+      ],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding'],
+        ['1', 'TeamA', 'ClubX', '5']
+      ]
+    }
+    expect(() => importTeamEntries(workbook, 1, 5)).toThrow(
+      "Player 'Alice' appears twice for team 'TeamA'."
+    )
+  })
+
+  it('should allow the same player name on different teams', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+        ['1', 'Alice', '36892', 'F', 'TeamA'],
+        ['2', 'Bob', '36893', 'M', 'TeamA'],
+        ['3', 'Alice', '36892', 'F', 'TeamB'],
+        ['4', 'Dave', '36894', 'M', 'TeamB']
+      ],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding'],
+        ['1', 'TeamA', 'ClubX', '1'],
+        ['2', 'TeamB', 'ClubY', '2']
+      ]
+    }
+    const entries = importTeamEntries(workbook, 2, 2)
+
+    expect(entries).toHaveLength(2)
+    expect(entries[0].teamEntry?.players.map((p) => p.name)).toEqual([
+      'Alice',
+      'Bob'
+    ])
+    expect(entries[1].teamEntry?.players.map((p) => p.name)).toEqual([
+      'Alice',
+      'Dave'
+    ])
   })
 
   it('should import a team row with only SN and Team (trailing blanks trimmed)', () => {
@@ -184,7 +229,7 @@ describe('importTeamEntries', () => {
     )
   })
 
-  it('should throw failed to parse seeding on non-integer', () => {
+  it('should throw the row-numbered seeding message on non-integer', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
@@ -198,7 +243,7 @@ describe('importTeamEntries', () => {
       ]
     }
     expect(() => importTeamEntries(workbook, 3, 3)).toThrow(
-      'failed to parse seeding'
+      "Row 2: Seeding 'abc' isn't a whole number."
     )
   })
 })

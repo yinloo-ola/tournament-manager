@@ -160,8 +160,11 @@ describe('CategoryCard entry import (R5)', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('should surface an importer error via alert and not emit', async () => {
-    readWorkbookMock.mockResolvedValue({}) // no 'entries' sheet → importer throws
+  it('should surface a structural error with the template toast action and not emit', async () => {
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    readWorkbookMock.mockResolvedValue({}) // no 'entries' sheet → pre-validation throws
     const wrapper = mount(CategoryCard, {
       props: { modelValue: baseCategory() }
     })
@@ -170,9 +173,72 @@ describe('CategoryCard entry import (R5)', () => {
     await nextTick()
     await nextTick()
 
-    expect(toastErrorSpy).toHaveBeenCalledWith('sheet entries does not exist')
+    expect(toastErrorSpy).toHaveBeenCalledWith(
+      "Missing sheet 'entries' — see the Entry Template.",
+      expect.objectContaining({ actionLabel: 'Download template' })
+    )
+    // The toast action is wired to the card's template download.
+    const options = toastErrorSpy.mock.calls[0]![1] as { onAction: () => void }
+    options.onAction()
+    expect(clickSpy).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('playersImported')).toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
+    clickSpy.mockRestore()
+  })
+
+  it('should surface a data error without the template action', async () => {
+    readWorkbookMock.mockResolvedValue({
+      entries: [
+        ['SN', 'Name', 'Club', 'Seeding', 'Date Of Birth', 'Gender'],
+        ['1', 'Alice', 'ClubA', 'abc', '36892', 'F']
+      ]
+    })
+    const wrapper = mount(CategoryCard, {
+      props: { modelValue: baseCategory() }
+    })
+
+    selectFile(wrapper)
+    await nextTick()
+    await nextTick()
+
+    expect(toastErrorSpy).toHaveBeenCalledWith(
+      "Row 2: Seeding 'abc' isn't a whole number."
+    )
+    expect(wrapper.emitted('playersImported')).toBeUndefined()
+  })
+
+  it('should download the entry template with a category-slug filename', async () => {
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const wrapper = mount(CategoryCard, {
+      props: { modelValue: baseCategory() }
+    })
+
+    await wrapper.find('[data-test="download-template"]').trigger('click')
+
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+    const anchor = clickSpy.mock.instances[0] as HTMLAnchorElement
+    expect(anchor.download).toBe('men-singles-entry-template.xlsx')
+    expect(anchor.href).toContain('singles-entry-template.xlsx')
+    clickSpy.mockRestore()
+  })
+
+  it('should guard the template download on a selected entry type', async () => {
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const wrapper = mount(CategoryCard, {
+      props: { modelValue: baseCategory({ entryType: EntryType.Unknown }) }
+    })
+
+    await wrapper.find('[data-test="download-template"]').trigger('click')
+
+    expect(toastErrorSpy).toHaveBeenCalledWith(
+      'Please select an entry type before importing'
+    )
+    expect(clickSpy).not.toHaveBeenCalled()
+    clickSpy.mockRestore()
   })
 
   it('should run the team guards before importing', async () => {
