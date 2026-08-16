@@ -169,6 +169,34 @@ describe('buildLineupSeed', () => {
     )
   })
 
+  it('refuses naming players without a date of birth', () => {
+    const tournament = buildFixture()
+    tournament.categories[0].entries[0].teamEntry!.players[0].dateOfBirth = ''
+    expect(() => buildLineupSeed(tournament)).toThrow(
+      "Cannot export for the lineup system: Player 'Alan' (Team 'Alpha', MT) has no date of birth."
+    )
+  })
+
+  it('refuses naming players with a date of birth the lineup system cannot parse', () => {
+    const tournament = buildFixture()
+    // Text Excel never recognized as a date — passes through as typed.
+    tournament.categories[0].entries[0].teamEntry!.players[0].dateOfBirth = '15/01/1990'
+    expect(() => buildLineupSeed(tournament)).toThrow(
+      "Cannot export for the lineup system: Player 'Alan' (Team 'Alpha', MT) has an invalid date of birth '15/01/1990'."
+    )
+  })
+
+  it('emits tournament-local scheduledStart, stripping the UTC designator', () => {
+    const tournament = buildFixture()
+    // The schedule pipeline anchors UTC instants (…Z); the organizer means
+    // local wall-clock — the seed must carry it without the offset.
+    tournament.categories[0].groups[0].rounds[0][0].datetime = '2026-03-01T09:00:00.000Z'
+    const seed = buildLineupSeed(tournament)
+    const tie = seed.ties[0] // round 1: Alpha vs Bravo
+    expect(tie.scheduledStart).toBe('2026-03-01T09:00')
+    expect(tie.id.endsWith('2026-03-01T09:00')).toBe(true)
+  })
+
   it('refuses naming the team + category pairs that share a manager email', () => {
     const tournament = buildFixture()
     tournament.categories[0].entries[0] = teamEntry(

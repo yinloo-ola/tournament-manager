@@ -25,6 +25,7 @@ import type { EntryLike } from './importSingles'
  *  - "Row N: Manager Email is missing."
  *  - "Row N: Manager Email 'X' isn't a valid email."
  *  - "Manager Email 'X' is used by teams 'A' and 'B' in this file."
+ *  - "Row N: Date Of Birth is missing." (players sheet)
  *
  * The sheet-existence throws remain Go-parity internal invariants — the
  * readEntryWorkbook pre-validation normally delivers the user-facing
@@ -43,7 +44,10 @@ export function importTeamEntries(
   }
 
   const teamMap = new Map<string, Player[]>()
-  for (const row of playerRows.slice(1)) {
+  for (let i = 1; i < playerRows.length; i++) {
+    const row = playerRows[i]
+    const rowNum = i + 1
+
     // readWorkbook trims trailing blanks, so a player with an empty Gender
     // (or DOB) arrives shorter — the Name is still valid and must not be
     // skipped, or the player silently vanishes from the team map.
@@ -54,6 +58,12 @@ export function importTeamEntries(
     const dob = (row[2] ?? '').trim()
     const gender = (row[3] ?? '').trim()
     const team = (row[4] ?? '').trim()
+
+    // The lineup system's seed contract requires a real date per player —
+    // catch blanks here, with the row number, rather than at handover.
+    if (dob === '') {
+      throw new Error(`Row ${rowNum}: Date Of Birth is missing.`)
+    }
 
     const players = teamMap.get(team)
     if (players) {

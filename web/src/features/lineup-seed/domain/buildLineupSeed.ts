@@ -16,6 +16,22 @@ import { EntryType, MANAGER_EMAIL_SHAPE, type Match, type Tournament } from '@/s
  *  parser accepts 1 (their SUPPORTED_SEED_VERSION is the lockstep twin). */
 export const SEED_VERSION = 1
 
+/** The date-of-birth shapes the lineup system's parser accepts: an already-ISO
+ *  yyyy-mm-dd date, or an Excel serial-day number (what readWorkbook yields for
+ *  real date cells). Anything else fails its import. */
+const DOB_SHAPE = /^\d{4}-\d{2}-\d{2}$|^\d+$/
+
+/**
+ * The seed contract's scheduledStart is tournament-local ISO date-time. The
+ * schedule pipeline anchors UTC instants ("…T14:30:00.000Z") while the
+ * organizer means local wall-clock — strip the designator (and seconds) so
+ * consumer browsers render the time that was scheduled, not UTC + offset.
+ * Offset-less strings pass through unchanged.
+ */
+function toTournamentLocal(datetime: string): string {
+  return datetime.slice(0, 16)
+}
+
 /** Knockout round label by matches in the round — bracket shorthand. */
 const KNOCKOUT_ROUND_LABELS: Record<number, string> = {
   64: 'R128',
@@ -117,7 +133,7 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
   // Manager emails: required on every team, email-shaped, unique across the
   // whole seed (one manager login per team — the lineup system's access model
   // keys on it). One aggregated message names everything to fix.
-  assertManagerEmailsValid(tournament)
+  assertTeamsExportable(tournament)
 
   for (const category of tournament.categories) {
     if (category.entryType !== EntryType.Team) continue
@@ -157,10 +173,11 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
       const teamA = teamIdByEntryIdx.get(match.entry1Idx)
       const teamB = teamIdByEntryIdx.get(match.entry2Idx)
       if (!teamA || !teamB) return // bye / placeholder entry
+      const scheduledStart = toTournamentLocal(match.datetime)
       const tie: SeedTie = {
-        id: `${teamA}|${teamB}|${match.datetime}`,
+        id: `${teamA}|${teamB}|${scheduledStart}`,
         categoryId,
-        scheduledStart: match.datetime,
+        scheduledStart,
         teamIds: [teamA, teamB]
       }
       if (group !== undefined) tie.group = group
@@ -205,9 +222,10 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
 }
 
 /** Aggregated export guard: every Team entry must carry an email-shaped,
- *  case-insensitively unique manager email (import normally enforces this —
- *  this catches hand-edited documents too). */
-function assertManagerEmailsValid(tournament: Tournament): void {
+ *  case-insensitively unique manager email, and every rostered player a
+ *  date of birth the lineup system can parse (import normally enforces
+ *  both — this catches hand-edited documents too). */
+function assertTeamsExportable(tournament: Tournament): void {
   const problems: string[] = []
   const teamsByEmail = new Map<string, { email: string; teams: { name: string; shortName: string }[] }>()
   for (const category of tournament.categories) {
@@ -241,6 +259,23 @@ function assertManagerEmailsValid(tournament: Tournament): void {
           ? `${listed[0]} and ${listed[1]}`
           : `${listed.slice(0, -1).join(', ')} and ${listed[listed.length - 1]}`
       problems.push(`Manager Email '${email}' is shared by ${joined}.`)
+    }
+  }
+  for (const category of tournament.categories) {
+    if (category.entryType !== EntryType.Team) continue
+    for (const entry of category.entries) {
+      const teamName = entry.teamEntry?.teamName ?? ''
+      for (const player of entry.teamEntry?.players ?? []) {
+        if (player.dateOfBirth === '') {
+          problems.push(
+            `Player '${player.name}' (Team '${teamName}', ${category.shortName}) has no date of birth.`
+          )
+        } else if (!DOB_SHAPE.test(player.dateOfBirth)) {
+          problems.push(
+            `Player '${player.name}' (Team '${teamName}', ${category.shortName}) has an invalid date of birth '${player.dateOfBirth}'.`
+          )
+        }
+      }
     }
   }
   if (problems.length > 0) {

@@ -301,6 +301,40 @@ describe('importTeamEntries', () => {
     )
   })
 
+  it('should throw the row-numbered missing-DOB message', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+        ['1', 'Alice', '', 'F', 'TeamA'], // interior-blank DOB
+        ['2', 'Bob', '36893', 'M', 'TeamA']
+      ],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'coach@clubx.com']
+      ]
+    }
+    expect(() => importTeamEntries(workbook, 1, 5)).toThrow(
+      'Row 2: Date Of Birth is missing.'
+    )
+  })
+
+  it('should throw the missing-DOB message for trailing-blank player rows', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [
+        ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+        ['1', 'Alice', '36892', 'F', 'TeamA'],
+        ['2', 'Bob'] // no DOB/Gender/Team — readWorkbook trims trailing blanks
+      ],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'coach@clubx.com']
+      ]
+    }
+    expect(() => importTeamEntries(workbook, 1, 5)).toThrow(
+      'Row 3: Date Of Birth is missing.'
+    )
+  })
+
   it('should throw naming both teams when an email repeats in one file (case-insensitive)', () => {
     const workbook: Record<string, string[][]> = {
       players: [...teamPlayers('Alpha'), ...teamPlayers('Bravo').slice(1)],
