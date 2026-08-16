@@ -96,6 +96,24 @@ describe('importFinalScheduleFromBuffer', () => {
       expect(result.categoriesGroupsMap.WS).toBeDefined()
     })
 
+    it('should import every match via the #SN text cells', async () => {
+      const { buffer } = await generateDraftBuffer()
+      const result = await importFinalScheduleFromBuffer(buffer)
+
+      // 2 categories × 2 groups × 3 rounds × 2 matches = 24 group matches
+      const groupMatches = Object.values(result.categoriesGroupsMap)
+        .flatMap((groups) => groups)
+        .flatMap((group) => group.rounds)
+        .flat()
+      expect(groupMatches.length).toBe(24)
+
+      // 2 categories × (SF 2 + F 1) = 6 knockout matches
+      const knockoutMatches = Object.values(result.categoriesKnockoutRoundsMap)
+        .flatMap((rounds) => rounds)
+        .flatMap((round) => round.matches)
+      expect(knockoutMatches.length).toBe(6)
+    })
+
     it('should assemble group matches into per-category groups with correct structure', async () => {
       const { buffer, tournament } = await generateDraftBuffer()
       const result = await importFinalScheduleFromBuffer(buffer)
@@ -133,6 +151,66 @@ describe('importFinalScheduleFromBuffer', () => {
       const firstMatch = msGroups[0].rounds[0][0]
       expect(firstMatch.datetime).toBeTruthy()
       expect(firstMatch.table).toMatch(/^T\d+$/)
+    })
+
+    it('should resolve cells whose value is the SN (name shown via number format)', async () => {
+      const wb = new ExcelJS.Workbook()
+      const ws = wb.addWorksheet('schedule')
+      const wm = wb.addWorksheet('matches')
+
+      headers.forEach((h, i) => (wm.getCell(1, i + 1).value = h))
+      ws.getCell(1, 1).value = 'Date/Time'
+      ws.getCell(1, 2).value = 'T1'
+
+      wm.getCell(2, 1).value = 1 // SN
+      wm.getCell(2, 2).value = 'MS'
+      wm.getCell(2, 3).value = 1 // Round
+      wm.getCell(2, 4).value = 1 // Group
+      wm.getCell(2, 9).value = 3 // EntryID1
+      wm.getCell(2, 10).value = 4 // EntryID2
+
+      ws.getCell(2, 1).value = new Date('2025-03-22T09:00:00Z')
+      ws.getCell(2, 2).value = 1
+      ws.getCell(2, 2).numFmt = '"MS Grp1"'
+
+      const buffer = new Uint8Array(await wb.xlsx.writeBuffer())
+      const result = await importFinalScheduleFromBuffer(buffer)
+
+      const match = result.categoriesGroupsMap.MS[0].rounds[0][0]
+      expect(match.entry1Idx).toBe(2)
+      expect(match.entry2Idx).toBe(3)
+      expect(match.table).toBe('T1')
+    })
+
+    it('should survive the referee moving a cell to another slot and table', async () => {
+      const { buffer } = await generateDraftBuffer()
+
+      // Simulate cut/paste: move the B2 match cell (T1, slot 0) to E5 (T4,
+      // slot 3) — cut/paste carries the cell's value and format together
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.getWorksheet('schedule')!
+      const source = ws.getCell('B2')
+      expect(source.value).toBe(1)
+      expect(source.numFmt).toBe('"MS Grp1"')
+      const dest = ws.getCell('E5')
+      dest.value = source.value
+      dest.style = source.style
+      source.value = null
+      const edited = new Uint8Array(await wb.xlsx.writeBuffer())
+
+      const result = await importFinalScheduleFromBuffer(edited)
+
+      // Group 1's (0,1) pairing occurs exactly once — it must now sit on
+      // T4 at slot 3's time (10:30), not on T1 at 09:00
+      const moved = Object.values(result.categoriesGroupsMap)
+        .flatMap((groups) => groups)
+        .flatMap((group) => group.rounds)
+        .flat()
+        .find((m) => m.entry1Idx === 0 && m.entry2Idx === 1)
+      expect(moved).toBeDefined()
+      expect(moved!.table).toBe('T4')
+      expect(moved!.datetime).toBe('2025-03-22T10:30:00.000Z')
     })
 
     it('should handle bye matches (empty entry cells → -1)', async () => {

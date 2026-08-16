@@ -90,14 +90,14 @@ Generates an Excel workbook (ExcelJS → blob download) with:
 
 | Sheet | Contents |
 |---|---|
-| **schedule** | A time-slot × table grid showing match names, color-coded by category, with hyperlinks to the matches sheet. |
+| **schedule** | A time-slot × table grid of match cells showing the match name, color-coded by category. Each cell's *value* is the row's SN in the matches sheet, hidden behind a custom number format that renders the name — no hyperlinks, no visible IDs, so referees can shift cells around freely (cut/paste, drag) when building the final schedule; value and format move together. |
 | **matches** | A flat table of all matches. Sheet is password-protected. |
 | **Tournament Info** | Summary of tournament name, tables, start time, and category configurations. |
 | **entries_{ShortName}** | Per-category listing of all entries. |
 
 ### 8. Import: Final Schedule
 
-After manually editing the draft schedule Excel, the user re-imports it. The browser reads the `.xlsx` (ExcelJS), follows hyperlinks from the schedule grid to the matches sheet, extracts match metadata, and merges date/time/table assignments back into the tournament state.
+After manually editing the draft schedule Excel, the user re-imports it. The browser reads the `.xlsx` (ExcelJS), resolves each schedule-grid cell's SN value to its matches-sheet row (hyperlinks are still honored in files from older exports), extracts match metadata, and merges date/time/table assignments back into the tournament state.
 
 ### 9. Export: Scoresheet with Template
 

@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ExcelJS from 'exceljs'
+import JSZip from 'jszip'
 import {
   createDraftScheduleWorkbook,
+  workbookToBuffer,
   matchName,
   generateCategoryGroupColorMap
 } from '../draftScheduleWorkbook'
@@ -141,14 +143,14 @@ describe('createDraftScheduleWorkbook', () => {
       expect((dt1 as Date).toISOString()).toBe('2025-03-22T09:30:00.000Z')
     })
 
-    it('should write match display text and hyperlinks in match cells', () => {
+    it('should hide the SN as the cell value, showing the name via number format', () => {
       const { wb } = buildScheduleWorkbook()
       const ws = wb.getWorksheet('schedule')!
-      // Slot 0, T1: MS Grp1 (group 0)
+      // Slot 0, T1: MS Grp1 (group 0), first match → SN 1 as hidden value
       const cell = ws.getCell(2, 2)
-      const val = cell.value as { text: string; hyperlink: string }
-      expect(val.text).toBe('MS Grp1')
-      expect(val.hyperlink).toMatch(/^matches!A\d+$/)
+      expect(cell.value).toBe(1)
+      expect(cell.numFmt).toBe('"MS Grp1"')
+      expect(cell.alignment?.horizontal).toBe('center')
     })
 
     it('should color-code match cells with valid #RRGGBB fills', () => {
@@ -393,6 +395,41 @@ describe('createDraftScheduleWorkbook', () => {
       const wm = wb2.getWorksheet('matches')!
       expect(wm.getCell(1, 1).value).toBe('SN')
       expect(wm.getCell(2, 2).value).toBe('MS')
+    })
+  })
+
+  describe('workbookToBuffer schedule cells', () => {
+    it('should emit SN-valued cells with the name in the number format, no hyperlinks', async () => {
+      const { wb } = buildScheduleWorkbook()
+      const buffer = await workbookToBuffer(wb)
+
+      const zip = await JSZip.loadAsync(buffer)
+      const sheet = await zip.file('xl/worksheets/sheet1.xml')!.async('string')
+
+      // Referees shift cells around to build the final schedule — no
+      // hyperlink machinery anywhere in the schedule sheet, and the value
+      // is the bare SN
+      expect(sheet).not.toContain('<hyperlink')
+      expect(sheet).toContain('<v>1</v>')
+      const rels = await zip.file('xl/worksheets/_rels/sheet1.xml.rels')?.async('string')
+      if (rels) {
+        expect(rels).not.toContain('relationships/hyperlink')
+      }
+
+      // The display name lives in styles.xml as a custom number format
+      const styles = await zip.file('xl/styles.xml')!.async('string')
+      expect(styles).toContain('MS Grp1')
+
+      // …and the import round-trip still resolves every cell
+      const { importFinalScheduleFromBuffer } = await import(
+        '../../domain/importFinalSchedule'
+      )
+      const imported = await importFinalScheduleFromBuffer(buffer)
+      const groupMatches = Object.values(imported.categoriesGroupsMap)
+        .flatMap((groups) => groups)
+        .flatMap((group) => group.rounds)
+        .flat()
+      expect(groupMatches.length).toBe(24)
     })
   })
 

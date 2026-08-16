@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed — schedule cells: hidden SN value, match name via number format
+- **Why**: referees edit the draft schedule by shifting cells around (cut/paste, drag) into the final schedule for import. Each cell's identity is its row's `SN` in the `matches` sheet — previously carried by hyperlinks (broken by ExcelJS: see below) and then by a visible `#SN` text suffix (rejected as clutter). Now the SN is the cell's **value**, and a custom number format (a quoted literal renders verbatim) displays the match name — the grid looks exactly like before, with no visible IDs, no hyperlinks, and no notes. Cut/paste moves value and format together, so identity travels with the cell through any shuffle; the only trace is the formula bar showing the SN. Paste-special-values degrades visibly (cell shows the raw SN) and still imports.
+- Match cells are horizontally centered (alignment rides in the same cell style, so it travels with cut/paste too).
+- `importFinalScheduleFromBuffer` resolves cells by their numeric SN value; legacy hyperlink files (both the ExcelJS-broken form and Excel-resaved `location`-only links) still import. A test simulates the referee workflow end-to-end (cut B2, paste at another slot/table, re-import) and asserts the match lands on the new table and time.
+- **Also fixed — the hyperlink bug that started this**: ExcelJS writes internal `matches!A5` hyperlinks with a bogus `TargetMode="External"` relationship; Excel follows it instead of the `location` attribute and tries to open a nonexistent file — the source of "Cannot open the specified file" on every schedule cell. `workbookToBuffer` now heals any written zip via `fixInternalHyperlinks` (`shared/excel/internalHyperlinks.ts`, jszip — kept as a guard for other export paths, e.g. scoresheets cloned from user templates that may contain links). External http(s) links untouched.
+- 287 tests green, `vue-tsc` clean; new tests cover the SN-value format (value + numFmt in the XML), legacy import paths, and the simulated referee move.
+
 ## [1.1.0] - 2026-08-04
 
 ### Added — Material 3 redesign

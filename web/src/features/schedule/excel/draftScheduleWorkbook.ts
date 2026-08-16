@@ -2,8 +2,9 @@
  * Port of endpoint/schedule/internal/draft_schedule.go — `CreateDraftSchedule`
  * and all `populate*` functions. Builds an ExcelJS Workbook with sheets:
  *
- * - `schedule` — time-slot × table grid with color-coded match cells and
- *   internal hyperlinks to the `matches` sheet.
+ * - `schedule` — time-slot × table grid with color-coded match cells. Each
+ *   cell's value is the matches-sheet SN, hidden behind a custom number
+ *   format that renders the match name.
  * - `matches` — one row per match (SN, Category, Round, Group, KO Round,
  *   Match, Date/Time, Table, EntryID1, EntryID2). Sheet-protected with the
  *   hardcoded password.
@@ -16,9 +17,13 @@
  * - No "Sheet1" to delete (ExcelJS starts with zero worksheets).
  * - ARGB colors: ExcelJS uses 8-digit ARGB; Go's `#RRGGBB` → `'FF' + hex`.
  * - `Match.Name()` display text ported faithfully.
+ * - ExcelJS writes internal hyperlinks with a bogus External relationship
+ *   (Excel: "Cannot open the specified file"); `workbookToBuffer` heals the
+ *   buffer via `fixInternalHyperlinks` — see shared/excel/internalHyperlinks.
  */
 
 import ExcelJS from 'exceljs'
+import { fixInternalHyperlinks } from '@/shared/excel/internalHyperlinks'
 import type { Tournament, Player } from '@/shared/model'
 import { type Schedule, type ScheduledMatch, maxTableCount } from '../domain/scheduleMatches'
 import { generateColors, ColorMode } from './color'
@@ -97,12 +102,17 @@ function dateTimeStyle(): Partial<ExcelJS.Style> {
   }
 }
 
-function matchStyle(hexColor: string): Partial<ExcelJS.Style> {
+function matchStyle(hexColor: string, displayName: string): Partial<ExcelJS.Style> {
   // hexColor is "#RRGGBB"; ExcelJS needs "FFRRGGBB" (ARGB with alpha)
   const argb = 'FF' + hexColor.substring(1)
   return {
+    // A quoted literal in a format code renders verbatim, whatever the
+    // value — so the grid shows the display name while the cell's value
+    // stays the numeric SN. `"` inside a literal is escaped by doubling.
+    numFmt: `"${displayName.replace(/"/g, '""')}"`,
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb } },
-    border: BLACK_BORDER
+    border: BLACK_BORDER,
+    alignment: { horizontal: 'center' }
   }
 }
 
@@ -164,7 +174,8 @@ function populateSchedule(
       if (match === null) return
 
       // Matches sheet row
-      wm.getCell(matchesRow, 1).value = sn
+      const matchSN = sn
+      wm.getCell(matchesRow, 1).value = matchSN
       sn++
       wm.getCell(matchesRow, 2).value = match.categoryShortName
       if (match.groupIdx >= 0) {
@@ -185,13 +196,14 @@ function populateSchedule(
       }
       matchesRow++
 
-      // Schedule cell with hyperlink — link to the row just written
-      const displayText = matchName(match)
-      const matchLink = `${MATCHES_SHEET}!A${matchesRow - 1}`
+      // Schedule cell — the SN just written to the matches sheet is the
+      // value; the display name renders through the number format. Referees
+      // build the final schedule by shifting cells around: cut/paste moves
+      // value and format together, so the identity travels with the cell.
       const matchCell = ws.getCell(slotIdx + 2, tableIdx + 2)
-      matchCell.value = { text: displayText, hyperlink: matchLink }
+      matchCell.value = matchSN
       Object.assign(matchCell, {
-        style: matchStyle(colorMap.get(match.categoryShortName) ?? '#FFFFFF')
+        style: matchStyle(colorMap.get(match.categoryShortName) ?? '#FFFFFF', matchName(match))
       })
     })
   })
@@ -407,5 +419,5 @@ export function createDraftScheduleWorkbook(
  */
 export async function workbookToBuffer(wb: ExcelJS.Workbook): Promise<Uint8Array> {
   const buffer = await wb.xlsx.writeBuffer()
-  return new Uint8Array(buffer)
+  return fixInternalHyperlinks(new Uint8Array(buffer))
 }

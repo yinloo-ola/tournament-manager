@@ -2,9 +2,10 @@
  * Port of endpoint/schedule/internal/final_schedule.go — `ImportFinalSchedule` +
  * `getMatchFromCellAddr` + `formCategoriesGroupsMap` + `formCategoriesKnockoutRoundsMap`.
  *
- * Reads the user-edited `.xlsx` via ExcelJS, detects hyperlinks in the
- * schedule grid pointing to the matches sheet, extracts match metadata, and
- * reconstructs `Record<string, Group[]>` and `Record<string, KnockoutRound[]>`.
+ * Reads the user-edited `.xlsx` via ExcelJS, identifies the match behind
+ * each schedule-grid cell (by its SN value, or legacy hyperlinks in files
+ * from older exports), extracts match metadata, and reconstructs
+ * `Record<string, Group[]>` and `Record<string, KnockoutRound[]>`.
  *
  * The existing `calculator/schedule.ts importFinalSchedule()` merges these maps
  * into the tournament — that merge logic is reused unchanged.
@@ -16,13 +17,18 @@
  *   no need for `ExcelDateToTime` conversion (unlike Go's `ParseFloat` approach).
  * - Cell-address parsing uses `splitCellName` from `shared/excel/address.ts`.
  * - Empty int cells default to 0, then `idx - 1 = -1 = EntryEmptyIdx` (bye matches).
+ * - ExcelJS's reader drops internal `location` hyperlinks (it only maps ones
+ *   with an `r:id`), so schedule links are additionally scraped from the zip
+ *   via `readSheetHyperlinks` — see shared/excel/internalHyperlinks.
  */
 
 import ExcelJS from 'exceljs'
 import type { Group, KnockoutRound, Match } from '@/shared/model'
 import { splitCellName } from '@/shared/excel/address'
+import { readSheetHyperlinks } from '@/shared/excel/internalHyperlinks'
 
 const SCHEDULE_SHEET = 'schedule'
+const MATCHES_SHEET = 'matches'
 
 export interface ImportedSchedule {
   categoriesGroupsMap: Record<string, Group[]>
@@ -50,16 +56,8 @@ function getCellStr(ws: ExcelJS.Worksheet, row: number, col: number): string {
 // Match extraction — port of getMatchFromCellAddr
 // ---------------------------------------------------------------------------
 
-/**
- * Follow a hyperlink like "matches!A5" to the matches sheet and extract
- * the match metadata at that row.
- *
- * Port of Go's `getMatchFromCellAddr(cellAddr string, file *excelize.File)`.
- */
-function getMatchFromHyperlink(
-  hyperlink: string,
-  wb: ExcelJS.Workbook
-): {
+/** Match metadata read from one row of the matches sheet. */
+interface MatchMeta {
   category: string
   roundIdx: number
   groupIdx: number
@@ -67,24 +65,9 @@ function getMatchFromHyperlink(
   entry2Idx: number
   round: number
   matchIdx: number
-} | null {
-  // Split "matches!A5" → sheetName="matches", cellAddr="A5"
-  const exclamationIdx = hyperlink.indexOf('!')
-  if (exclamationIdx === -1) return null
-  const sheetName = hyperlink.substring(0, exclamationIdx)
-  const cellAddr = hyperlink.substring(exclamationIdx + 1)
+}
 
-  const wm = wb.getWorksheet(sheetName)
-  if (!wm) return null
-
-  let row: number
-  try {
-    const addr = splitCellName(cellAddr)
-    row = addr.row
-  } catch {
-    return null
-  }
-
+function getMatchFromRow(wm: ExcelJS.Worksheet, row: number): MatchMeta {
   // Read columns: B=Category, C=Round, D=Group, E=KO Round, F=KO Match,
   //               I=EntryID1, J=EntryID2
   const category = getCellStr(wm, row, 2) // B
@@ -104,6 +87,49 @@ function getMatchFromHyperlink(
     round: koRound,
     matchIdx: koMatch
   }
+}
+
+/**
+ * Follow a hyperlink like "matches!A5" to the matches sheet and extract
+ * the match metadata at that row.
+ *
+ * Port of Go's `getMatchFromCellAddr(cellAddr string, file *excelize.File)`.
+ * Legacy identity: kept for files exported before cells carried "#SN".
+ */
+function getMatchFromHyperlink(hyperlink: string, wb: ExcelJS.Workbook): MatchMeta | null {
+  // Split "matches!A5" → sheetName="matches", cellAddr="A5"
+  const exclamationIdx = hyperlink.indexOf('!')
+  if (exclamationIdx === -1) return null
+  const sheetName = hyperlink.substring(0, exclamationIdx)
+  const cellAddr = hyperlink.substring(exclamationIdx + 1)
+
+  const wm = wb.getWorksheet(sheetName)
+  if (!wm) return null
+
+  let row: number
+  try {
+    const addr = splitCellName(cellAddr)
+    row = addr.row
+  } catch {
+    return null
+  }
+
+  return getMatchFromRow(wm, row)
+}
+
+/**
+ * Resolve an SN to the matches-sheet row carrying that SN in column A.
+ * The exporter writes the SN as every schedule cell's *value* (the match
+ * name renders through the number format), so the identity survives any
+ * cell move — which is how referees build the final schedule.
+ */
+function getMatchBySN(wb: ExcelJS.Workbook, sn: number): MatchMeta | null {
+  const wm = wb.getWorksheet(MATCHES_SHEET)
+  if (!wm) return null
+  for (let row = 2; row <= wm.rowCount; row++) {
+    if (getCellInt(wm, row, 1) === sn) return getMatchFromRow(wm, row)
+  }
+  return null
 }
 
 // ---------------------------------------------------------------------------
@@ -260,6 +286,10 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
     throw new Error(`sheet ${SCHEDULE_SHEET} does not exist`)
   }
 
+  // Internal links written as `location` (this app's export, and Excel's own
+  // re-save form) are invisible to ExcelJS's reader — scrape them from the zip.
+  const hyperlinkByAddress = await readSheetHyperlinks(buffer, SCHEDULE_SHEET)
+
   // Build header map from row 1 (column index → table name)
   const headerRow = ws.getRow(1)
   const headerMap: Map<number, string> = new Map()
@@ -293,18 +323,30 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
 
     if (!dateTime) return // skip non-datetime rows
 
-    // Scan other columns for hyperlinks
+    // Scan other columns for match cells
     row.eachCell((cell, colNumber) => {
       if (colNumber === 1) return // skip datetime column
       if (cell.value === null) return
 
-      // Check for hyperlink cell value: { text, hyperlink }
+      // Cell identity, most robust first: the SN as the cell's numeric
+      // value (current exporter — the name is just the number format),
+      // then legacy hyperlinks — via the cell value on files ExcelJS wrote
+      // itself, or the scraped map for location-only links (ExcelJS's
+      // reader drops them)
+      let extracted: MatchMeta | null = null
       if (typeof cell.value === 'object' && 'hyperlink' in cell.value) {
-        const hyperlink = (cell.value as { hyperlink: string }).hyperlink
+        extracted = getMatchFromHyperlink(
+          (cell.value as { hyperlink: string }).hyperlink,
+          wb
+        )
+      } else if (typeof cell.value === 'number' && Number.isInteger(cell.value) && cell.value > 0) {
+        extracted = getMatchBySN(wb, cell.value)
+      } else {
+        const link = hyperlinkByAddress.get(cell.address)
+        if (link) extracted = getMatchFromHyperlink(link, wb)
+      }
+      if (extracted) {
         const table = headerMap.get(colNumber) || ''
-
-        const extracted = getMatchFromHyperlink(hyperlink, wb)
-        if (!extracted) return
 
         matches.push({
           categoryShortName: extracted.category,
