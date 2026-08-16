@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import ExcelJS from 'exceljs'
-import { importFinalScheduleFromBuffer } from '../importFinalSchedule'
+import { importFinalScheduleFromBuffer, type ImportedSchedule } from '../importFinalSchedule'
 import { createDraftScheduleWorkbook, workbookToBuffer } from '../../excel/draftScheduleWorkbook'
 import { scheduleMatches } from '../scheduleMatches'
 import { generateRoundsForTournament } from '@/features/matches/domain/generateRounds'
@@ -85,6 +85,15 @@ async function generateDraftBuffer(): Promise<{ buffer: Uint8Array; tournament: 
   return { buffer, tournament }
 }
 
+/** Find an imported group match by its entry pairing (unique per group). */
+function findGroupMatch(result: ImportedSchedule, entry1Idx: number, entry2Idx: number) {
+  return Object.values(result.categoriesGroupsMap)
+    .flatMap((groups) => groups)
+    .flatMap((group) => group.rounds)
+    .flat()
+    .find((m) => m.entry1Idx === entry1Idx && m.entry2Idx === entry2Idx)
+}
+
 describe('importFinalScheduleFromBuffer', () => {
   describe('round-trip (TS export → TS import)', () => {
     it('should extract matches from schedule hyperlinks', async () => {
@@ -115,7 +124,7 @@ describe('importFinalScheduleFromBuffer', () => {
     })
 
     it('should assemble group matches into per-category groups with correct structure', async () => {
-      const { buffer, tournament } = await generateDraftBuffer()
+      const { buffer } = await generateDraftBuffer()
       const result = await importFinalScheduleFromBuffer(buffer)
 
       // MS has 2 groups
@@ -185,15 +194,19 @@ describe('importFinalScheduleFromBuffer', () => {
     it('should survive the referee moving a cell to another slot and table', async () => {
       const { buffer } = await generateDraftBuffer()
 
-      // Simulate cut/paste: move the B2 match cell (T1, slot 0) to E5 (T4,
-      // slot 3) — cut/paste carries the cell's value and format together
+      // Simulate cut/paste: move the B2 match cell (T1, slot 0) into the
+      // empty grid cell at D8 (T3, slot 6 → 11:00) — cut/paste carries the
+      // cell's value and format together. Pasting onto an occupied cell
+      // would displace that match, which the missing-match check catches.
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const ws = wb.getWorksheet('schedule')!
       const source = ws.getCell('B2')
       expect(source.value).toBe(1)
       expect(source.numFmt).toBe('"MS Grp1"')
-      const dest = ws.getCell('E5')
+      const dest = ws.getCell('D8')
+      expect(dest.value).toBeNull()
+      const slotTime = ws.getCell('A8').value as Date
       dest.value = source.value
       dest.style = source.style
       source.value = null
@@ -202,15 +215,11 @@ describe('importFinalScheduleFromBuffer', () => {
       const result = await importFinalScheduleFromBuffer(edited)
 
       // Group 1's (0,1) pairing occurs exactly once — it must now sit on
-      // T4 at slot 3's time (10:30), not on T1 at 09:00
-      const moved = Object.values(result.categoriesGroupsMap)
-        .flatMap((groups) => groups)
-        .flatMap((group) => group.rounds)
-        .flat()
-        .find((m) => m.entry1Idx === 0 && m.entry2Idx === 1)
+      // T3 at row 8's slot time, not on T1 at 09:00
+      const moved = findGroupMatch(result, 0, 1)
       expect(moved).toBeDefined()
-      expect(moved!.table).toBe('T4')
-      expect(moved!.datetime).toBe('2025-03-22T10:30:00.000Z')
+      expect(moved!.table).toBe('T3')
+      expect(moved!.datetime).toBe(slotTime.toISOString())
     })
 
     it('should handle bye matches (empty entry cells → -1)', async () => {
@@ -293,6 +302,169 @@ describe('importFinalScheduleFromBuffer', () => {
       await expect(importFinalScheduleFromBuffer(buffer)).rejects.toThrow(
         'sheet schedule does not exist'
       )
+    })
+  })
+
+  describe('integrity checks', () => {
+    /** Minimal workbook: matches sheet rows + schedule grid cells, both SN-valued. */
+    function buildIntegrityFixture(
+      matchRows: { sn: number; cat?: string; round?: number; group?: number }[],
+      gridRows: { time: Date; cells: (number | null)[] }[]
+    ): ExcelJS.Workbook {
+      const wb = new ExcelJS.Workbook()
+      const ws = wb.addWorksheet('schedule')
+      const wm = wb.addWorksheet('matches')
+
+      headers.forEach((h, i) => (wm.getCell(1, i + 1).value = h))
+      matchRows.forEach((m, i) => {
+        wm.getCell(i + 2, 1).value = m.sn
+        wm.getCell(i + 2, 2).value = m.cat ?? 'MS'
+        wm.getCell(i + 2, 3).value = m.round ?? 1
+        wm.getCell(i + 2, 4).value = m.group ?? 1
+      })
+
+      ws.getCell(1, 1).value = 'Date/Time'
+      const tableCount = Math.max(...gridRows.map((row) => row.cells.length), 1)
+      for (let c = 1; c <= tableCount; c++) {
+        ws.getCell(1, c + 1).value = `T${c}`
+      }
+      gridRows.forEach((row, r) => {
+        ws.getCell(r + 2, 1).value = row.time
+        row.cells.forEach((sn, c) => {
+          if (sn !== null) ws.getCell(r + 2, c + 2).value = sn
+        })
+      })
+      return wb
+    }
+
+    async function fixtureBuffer(wb: ExcelJS.Workbook): Promise<Uint8Array> {
+      return new Uint8Array(await wb.xlsx.writeBuffer())
+    }
+
+    const T9 = () => new Date('2025-03-22T09:00:00Z')
+    const T930 = () => new Date('2025-03-22T09:30:00Z')
+
+    it('should reject a match appearing in two cells', async () => {
+      const T10 = () => new Date('2025-03-22T10:00:00Z')
+      const T1030 = () => new Date('2025-03-22T10:30:00Z')
+      const T11 = () => new Date('2025-03-22T11:00:00Z')
+      const T1130 = () => new Date('2025-03-22T11:30:00Z')
+      const wb = buildIntegrityFixture(
+        [{ sn: 3 }, { sn: 4 }, { sn: 5 }],
+        [
+          { time: T9(), cells: [3] },
+          { time: T930(), cells: [3] },
+          { time: T10(), cells: [4] },
+          { time: T1030(), cells: [4] },
+          { time: T11(), cells: [5] },
+          { time: T1130(), cells: [5] }
+        ]
+      )
+      await expect(importFinalScheduleFromBuffer(await fixtureBuffer(wb))).rejects.toThrow(
+        /Matches 3, 4 and 5 appear in more than one cell/
+      )
+    })
+
+    it('should reject matches missing from the grid', async () => {
+      const wb = buildIntegrityFixture(
+        [
+          { sn: 1 },
+          { sn: 2 }
+        ],
+        [{ time: T9(), cells: [1] }]
+      )
+      await expect(importFinalScheduleFromBuffer(await fixtureBuffer(wb))).rejects.toThrow(
+        /Match 2 has no cell in the schedule/
+      )
+    })
+
+    it('should reject two matches on the same table at the same time', async () => {
+      const wb = buildIntegrityFixture(
+        [
+          { sn: 3 },
+          { sn: 9 }
+        ],
+        [
+          { time: T9(), cells: [3] },
+          { time: T9(), cells: [9] }
+        ]
+      )
+      await expect(importFinalScheduleFromBuffer(await fixtureBuffer(wb))).rejects.toThrow(
+        /Table T1 is double-booked at 2025-03-22 09:00 \(matches 3 and 9\)/
+      )
+    })
+
+    it('should report every problem in one message', async () => {
+      const T10 = () => new Date('2025-03-22T10:00:00Z')
+      const wb = buildIntegrityFixture(
+        [
+          { sn: 1 },
+          { sn: 2 },
+          { sn: 4 },
+          { sn: 5 }
+        ],
+        [
+          { time: T9(), cells: [1] },
+          { time: T930(), cells: [1] },
+          // SN 4 and SN 5 double-book T1 at 10:00; SN 2 is nowhere
+          { time: T10(), cells: [4] },
+          { time: T10(), cells: [5] }
+        ]
+      )
+      await expect(importFinalScheduleFromBuffer(await fixtureBuffer(wb))).rejects.toThrow(
+        /more than one cell.*Match 2 has no cell.*double-booked/s
+      )
+    })
+
+    it('should accept an adjusted slot time', async () => {
+      const { buffer } = await generateDraftBuffer()
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      wb.getWorksheet('schedule')!.getCell('A2').value = new Date('2025-03-22T10:15:00Z')
+      const edited = new Uint8Array(await wb.xlsx.writeBuffer())
+
+      const result = await importFinalScheduleFromBuffer(edited)
+      const first = result.categoriesGroupsMap.MS[0].rounds[0][0]
+      expect(first.datetime).toBe('2025-03-22T10:15:00.000Z')
+    })
+
+    it('should accept a slot row appended by the referee', async () => {
+      const { buffer } = await generateDraftBuffer()
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.getWorksheet('schedule')!
+
+      // Cut the B2 match (SN 1) into a brand-new bottom row at 14:00
+      const bottom = ws.rowCount + 1
+      ws.getCell(bottom, 1).value = new Date('2025-03-22T14:00:00Z')
+      ws.getCell(bottom, 2).value = ws.getCell('B2').value
+      ws.getCell('B2').value = null
+      const edited = new Uint8Array(await wb.xlsx.writeBuffer())
+
+      const result = await importFinalScheduleFromBuffer(edited)
+      const moved = findGroupMatch(result, 0, 1)
+      expect(moved!.datetime).toBe('2025-03-22T14:00:00.000Z')
+      expect(moved!.table).toBe('T1')
+    })
+
+    it('should accept a slot row inserted mid-grid by the referee', async () => {
+      const { buffer } = await generateDraftBuffer()
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      const ws = wb.getWorksheet('schedule')!
+
+      // Insert a row at position 3 (shifting later slots down), give it an
+      // earlier time, and move the B2 match (SN 1) into it
+      ws.insertRow(3)
+      ws.getCell(3, 1).value = new Date('2025-03-22T08:00:00Z')
+      ws.getCell(3, 2).value = ws.getCell('B2').value
+      ws.getCell('B2').value = null
+      const edited = new Uint8Array(await wb.xlsx.writeBuffer())
+
+      const result = await importFinalScheduleFromBuffer(edited)
+      const moved = findGroupMatch(result, 0, 1)
+      expect(moved!.datetime).toBe('2025-03-22T08:00:00.000Z')
+      expect(moved!.table).toBe('T1')
     })
   })
 

@@ -135,9 +135,13 @@ function populateSchedule(
   for (let i = 0; i < tableCount; i++) {
     ws.getCell(1, i + 2).value = `T${i + 1}`
   }
-  // Apply header style to schedule header row
+  // Apply header style to schedule header row (centered, matching the cells)
+  const centeredHdrStyle: Partial<ExcelJS.Style> = {
+    ...hdrStyle,
+    alignment: { horizontal: 'center' }
+  }
   for (let c = 1; c <= tableCount + 1; c++) {
-    Object.assign(ws.getCell(1, c), { style: hdrStyle })
+    Object.assign(ws.getCell(1, c), { style: centeredHdrStyle })
   }
 
   // --- Matches header ---
@@ -207,6 +211,39 @@ function populateSchedule(
       })
     })
   })
+
+  // Presentation: freeze header row + datetime column, readable table
+  // column widths, and borders on empty grid cells so the schedule reads
+  // as a complete matrix with obvious free slots
+  ws.views = [{ state: 'frozen', xSplit: 1, ySplit: 1 }]
+  for (let c = 2; c <= tableCount + 1; c++) {
+    ws.getColumn(c).width = 14
+  }
+
+  // Typing over a match cell replaces its SN and silently breaks the
+  // final-schedule import — a custom rule of constant FALSE rejects every
+  // typed entry, numbers included (blank clears stay allowed). Cut/paste
+  // (how referees assemble the final schedule) bypasses validation, which
+  // sheet protection would forbid outright.
+  const matchGridValidation: ExcelJS.DataValidation = {
+    type: 'custom',
+    formulae: ['FALSE'],
+    allowBlank: true,
+    showErrorMessage: true,
+    errorTitle: 'Match cells: move, don\'t retype',
+    error:
+      'Match cells can\'t be edited - move them with cut & paste (Ctrl+X / Ctrl+V). ' +
+      'Editing breaks the final-schedule import.'
+  }
+  for (let r = 2; r <= schedule.timeSlots.length + 1; r++) {
+    for (let c = 2; c <= tableCount + 1; c++) {
+      const cell = ws.getCell(r, c)
+      cell.dataValidation = matchGridValidation
+      if (cell.value === null) {
+        Object.assign(cell, { style: { border: BLACK_BORDER } })
+      }
+    }
+  }
 
   // Column widths
   ws.getColumn(1).width = 16

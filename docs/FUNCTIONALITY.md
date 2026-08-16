@@ -90,14 +90,14 @@ Generates an Excel workbook (ExcelJS → blob download) with:
 
 | Sheet | Contents |
 |---|---|
-| **schedule** | A time-slot × table grid of match cells showing the match name, color-coded by category. Each cell's *value* is the row's SN in the matches sheet, hidden behind a custom number format that renders the name — no hyperlinks, no visible IDs, so referees can shift cells around freely (cut/paste, drag) when building the final schedule; value and format move together. |
+| **schedule** | A time-slot × table grid of match cells showing the match name, color-coded by category. The header row and datetime column are frozen for scrolling; table columns are fixed-width; every grid cell (empty ones included) is bordered so free slots are obvious; the header row is centered. Each cell's *value* is the row's SN in the matches sheet, hidden behind a custom number format that renders the name — no hyperlinks, no visible IDs, so referees can shift cells around freely (cut/paste, drag) when building the final schedule; value and format move together. Typing over a grid cell — text or number — is rejected by data validation (constant-FALSE custom rule with an explanatory message), so the only way to rearrange cells is cut/paste or drag; clearing a cell stays allowed. Sheet protection was ruled out because Excel forbids moving cells on a protected sheet. Datetimes and headers stay freely editable. |
 | **matches** | A flat table of all matches. Sheet is password-protected. |
 | **Tournament Info** | Summary of tournament name, tables, start time, and category configurations. |
 | **entries_{ShortName}** | Per-category listing of all entries. |
 
 ### 8. Import: Final Schedule
 
-After manually editing the draft schedule Excel, the user re-imports it. The browser reads the `.xlsx` (ExcelJS), resolves each schedule-grid cell's SN value to its matches-sheet row (hyperlinks are still honored in files from older exports), extracts match metadata, and merges date/time/table assignments back into the tournament state.
+After manually editing the draft schedule Excel, the user re-imports it. The browser reads the `.xlsx` (ExcelJS), resolves each schedule-grid cell's SN value to its matches-sheet row (hyperlinks are still honored in files from older exports), extracts match metadata, and merges date/time/table assignments back into the tournament state. Before merging, the import validates the schedule and fails with one plain-language error listing every problem: matches appearing in two cells (copied instead of cut), matches with no cell at all, and two matches booked on the same table at the same time (e.g. a mistyped new slot row). Adjusted slot times and slot rows the referee added or inserted import normally.
 
 ### 9. Export: Scoresheet with Template
 

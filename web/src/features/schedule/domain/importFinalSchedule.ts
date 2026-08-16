@@ -58,6 +58,7 @@ function getCellStr(ws: ExcelJS.Worksheet, row: number, col: number): string {
 
 /** Match metadata read from one row of the matches sheet. */
 interface MatchMeta {
+  sn: number
   category: string
   roundIdx: number
   groupIdx: number
@@ -68,8 +69,9 @@ interface MatchMeta {
 }
 
 function getMatchFromRow(wm: ExcelJS.Worksheet, row: number): MatchMeta {
-  // Read columns: B=Category, C=Round, D=Group, E=KO Round, F=KO Match,
-  //               I=EntryID1, J=EntryID2
+  // Read columns: A=SN, B=Category, C=Round, D=Group, E=KO Round,
+  //               F=KO Match, I=EntryID1, J=EntryID2
+  const sn = getCellInt(wm, row, 1) // A
   const category = getCellStr(wm, row, 2) // B
   const round = getCellInt(wm, row, 3) // C
   const grp = getCellInt(wm, row, 4) // D
@@ -79,6 +81,7 @@ function getMatchFromRow(wm: ExcelJS.Worksheet, row: number): MatchMeta {
   const entry2Idx = getCellInt(wm, row, 10) // J
 
   return {
+    sn,
     category,
     roundIdx: round - 1,
     groupIdx: grp - 1,
@@ -137,6 +140,7 @@ function getMatchBySN(wb: ExcelJS.Workbook, sn: number): MatchMeta | null {
 // ---------------------------------------------------------------------------
 
 interface ExtractedMatch {
+  sn: number
   categoryShortName: string
   roundIdx: number
   groupIdx: number
@@ -266,6 +270,27 @@ function formCategoriesKnockoutRoundsMap(
 }
 
 // ---------------------------------------------------------------------------
+// Integrity-check helpers
+// ---------------------------------------------------------------------------
+
+/** Deterministic UTC "YYYY-MM-DD HH:mm" for error messages. */
+function formatDateTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return (
+    `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ` +
+    `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`
+  )
+}
+
+/** "Match 5" / "Matches 5 and 17" / "Matches 5, 17 and 23". */
+function nameSNs(sns: number[]): string {
+  const sorted = [...sns].sort((a, b) => a - b)
+  if (sorted.length === 1) return `Match ${sorted[0]}`
+  if (sorted.length === 2) return `Matches ${sorted[0]} and ${sorted[1]}`
+  return `Matches ${sorted.slice(0, -1).join(', ')} and ${sorted[sorted.length - 1]}`
+}
+
+// ---------------------------------------------------------------------------
 // Main import function — port of ImportFinalSchedule
 // ---------------------------------------------------------------------------
 
@@ -349,6 +374,7 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
         const table = headerMap.get(colNumber) || ''
 
         matches.push({
+          sn: extracted.sn,
           categoryShortName: extracted.category,
           roundIdx: extracted.roundIdx,
           groupIdx: extracted.groupIdx,
@@ -363,6 +389,68 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
       }
     })
   })
+
+  // Integrity checks — a damaged schedule must fail loudly here, because
+  // the positional merge downstream would silently corrupt match times
+  // (duplicates), keep stale draft times (missing group matches), or drop
+  // matches outright (missing knockout matches)
+  const problems: string[] = []
+
+  const cellCountBySN = new Map<number, number>()
+  for (const match of matches) {
+    cellCountBySN.set(match.sn, (cellCountBySN.get(match.sn) ?? 0) + 1)
+  }
+  const duplicates = [...cellCountBySN.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([sn]) => sn)
+  if (duplicates.length > 0) {
+    const verb = duplicates.length === 1 ? 'appears' : 'appear'
+    problems.push(
+      `${nameSNs(duplicates)} ${verb} in more than one cell. ` +
+        'Copying a cell duplicates it - cut (Ctrl+X) moves it. Remove the extra copies.'
+    )
+  }
+
+  const expectedSNs: number[] = []
+  const wm = wb.getWorksheet(MATCHES_SHEET)
+  if (wm) {
+    for (let row = 2; row <= wm.rowCount; row++) {
+      const sn = getCellInt(wm, row, 1)
+      if (sn > 0) expectedSNs.push(sn)
+    }
+  }
+  const missing = expectedSNs.filter((sn) => !cellCountBySN.has(sn))
+  if (missing.length > 0) {
+    const verb = missing.length === 1 ? 'has' : 'have'
+    problems.push(
+      `${nameSNs(missing)} ${verb} no cell in the schedule - ` +
+        'every match needs a slot before importing.'
+    )
+  }
+
+  const booked = new Map<string, { table: string; time: Date; sns: number[] }>()
+  for (const match of matches) {
+    if (!match.table) continue
+    const key = `${match.table}|${match.dateTime.getTime()}`
+    const entry = booked.get(key) ?? { table: match.table, time: match.dateTime, sns: [] }
+    entry.sns.push(match.sn)
+    booked.set(key, entry)
+  }
+  for (const booking of booked.values()) {
+    if (booking.sns.length > 1) {
+      problems.push(
+        `Table ${booking.table} is double-booked at ${formatDateTime(booking.time)} ` +
+          `(${nameSNs(booking.sns).toLowerCase()}).`
+      )
+    }
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      `This schedule can't be imported - ${problems.length} ` +
+        `problem${problems.length === 1 ? '' : 's'} found. ${problems.join(' ')}`
+    )
+  }
 
   // Split into group and knockout matches
   const groupMatches = matches.filter((m) => m.groupIdx >= 0)

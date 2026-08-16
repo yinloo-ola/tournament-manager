@@ -153,6 +153,19 @@ describe('createDraftScheduleWorkbook', () => {
       expect(cell.alignment?.horizontal).toBe('center')
     })
 
+    it('should reject typing over the match grid via data validation', () => {
+      const { wb } = buildScheduleWorkbook()
+      const ws = wb.getWorksheet('schedule')!
+      const dv = ws.getCell(2, 2).dataValidation
+      expect(dv?.type).toBe('custom')
+      expect(dv?.formulae).toEqual(['FALSE'])
+      // empty grid cells are covered too
+      expect(ws.getCell(8, 4).dataValidation?.type).toBe('custom')
+      // datetime and header cells stay freely editable
+      expect(ws.getCell(2, 1).dataValidation).toBeUndefined()
+      expect(ws.getCell(1, 2).dataValidation).toBeUndefined()
+    })
+
     it('should color-code match cells with valid #RRGGBB fills', () => {
       const { wb } = buildScheduleWorkbook()
       const ws = wb.getWorksheet('schedule')!
@@ -174,6 +187,45 @@ describe('createDraftScheduleWorkbook', () => {
       const cell4 = ws.getCell(8, 5) // T4
       expect(cell3.value).toBeNull()
       expect(cell4.value).toBeNull()
+    })
+  })
+
+  describe('schedule sheet presentation', () => {
+    it('should freeze the header row and datetime column', () => {
+      const { wb } = buildScheduleWorkbook()
+      const ws = wb.getWorksheet('schedule')!
+      const view = ws.views[0] as ExcelJS.WorksheetViewFrozen
+      expect(view.state).toBe('frozen')
+      expect(view.xSplit).toBe(1)
+      expect(view.ySplit).toBe(1)
+    })
+
+    it('should set readable widths on table columns', () => {
+      const { wb } = buildScheduleWorkbook()
+      const ws = wb.getWorksheet('schedule')!
+      for (let c = 2; c <= 5; c++) {
+        expect(ws.getColumn(c).width).toBe(14)
+      }
+    })
+
+    it('should border empty grid cells so the grid reads as a complete matrix', () => {
+      const { wb } = buildScheduleWorkbook()
+      const ws = wb.getWorksheet('schedule')!
+      // Slot 7 (row 8) leaves T3/T4 empty
+      const empty = ws.getCell(8, 4)
+      expect(empty.value).toBeNull()
+      expect(empty.border?.top?.style).toBe('thin')
+      expect(empty.border?.bottom?.style).toBe('thin')
+      expect(empty.border?.left?.style).toBe('thin')
+      expect(empty.border?.right?.style).toBe('thin')
+      expect(empty.fill).toBeFalsy()
+    })
+
+    it('should center the header row', () => {
+      const { wb } = buildScheduleWorkbook()
+      const ws = wb.getWorksheet('schedule')!
+      expect(ws.getCell(1, 1).alignment?.horizontal).toBe('center')
+      expect(ws.getCell(1, 2).alignment?.horizontal).toBe('center')
     })
   })
 
@@ -411,6 +463,7 @@ describe('createDraftScheduleWorkbook', () => {
       // is the bare SN
       expect(sheet).not.toContain('<hyperlink')
       expect(sheet).toContain('<v>1</v>')
+      expect(sheet).toContain('<dataValidation')
       const rels = await zip.file('xl/worksheets/_rels/sheet1.xml.rels')?.async('string')
       if (rels) {
         expect(rels).not.toContain('relationships/hyperlink')
@@ -430,6 +483,21 @@ describe('createDraftScheduleWorkbook', () => {
         .flatMap((group) => group.rounds)
         .flat()
       expect(groupMatches.length).toBe(24)
+    })
+
+    it('should serialize freeze panes, table column widths, and header centering to XML', async () => {
+      const { wb } = buildScheduleWorkbook()
+      const buffer = await workbookToBuffer(wb)
+
+      const zip = await JSZip.loadAsync(buffer)
+      const sheet = await zip.file('xl/worksheets/sheet1.xml')!.async('string')
+      expect(sheet).toContain('state="frozen"')
+      expect(sheet).toContain('xSplit="1"')
+      expect(sheet).toContain('ySplit="1"')
+      expect(sheet).toMatch(/<col[^>]*width="14"/)
+
+      const styles = await zip.file('xl/styles.xml')!.async('string')
+      expect(styles).toContain('horizontal="center"')
     })
   })
 
