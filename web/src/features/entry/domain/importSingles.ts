@@ -9,7 +9,8 @@ import { ENTRIES_SHEET } from './entryLayout'
  * field order is entryType, seeding?, club?, singlesEntry, doublesEntry,
  * teamEntry. The entry-type-specific field is set; the other two are null
  * (Go has no omitempty on these fields). seeding and club are omitted when
- * zero/empty (Go pointer.OrNil + omitempty).
+ * zero/empty (Go pointer.OrNil + omitempty). managerEmail is team-only —
+ * the lineup seed v1 contract requires it on every team row.
  *
  * TournamentView.playersImported rehydrates via Entry.from(obj), which
  * Object.assigns these properties onto a new Entry instance.
@@ -18,6 +19,7 @@ export type EntryLike = {
   entryType: EntryType
   seeding?: number
   club?: string
+  managerEmail?: string
   singlesEntry?: { player: Player } | null
   doublesEntry?: { players: [Player, Player] } | null
   teamEntry?: {

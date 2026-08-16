@@ -1,4 +1,4 @@
-import { EntryType, type Player } from '@/shared/model'
+import { EntryType, MANAGER_EMAIL_SHAPE, type Player } from '@/shared/model'
 import { parseSeedingWithRow } from './parseSeeding'
 import { ENTRIES_SHEET, PLAYERS_SHEET } from './entryLayout'
 import type { EntryLike } from './importSingles'
@@ -13,7 +13,8 @@ import type { EntryLike } from './importSingles'
  * and Seeding are optional (missing trailing cells are treated as empty).
  *
  * Note: the team entries sheet layout differs from doubles — Club is at
- * column 2 and Seeding at column 3 (not 3 and 4 as in doubles).
+ * column 2, Seeding at column 3 (not 3 and 4 as in doubles), and Manager
+ * Email at column 4 (team-only, lineup seed v1 contract).
  *
  * Throws the plain-language message contract (row numbers count the header
  * as Excel row 1):
@@ -21,11 +22,15 @@ import type { EntryLike } from './importSingles'
  *  - "Row N: Team 'T' isn't in the 'players' sheet."
  *  - "Team 'T' has N players — allowed: min to max."
  *  - "Row N: Seeding 'X' isn't a whole number."
+ *  - "Row N: Manager Email is missing."
+ *  - "Row N: Manager Email 'X' isn't a valid email."
+ *  - "Manager Email 'X' is used by teams 'A' and 'B' in this file."
  *
  * The sheet-existence throws remain Go-parity internal invariants — the
  * readEntryWorkbook pre-validation normally delivers the user-facing
  * "Missing sheet …" messages before an importer runs.
  */
+
 export function importTeamEntries(
   workbook: Record<string, string[][]>,
   minPlayers: number,
@@ -72,6 +77,10 @@ export function importTeamEntries(
   }
 
   const entries: EntryLike[] = []
+  // One manager per team — emails unique within the file, compared
+  // case-insensitively (the seed contract's rule; cross-category clashes
+  // are the exporter's to refuse).
+  const teamByEmail = new Map<string, string>()
   for (let i = 1; i < entryRows.length; i++) {
     const row = entryRows[i]
     const rowNum = i + 1
@@ -107,10 +116,32 @@ export function importTeamEntries(
       )
     }
 
+    // Manager Email (column 4) — required, email-shaped, unique in this file
+    const managerEmail = (row[4] ?? '').trim()
+    if (managerEmail === '') {
+      throw new Error(`Row ${rowNum}: Manager Email is missing.`)
+    }
+    if (!MANAGER_EMAIL_SHAPE.test(managerEmail)) {
+      throw new Error(
+        `Row ${rowNum}: Manager Email '${managerEmail}' isn't a valid email.`
+      )
+    }
+    const emailKey = managerEmail.toLowerCase()
+    const otherTeam = teamByEmail.get(emailKey)
+    if (otherTeam !== undefined) {
+      // The message shows the email as this row typed it — the value the
+      // organizer is looking at — even when the clash is only in case.
+      throw new Error(
+        `Manager Email '${managerEmail}' is used by teams '${otherTeam}' and '${teamName}' in this file.`
+      )
+    }
+    teamByEmail.set(emailKey, teamName)
+
     const entry: EntryLike = {
       entryType: EntryType.Team,
       ...(seeding !== 0 ? { seeding } : {}),
       ...(club !== '' ? { club } : {}),
+      managerEmail,
       singlesEntry: null,
       doublesEntry: null,
       teamEntry: {

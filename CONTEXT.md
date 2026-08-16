@@ -19,3 +19,7 @@ _Avoid_: event type, discipline
 **Entry Template**:
 The blank workbook an organizer downloads for an event type, fills in, and uploads to import a category's entries. Never a format of play — lineup-manager's Team Match Format is a different concept, and is itself never called a template.
 _Avoid_: entry form, sample file, import sheet
+
+**Manager Email**:
+The Team Manager's address carried by a Team entry — required in the Team Entry Template, one per team, and never shared by two teams in a tournament: it becomes that manager's login in the lineup system.
+_Avoid_: contact email, manager contact

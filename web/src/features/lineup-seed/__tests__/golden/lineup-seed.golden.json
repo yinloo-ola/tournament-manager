@@ -1,4 +1,5 @@
 {
+  "seedVersion": 1,
   "tournamentName": "Lineup Seed Test Cup",
   "categories": [
     {
@@ -11,16 +12,19 @@
     {
       "id": "MT|Alpha",
       "name": "Alpha",
+      "managerEmail": "coach.alpha@club.com",
       "club": "Alpha Club"
     },
     {
       "id": "MT|Bravo",
       "name": "Bravo",
+      "managerEmail": "coach.bravo@club.com",
       "club": "Bravo Club"
     },
     {
       "id": "MT|Charlie",
-      "name": "Charlie"
+      "name": "Charlie",
+      "managerEmail": "coach.charlie@club.com"
     }
   ],
   "players": [
@@ -58,22 +62,38 @@
       "id": "MT|Alpha|MT|Bravo|2026-03-01T09:00",
       "categoryId": "MT",
       "scheduledStart": "2026-03-01T09:00",
-      "teamIds": ["MT|Alpha", "MT|Bravo"],
+      "teamIds": [
+        "MT|Alpha",
+        "MT|Bravo"
+      ],
+      "group": "Group 1",
+      "round": "Round 1",
       "table": "T1"
     },
     {
       "id": "MT|Alpha|MT|Charlie|2026-03-01T10:00",
       "categoryId": "MT",
       "scheduledStart": "2026-03-01T10:00",
-      "teamIds": ["MT|Alpha", "MT|Charlie"],
+      "teamIds": [
+        "MT|Alpha",
+        "MT|Charlie"
+      ],
+      "group": "Group 1",
+      "round": "Round 2",
       "table": "T2"
     },
     {
       "id": "MT|Bravo|MT|Charlie|2026-03-01T11:00",
       "categoryId": "MT",
       "scheduledStart": "2026-03-01T11:00",
-      "teamIds": ["MT|Bravo", "MT|Charlie"],
+      "teamIds": [
+        "MT|Bravo",
+        "MT|Charlie"
+      ],
+      "group": "Group 1",
+      "round": "Round 3",
       "table": "T1"
     }
-  ]
+  ],
+  "startDate": "2026-03-01"
 }

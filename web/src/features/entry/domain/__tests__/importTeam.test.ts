@@ -37,8 +37,8 @@ describe('importTeamEntries', () => {
         ['3', 'Carol', '36894', 'F', 'TeamA']
       ],
       entries: [
-        ['SN', 'Team', 'Club', 'Seeding'],
-        ['1', 'TeamA', 'ClubX', '5']
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'coach@clubx.com']
       ]
     }
     const entries = importTeamEntries(workbook, 3, 3)
@@ -50,6 +50,7 @@ describe('importTeamEntries', () => {
     expect(entries[0].teamEntry?.maxPlayers).toBe(3)
     expect(entries[0].club).toBe('ClubX')
     expect(entries[0].seeding).toBe(5)
+    expect(entries[0].managerEmail).toBe('coach@clubx.com')
   })
 
   it('should throw the row-numbered unknown-team message', () => {
@@ -113,9 +114,9 @@ describe('importTeamEntries', () => {
         ['4', 'Dave', '36894', 'M', 'TeamB']
       ],
       entries: [
-        ['SN', 'Team', 'Club', 'Seeding'],
-        ['1', 'TeamA', 'ClubX', '1'],
-        ['2', 'TeamB', 'ClubY', '2']
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '1', 'coach.a@clubx.com'],
+        ['2', 'TeamB', 'ClubY', '2', 'coach.b@cluby.com']
       ]
     }
     const entries = importTeamEntries(workbook, 2, 2)
@@ -131,7 +132,7 @@ describe('importTeamEntries', () => {
     ])
   })
 
-  it('should import a team row with only SN and Team (trailing blanks trimmed)', () => {
+  it('should import a team row with blank Club/Seeding when the manager email is present', () => {
     const workbook: Record<string, string[][]> = {
       players: [
         ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
@@ -140,9 +141,11 @@ describe('importTeamEntries', () => {
         ['3', 'Carol', '36894', 'F', 'TeamA']
       ],
       entries: [
-        ['SN', 'Team', 'Club', 'Seeding'],
-        ['1', 'TeamA', 'ClubX', '5'],
-        ['2', 'TeamA'] // no Club, no Seeding — readWorkbook trims trailing blanks
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'coach.a@clubx.com'],
+        // no Club, no Seeding — readWorkbook trims trailing blanks, but the
+        // email cell keeps the row long enough to read
+        ['2', 'TeamA', '', '', 'coach.b@clubx.com']
       ]
     }
     const entries = importTeamEntries(workbook, 3, 3)
@@ -150,6 +153,7 @@ describe('importTeamEntries', () => {
     expect(entries[1].teamEntry?.teamName).toBe('TeamA')
     expect(entries[1].club).toBeUndefined()
     expect(entries[1].seeding).toBeUndefined()
+    expect(entries[1].managerEmail).toBe('coach.b@clubx.com')
   })
 
   it('should skip rows with no team name', () => {
@@ -161,8 +165,8 @@ describe('importTeamEntries', () => {
         ['3', 'Carol', '36894', 'F', 'TeamA']
       ],
       entries: [
-        ['SN', 'Team', 'Club', 'Seeding'],
-        ['1', 'TeamA', 'ClubX', '5'],
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'coach@clubx.com'],
         ['2'] // SN only, no team name
       ]
     }
@@ -179,9 +183,9 @@ describe('importTeamEntries', () => {
         ['3', 'Carol', '36894', 'F', 'TeamA']
       ],
       entries: [
-        ['SN', 'Team', 'Club', 'Seeding'],
-        ['1', 'TeamA', '', ''], // interior blanks at Club and Seeding
-        ['2', 'TeamA', ''] // no seeding (only 3 cells, club empty)
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', '', '', 'coach.a@clubx.com'], // interior blanks at Club and Seeding
+        ['2', 'TeamA', '', '', 'coach.b@clubx.com'] // interior blanks at Club and Seeding
       ]
     }
     const entries = importTeamEntries(workbook, 3, 3)
@@ -205,8 +209,8 @@ describe('importTeamEntries', () => {
         ['3', 'Carol', '36894', 'F', 'TeamA']
       ],
       entries: [
-        ['SN', 'Team', 'Club', 'Seeding'],
-        ['1', 'TeamA', 'ClubX', '5']
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'coach@clubx.com']
       ]
     }
     const entries = importTeamEntries(workbook, 3, 3)
@@ -244,6 +248,70 @@ describe('importTeamEntries', () => {
     }
     expect(() => importTeamEntries(workbook, 3, 3)).toThrow(
       "Row 2: Seeding 'abc' isn't a whole number."
+    )
+  })
+
+  // Manager Email column (lineup seed v1 contract): required on every team
+  // row, email-shaped, and never shared by two teams in one file.
+  const teamPlayers = (team: string): string[][] => [
+    ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team'],
+    ['1', 'Alice', '36892', 'F', team],
+    ['2', 'Bob', '36893', 'M', team],
+    ['3', 'Carol', '36894', 'F', team]
+  ]
+
+  it('should capture the manager email from the entries sheet', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [...teamPlayers('TeamA'), ...teamPlayers('TeamB').slice(1)],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'Coach.A@clubx.com'],
+        ['2', 'TeamB', '', '', 'coach.b@cluby.com']
+      ]
+    }
+    const entries = importTeamEntries(workbook, 3, 3)
+    expect(entries).toHaveLength(2)
+    expect(entries[0].managerEmail).toBe('Coach.A@clubx.com')
+    expect(entries[1].managerEmail).toBe('coach.b@cluby.com')
+  })
+
+  it('should throw the row-numbered missing-email message', () => {
+    const workbook: Record<string, string[][]> = {
+      players: teamPlayers('TeamA'),
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5'] // email cell absent — trailing blanks trimmed
+      ]
+    }
+    expect(() => importTeamEntries(workbook, 3, 3)).toThrow(
+      'Row 2: Manager Email is missing.'
+    )
+  })
+
+  it("should throw the row-numbered malformed-email message", () => {
+    const workbook: Record<string, string[][]> = {
+      players: teamPlayers('TeamA'),
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'TeamA', 'ClubX', '5', 'alpha at club.com']
+      ]
+    }
+    expect(() => importTeamEntries(workbook, 3, 3)).toThrow(
+      "Row 2: Manager Email 'alpha at club.com' isn't a valid email."
+    )
+  })
+
+  it('should throw naming both teams when an email repeats in one file (case-insensitive)', () => {
+    const workbook: Record<string, string[][]> = {
+      players: [...teamPlayers('Alpha'), ...teamPlayers('Bravo').slice(1)],
+      entries: [
+        ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+        ['1', 'Alpha', 'ClubX', '1', 'Coach@CLUB.com'],
+        ['2', 'Bravo', 'ClubY', '2', 'coach@club.com']
+      ]
+    }
+    expect(() => importTeamEntries(workbook, 3, 3)).toThrow(
+      "Manager Email 'coach@club.com' is used by teams 'Alpha' and 'Bravo' in this file."
     )
   })
 })

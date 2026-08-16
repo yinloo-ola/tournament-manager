@@ -52,8 +52,8 @@ const teamWorkbook: Record<string, string[][]> = {
     ['3', 'Carol', '36894', 'F', 'TeamA']
   ],
   entries: [
-    ['SN', 'Team', 'Club', 'Seeding'],
-    ['1', 'TeamA', 'ClubX', '5']
+    ['SN', 'Team', 'Club', 'Seeding', 'Manager Email'],
+    ['1', 'TeamA', 'ClubX', '5', 'coach@clubx.com']
   ]
 }
 

@@ -1,15 +1,31 @@
 // Producer side of the lineup seed-file contract (the consumer lives in the
-// lineup-manager repo). A pure export from a tournament-manager Tournament that
-// emits Team categories, team rosters, and scheduled team Ties — enough to seed
-// the lineup system's structure. It does NOT emit rubbers/constraints/lead-time
-// (authored in-product) or managers (provisioned separately).
+// lineup-manager repo). A pure export from a tournament-manager Tournament
+// that emits seed contract v1: Team categories, team rosters with their
+// manager emails, and scheduled Team Matches labelled with their group-stage
+// identity or knockout bracket position. It does NOT emit rubbers/
+// constraints/lead-time (authored in-product over there).
 //
 // tournament-manager carries no stable UUIDs (entries are array-indexed), so ids
 // are derived deterministically from the data (category short name, team name,
 // player name+dob, tie teams+datetime). They are stable across re-exports for
 // unchanged data and unique within a seed. Pure: no UI, no network.
 
-import { EntryType, type Match, type Tournament } from '@/shared/model'
+import { EntryType, MANAGER_EMAIL_SHAPE, type Match, type Tournament } from '@/shared/model'
+
+/** The seed contract version this builder emits — 1 while the lineup system's
+ *  parser accepts 1 (their SUPPORTED_SEED_VERSION is the lockstep twin). */
+export const SEED_VERSION = 1
+
+/** Knockout round label by matches in the round — bracket shorthand. */
+const KNOCKOUT_ROUND_LABELS: Record<number, string> = {
+  64: 'R128',
+  32: 'R64',
+  16: 'R32',
+  8: 'R16',
+  4: 'QF',
+  2: 'SF',
+  1: 'F'
+}
 
 export interface SeedCategory {
   id: string
@@ -21,6 +37,8 @@ export interface SeedTeam {
   id: string
   name: string
   club?: string
+  /** The team manager's login email in the lineup system — one per team. */
+  managerEmail: string
 }
 
 export interface SeedPlayer {
@@ -37,12 +55,20 @@ export interface SeedTie {
   /** ISO date-time, tournament-local, of the scheduled start. */
   scheduledStart: string
   table?: string
+  /** Human labels in this app's printed vocabulary ("Group 1", "Round 2");
+   *  knockout Team Matches carry no group. */
+  group?: string
+  round?: string
   /** Exactly two team ids. */
   teamIds: [string, string]
 }
 
 export interface SeedFile {
+  seedVersion: number
   tournamentName: string
+  /** yyyy-mm-dd — the tournament's start date; omitted only when no start
+   *  time exists (the import then derives it from the earliest tie). */
+  startDate?: string
   categories: SeedCategory[]
   teams: SeedTeam[]
   players: SeedPlayer[]
@@ -53,6 +79,10 @@ export interface SeedFile {
  * Build a lineup seed from a tournament: only Team categories, their teams +
  * rosters, and the scheduled team-vs-team Ties (round-robin + knockout matches
  * that have a datetime). Matches without a datetime (unscheduled) are omitted.
+ *
+ * Throws one aggregated refusal when any team lacks a valid, unique manager
+ * email — naming every offender so a single export attempt reveals the full
+ * fix list.
  */
 export function buildLineupSeed(tournament: Tournament): SeedFile {
   const categories: SeedCategory[] = []
@@ -84,6 +114,11 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
     }
   }
 
+  // Manager emails: required on every team, email-shaped, unique across the
+  // whole seed (one manager login per team — the lineup system's access model
+  // keys on it). One aggregated message names everything to fix.
+  assertManagerEmailsValid(tournament)
+
   for (const category of tournament.categories) {
     if (category.entryType !== EntryType.Team) continue
 
@@ -97,7 +132,12 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
       const teamName = entry.teamEntry?.teamName ?? ''
       const teamId = `${categoryId}|${teamName}`
       teamIdByEntryIdx.set(idx, teamId)
-      const team: SeedTeam = { id: teamId, name: teamName }
+      const team: SeedTeam = {
+        id: teamId,
+        name: teamName,
+        // Present and valid — assertManagerEmailsValid ran above.
+        managerEmail: entry.managerEmail!
+      }
       if (entry.club) team.club = entry.club
       teams.push(team)
       for (const player of entry.teamEntry?.players ?? []) {
@@ -111,8 +151,8 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
       }
     })
 
-    // Scheduled team Ties: every round-robin + knockout match with a datetime.
-    const collectTie = (match: Match): void => {
+    // Scheduled Team Matches: every round-robin + knockout match with a datetime.
+    const collectTie = (match: Match, group?: string, round?: string): void => {
       if (!match.datetime) return // unscheduled — no meaningful tie time
       const teamA = teamIdByEntryIdx.get(match.entry1Idx)
       const teamB = teamIdByEntryIdx.get(match.entry2Idx)
@@ -123,18 +163,87 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
         scheduledStart: match.datetime,
         teamIds: [teamA, teamB]
       }
+      if (group !== undefined) tie.group = group
+      if (round !== undefined) tie.round = round
       if (match.table) tie.table = match.table
       ties.push(tie)
     }
-    for (const group of category.groups) {
-      for (const round of group.rounds) {
-        for (const match of round) collectTie(match)
-      }
-    }
+    // Group stage — labels in the app's printed vocabulary, rounds numbered
+    // per group (exactly what the category card and round-robin chart show).
+    category.groups.forEach((group, g) => {
+      group.rounds.forEach((round, r) => {
+        for (const match of round) {
+          collectTie(match, `Group ${g + 1}`, `Round ${r + 1}`)
+        }
+      })
+    })
+    // Knockout — no group; the bracket label derives from matches in the round.
+    // An unexpected round size throws rather than emitting a mislabelled seed.
     for (const knockoutRound of category.knockoutRounds) {
-      for (const match of knockoutRound.matches) collectTie(match)
+      const label = KNOCKOUT_ROUND_LABELS[knockoutRound.matches.length]
+      if (label === undefined) {
+        throw new Error(
+          `Cannot label a knockout round with ${knockoutRound.matches.length} matches — expected a power of two up to 64.`
+        )
+      }
+      for (const match of knockoutRound.matches) collectTie(match, undefined, label)
     }
   }
 
-  return { tournamentName: tournament.name, categories, teams, players, ties }
+  const seed: SeedFile = {
+    seedVersion: SEED_VERSION,
+    tournamentName: tournament.name,
+    categories,
+    teams,
+    players,
+    ties
+  }
+  if (tournament.startTime) {
+    seed.startDate = tournament.startTime.slice(0, 10)
+  }
+  return seed
+}
+
+/** Aggregated export guard: every Team entry must carry an email-shaped,
+ *  case-insensitively unique manager email (import normally enforces this —
+ *  this catches hand-edited documents too). */
+function assertManagerEmailsValid(tournament: Tournament): void {
+  const problems: string[] = []
+  const teamsByEmail = new Map<string, { email: string; teams: { name: string; shortName: string }[] }>()
+  for (const category of tournament.categories) {
+    if (category.entryType !== EntryType.Team) continue
+    for (const entry of category.entries) {
+      const teamName = entry.teamEntry?.teamName ?? ''
+      const email = entry.managerEmail
+      if (!email) {
+        problems.push(`Team '${teamName}' (${category.shortName}) has no manager email.`)
+        continue
+      }
+      if (!MANAGER_EMAIL_SHAPE.test(email)) {
+        problems.push(
+          `Team '${teamName}' (${category.shortName}) has an invalid Manager Email '${email}'.`
+        )
+        continue
+      }
+      const key = email.toLowerCase()
+      const entry0 = teamsByEmail.get(key) ?? { email, teams: [] }
+      entry0.teams.push({ name: teamName, shortName: category.shortName })
+      teamsByEmail.set(key, entry0)
+    }
+  }
+  for (const { email, teams: sharing } of teamsByEmail.values()) {
+    if (sharing.length > 1) {
+      // The message shows the email as first typed — the organizer's own
+      // spelling — even when the clash is only in case.
+      const listed = sharing.map((t) => `Team '${t.name}' (${t.shortName})`)
+      const joined =
+        listed.length === 2
+          ? `${listed[0]} and ${listed[1]}`
+          : `${listed.slice(0, -1).join(', ')} and ${listed[listed.length - 1]}`
+      problems.push(`Manager Email '${email}' is shared by ${joined}.`)
+    }
+  }
+  if (problems.length > 0) {
+    throw new Error(`Cannot export for the lineup system: ${problems.join(' ')}`)
+  }
 }

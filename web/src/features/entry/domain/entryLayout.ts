@@ -27,7 +27,7 @@ const SINGLES_ENTRIES_HEADERS = [
 const DOUBLES_ENTRIES_HEADERS = ['SN', 'Player1', 'Player2', 'Club', 'Seeding']
 const DOUBLES_PLAYERS_HEADERS = ['SN', 'Name', 'Date Of Birth', 'Gender']
 
-const TEAM_ENTRIES_HEADERS = ['SN', 'Team', 'Club', 'Seeding']
+const TEAM_ENTRIES_HEADERS = ['SN', 'Team', 'Club', 'Seeding', 'Manager Email']
 const TEAM_PLAYERS_HEADERS = ['SN', 'Name', 'Date Of Birth', 'Gender', 'Team']
 
 export function layoutFor(entryType: EntryType): SheetLayout[] {

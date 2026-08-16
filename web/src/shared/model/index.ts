@@ -25,6 +25,10 @@ export interface TeamEntry {
   maxPlayers: number
 }
 
+/** The manager-email shape the lineup system's seed parser enforces — the
+ *  entry importer and the seed exporter check the same regex in lockstep. */
+export const MANAGER_EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export enum EntryType {
   Unknown = 'Unknown',
   Singles = 'Singles',
@@ -44,6 +48,7 @@ export class Entry {
     public entryType: EntryType,
     public seeding?: number,
     public club?: string,
+    public managerEmail?: string,
     public singlesEntry?: SinglesEntry,
     public doublesEntry?: DoublesEntry,
     public teamEntry?: TeamEntry,

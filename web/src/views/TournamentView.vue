@@ -324,11 +324,11 @@ function exportLineupSeed() {
     const a = document.createElement('a')
     const file = window.URL.createObjectURL(blob)
     a.href = file
-    a.download = `${tournament.value.name}_lineup_seed_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.json`
+    a.download = `${tournament.value.name}_lineup_${dateInYyyyMmDdHhMmSs(new Date(), '_')}.json`
     a.click()
     window.URL.revokeObjectURL(file)
     const hasTeam = tournament.value.categories.some((c) => c.entryType === EntryType.Team)
-    toast.success(hasTeam ? 'Lineup seed exported' : 'Lineup seed exported (no Team categories)')
+    toast.success(hasTeam ? 'Tournament exported for lineup system' : 'Tournament exported for lineup system (no Team categories)')
   } catch (e: unknown) {
     const error = e as Error
     toast.error(error.message)
@@ -383,7 +383,7 @@ function goHome() {
         <MenuItem label="Export draft schedule" @click="exportDraftSchedule()" />
         <MenuItem label="Import final schedule" @click="finalScheduleFile?.click()" />
         <MenuItem divider />
-        <MenuItem label="Export lineup seed" @click="exportLineupSeed()" />
+        <MenuItem label="Export for lineup system" @click="exportLineupSeed()" />
         <MenuItem divider />
         <MenuItem label="Export scoresheets (with template)" @click="exportScoresheetWithTemplateFile?.click()" />
       </DropdownMenu>
