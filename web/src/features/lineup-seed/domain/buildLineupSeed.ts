@@ -1,20 +1,25 @@
 // Producer side of the lineup seed-file contract (the consumer lives in the
 // lineup-manager repo). A pure export from a tournament-manager Tournament
-// that emits seed contract v1: Team categories, team rosters with their
-// manager emails, and scheduled Team Matches labelled with their group-stage
-// identity or knockout bracket position. It does NOT emit rubbers/
-// constraints/lead-time (authored in-product over there).
+// that emits seed contract v2: Team categories, team rosters with their
+// manager emails, group-stage Team Matches with both teams, and the knockout
+// stage as STRUCTURE plus SCHEDULED matches — the entry round as an unplaced
+// pool (table + time; the lineup admin places them and enters teams) and
+// later rounds as positional ties whose sides are fed by earlier slots. It
+// does NOT emit rubbers/constraints/lead-time (authored in-product over
+// there), and never emits teams for knockout ties (resolution lives in the
+// lineup system — ADR 0004).
 //
 // tournament-manager carries no stable UUIDs (entries are array-indexed), so ids
 // are derived deterministically from the data (category short name, team name,
-// player name+dob, tie teams+datetime). They are stable across re-exports for
+// player name+dob, tie identity). They are stable across re-exports for
 // unchanged data and unique within a seed. Pure: no UI, no network.
 
 import { EntryType, MANAGER_EMAIL_SHAPE, type Match, type Tournament } from '@/shared/model'
 
-/** The seed contract version this builder emits — 1 while the lineup system's
- *  parser accepts 1 (their SUPPORTED_SEED_VERSION is the lockstep twin). */
-export const SEED_VERSION = 1
+/** The seed contract version this builder emits. The consumer's
+ *  SUPPORTED_SEED_VERSION is the lockstep twin — during the v2 cutover see
+ *  seedContract.test.ts for the transitional guard. */
+export const SEED_VERSION = 2
 
 /** The date-of-birth shapes the lineup system's parser accepts: an already-ISO
  *  yyyy-mm-dd date, or an Excel serial-day number (what readWorkbook yields for
@@ -32,15 +37,17 @@ function toTournamentLocal(datetime: string): string {
   return datetime.slice(0, 16)
 }
 
-/** Knockout round label by matches in the round — bracket shorthand. */
+/** Knockout round label by the round's slot size — bracket shorthand. Keyed
+ *  off KnockoutRound.round (the size the model stores), not the match count. */
 const KNOCKOUT_ROUND_LABELS: Record<number, string> = {
-  64: 'R128',
-  32: 'R64',
-  16: 'R32',
-  8: 'R16',
-  4: 'QF',
-  2: 'SF',
-  1: 'F'
+  256: 'R256',
+  128: 'R128',
+  64: 'R64',
+  32: 'R32',
+  16: 'R16',
+  8: 'QF',
+  4: 'SF',
+  2: 'F'
 }
 
 export interface SeedCategory {
@@ -65,18 +72,56 @@ export interface SeedPlayer {
   dateOfBirth: string // yyyy-mm-dd
 }
 
-export interface SeedTie {
+/** Group-stage tie: both teams known at export. Id = teams + time (v1 form). */
+export interface GroupSeedTie {
   id: string
   categoryId: string
   /** ISO date-time, tournament-local, of the scheduled start. */
   scheduledStart: string
   table?: string
-  /** Human labels in this app's printed vocabulary ("Group 1", "Round 2");
-   *  knockout Team Matches carry no group. */
-  group?: string
-  round?: string
+  /** Human labels in this app's printed vocabulary ("Group 1", "Round 2"). */
+  group: string
+  round: string
   /** Exactly two team ids. */
   teamIds: [string, string]
+}
+
+/** Knockout entry-round tie — an UNPLACED pool match: table + time only, no
+ *  bracket position (the lineup admin decides placement), no teams (resolution
+ *  lives in the lineup system). Id = category|ko|label|table|time. */
+export interface KnockoutPoolTie {
+  id: string
+  categoryId: string
+  scheduledStart: string
+  table: string
+  round: string
+}
+
+/** Knockout later-round tie — positional, scheduled, both sides fed. */
+export interface KnockoutFedTie {
+  id: string
+  categoryId: string
+  scheduledStart: string
+  table: string
+  round: string
+  /** The feeder slot ids for side 1 and side 2. */
+  fedBy: [string, string]
+}
+
+export type SeedTie = GroupSeedTie | KnockoutPoolTie | KnockoutFedTie
+
+/** One knockout category's bracket structure: every round's slot count plus,
+ *  from the second round on, which earlier slots feed each side. Slot identity
+ *  is the positional id scheme (category|ko|LABEL|n) — bye slots included. */
+export interface SeedBracketRound {
+  label: string
+  slots: number
+  fedBy?: [string, string][]
+}
+
+export interface SeedBracket {
+  categoryId: string
+  rounds: SeedBracketRound[]
 }
 
 export interface SeedFile {
@@ -89,6 +134,9 @@ export interface SeedFile {
   teams: SeedTeam[]
   players: SeedPlayer[]
   ties: SeedTie[]
+  /** Knockout bracket structure per category — omitted when no category has
+   *  a knockout stage. */
+  brackets?: SeedBracket[]
 }
 
 /**
@@ -105,6 +153,7 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
   const teams: SeedTeam[] = []
   const players: SeedPlayer[] = []
   const ties: SeedTie[] = []
+  const brackets: SeedBracket[] = []
 
   // Derived ids assume unique Team-category short names and unique team names
   // within a category. Fail loudly (the organizer gets the error in the UI)
@@ -167,21 +216,21 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
       }
     })
 
-    // Scheduled Team Matches: every round-robin + knockout match with a datetime.
-    const collectTie = (match: Match, group?: string, round?: string): void => {
+    // Scheduled group-stage Team Matches (both teams known from the draw).
+    const collectGroupTie = (match: Match, group: string, round: string): void => {
       if (!match.datetime) return // unscheduled — no meaningful tie time
       const teamA = teamIdByEntryIdx.get(match.entry1Idx)
       const teamB = teamIdByEntryIdx.get(match.entry2Idx)
       if (!teamA || !teamB) return // bye / placeholder entry
       const scheduledStart = toTournamentLocal(match.datetime)
-      const tie: SeedTie = {
+      const tie: GroupSeedTie = {
         id: `${teamA}|${teamB}|${scheduledStart}`,
         categoryId,
         scheduledStart,
+        group,
+        round,
         teamIds: [teamA, teamB]
       }
-      if (group !== undefined) tie.group = group
-      if (round !== undefined) tie.round = round
       if (match.table) tie.table = match.table
       ties.push(tie)
     }
@@ -190,20 +239,76 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
     category.groups.forEach((group, g) => {
       group.rounds.forEach((round, r) => {
         for (const match of round) {
-          collectTie(match, `Group ${g + 1}`, `Round ${r + 1}`)
+          collectGroupTie(match, `Group ${g + 1}`, `Round ${r + 1}`)
         }
       })
     })
-    // Knockout — no group; the bracket label derives from matches in the round.
-    // An unexpected round size throws rather than emitting a mislabelled seed.
-    for (const knockoutRound of category.knockoutRounds) {
-      const label = KNOCKOUT_ROUND_LABELS[knockoutRound.matches.length]
+    // Knockout — contract v2: structure + scheduled matches. The entry round
+    // exports as an UNPLACED POOL (table + time, no position, no teams — the
+    // lineup admin places them); later rounds export positionally with both
+    // sides fed. Byes and unscheduled matches never enter ties[] but hold
+    // their slots in brackets[]. An unexpected round size throws rather than
+    // emitting a mislabelled seed.
+    const slotIdsByRound: string[][] = []
+    const bracketRounds: SeedBracketRound[] = []
+    category.knockoutRounds.forEach((knockoutRound, r) => {
+      const label = KNOCKOUT_ROUND_LABELS[knockoutRound.round]
       if (label === undefined) {
         throw new Error(
-          `Cannot label a knockout round with ${knockoutRound.matches.length} matches — expected a power of two up to 64.`
+          `Cannot label a knockout round of size ${knockoutRound.round} — expected a power-of-two bracket size up to 256.`
         )
       }
-      for (const match of knockoutRound.matches) collectTie(match, undefined, label)
+      const slotIds = knockoutRound.matches.map((_, m) => `${categoryId}|ko|${label}|${m + 1}`)
+      // Brackets halve by construction; a hand-edited document that breaks
+      // that would silently emit undefined feed ids — fail loudly instead.
+      if (r > 0 && slotIdsByRound[r - 1].length !== slotIds.length * 2) {
+        throw new Error(
+          `Knockout rounds do not halve: ${label} has ${slotIds.length} slots after ${slotIdsByRound[r - 1].length} — regenerate the bracket.`
+        )
+      }
+      slotIdsByRound.push(slotIds)
+      // Slot i of this round is fed by slots 2i (side 1) and 2i+1 (side 2) of
+      // the previous round — the standard bracket wiring.
+      const feederPair = (i: number): [string, string] => [
+        slotIdsByRound[r - 1][2 * i],
+        slotIdsByRound[r - 1][2 * i + 1]
+      ]
+      const bracketRound: SeedBracketRound = { label, slots: slotIds.length }
+      if (r > 0) {
+        bracketRound.fedBy = slotIds.map((_, s) => feederPair(s))
+      }
+      bracketRounds.push(bracketRound)
+
+      knockoutRound.matches.forEach((match, m) => {
+        if (match.bye || !match.datetime) return // bye / unscheduled — not exportable
+        if (!match.table) {
+          throw new Error(
+            `Cannot export a scheduled knockout match without a table (${label} slot ${m + 1}) — fix the schedule first.`
+          )
+        }
+        const scheduledStart = toTournamentLocal(match.datetime)
+        if (r === 0) {
+          ties.push({
+            id: `${categoryId}|ko|${label}|${match.table}|${scheduledStart}`,
+            categoryId,
+            scheduledStart,
+            round: label,
+            table: match.table
+          })
+        } else {
+          ties.push({
+            id: slotIds[m],
+            categoryId,
+            scheduledStart,
+            round: label,
+            table: match.table,
+            fedBy: feederPair(m)
+          })
+        }
+      })
+    })
+    if (bracketRounds.length > 0) {
+      brackets.push({ categoryId, rounds: bracketRounds })
     }
   }
 
@@ -217,6 +322,9 @@ export function buildLineupSeed(tournament: Tournament): SeedFile {
   }
   if (tournament.startTime) {
     seed.startDate = tournament.startTime.slice(0, 10)
+  }
+  if (brackets.length > 0) {
+    seed.brackets = brackets
   }
   return seed
 }

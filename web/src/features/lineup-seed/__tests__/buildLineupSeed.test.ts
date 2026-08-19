@@ -108,11 +108,11 @@ describe('buildLineupSeed', () => {
     tournament.categories[0].entries.push(teamEntry('Alpha', 'Other', [])) // duplicate team name
     expect(() => buildLineupSeed(tournament)).toThrow(/unique team names/i)
   })
-  // ── Seed contract v1 ──
+  // ── Seed contract v2 ──
 
-  it('emits seedVersion 1 and the tournament start date', () => {
+  it('emits seedVersion 2 and the tournament start date', () => {
     const seed = buildLineupSeed(buildFixture())
-    expect(seed.seedVersion).toBe(1)
+    expect(seed.seedVersion).toBe(2)
     expect(seed.startDate).toBe('2026-03-01')
   })
 
@@ -130,21 +130,6 @@ describe('buildLineupSeed', () => {
       ['Group 1', 'Round 1'],
       ['Group 1', 'Round 2'],
       ['Group 1', 'Round 3']
-    ])
-  })
-
-  it('labels knockout Team Matches with bracket shorthand and omits group', () => {
-    const tournament = buildFixture()
-    tournament.categories[0].knockoutRounds = [
-      { round: 1, matches: [match(0, 1, '2026-03-01T14:00', 'T1'), match(1, 2, '2026-03-01T15:00', 'T2')] },
-      { round: 2, matches: [match(0, 1, '2026-03-02T09:00', 'T1')] }
-    ]
-    const seed = buildLineupSeed(tournament)
-    const koTies = seed.ties.filter((t) => t.scheduledStart >= '2026-03-01T14:00')
-    expect(koTies.map((t) => [t.group, t.round])).toEqual([
-      [undefined, 'SF'],
-      [undefined, 'SF'],
-      [undefined, 'F']
     ])
   })
 
@@ -212,5 +197,160 @@ describe('buildLineupSeed', () => {
     expect(() => buildLineupSeed(tournament)).toThrow(
       "Cannot export for the lineup system: Manager Email 'COACH.BRAVO@club.com' is shared by Team 'Alpha' (MT) and Team 'Bravo' (MT)."
     )
+  })
+})
+
+describe('buildLineupSeed — knockout contract v2', () => {
+  // ko-import spec §3 (lineup-manager .scratch): the bracket travels as
+  // structure (brackets[]) + scheduled matches. Entry round = unplaced pool
+  // (table+time, no position, no teams — the lineup admin places them); later
+  // rounds = positional ties with both sides fed; byes and unscheduled matches
+  // never enter ties[] but hold their slots in brackets[].
+  function koFixture() {
+    const tournament = buildFixture()
+    tournament.categories[0].knockoutRounds = [
+      {
+        round: 8,
+        matches: [
+          { ...match(-1, -1, '', ''), bye: true },
+          match(-1, -1, '2026-03-02T09:00', 'T1'),
+          { ...match(-1, -1, '', ''), bye: true },
+          match(-1, -1, '2026-03-02T09:00', 'T2')
+        ]
+      },
+      {
+        round: 4,
+        matches: [match(-1, -1, '2026-03-02T11:00', 'T1'), match(-1, -1, '2026-03-02T11:00', 'T2')]
+      },
+      { round: 2, matches: [match(-1, -1, '2026-03-02T13:00', 'T1')] }
+    ]
+    return tournament
+  }
+
+  it('exports the bracket structure with slot counts and feed wiring', () => {
+    const seed = buildLineupSeed(koFixture())
+    expect(seed.brackets).toEqual([
+      {
+        categoryId: 'MT',
+        rounds: [
+          { label: 'QF', slots: 4 },
+          {
+            label: 'SF',
+            slots: 2,
+            fedBy: [
+              ['MT|ko|QF|1', 'MT|ko|QF|2'],
+              ['MT|ko|QF|3', 'MT|ko|QF|4']
+            ]
+          },
+          { label: 'F', slots: 1, fedBy: [['MT|ko|SF|1', 'MT|ko|SF|2']] }
+        ]
+      }
+    ])
+  })
+
+  it('exports the entry round as an unplaced pool — table+time only, byes and unscheduled absent', () => {
+    const seed = buildLineupSeed(koFixture())
+    const pool = seed.ties.filter((t) => t.round === 'QF')
+    expect(pool).toEqual([
+      {
+        id: 'MT|ko|QF|T1|2026-03-02T09:00',
+        categoryId: 'MT',
+        scheduledStart: '2026-03-02T09:00',
+        round: 'QF',
+        table: 'T1'
+      },
+      {
+        id: 'MT|ko|QF|T2|2026-03-02T09:00',
+        categoryId: 'MT',
+        scheduledStart: '2026-03-02T09:00',
+        round: 'QF',
+        table: 'T2'
+      }
+    ])
+    for (const tie of pool) {
+      expect('teamIds' in tie).toBe(false)
+      expect('fedBy' in tie).toBe(false)
+      expect('group' in tie).toBe(false)
+    }
+  })
+
+  it('exports later rounds positionally with both sides fed', () => {
+    const seed = buildLineupSeed(koFixture())
+    const sf = seed.ties.filter((t) => t.round === 'SF')
+    expect(sf).toEqual([
+      {
+        id: 'MT|ko|SF|1',
+        categoryId: 'MT',
+        scheduledStart: '2026-03-02T11:00',
+        round: 'SF',
+        fedBy: ['MT|ko|QF|1', 'MT|ko|QF|2'],
+        table: 'T1'
+      },
+      {
+        id: 'MT|ko|SF|2',
+        categoryId: 'MT',
+        scheduledStart: '2026-03-02T11:00',
+        round: 'SF',
+        fedBy: ['MT|ko|QF|3', 'MT|ko|QF|4'],
+        table: 'T2'
+      }
+    ])
+    const f = seed.ties.find((t) => t.round === 'F')
+    expect(f).toEqual({
+      id: 'MT|ko|F|1',
+      categoryId: 'MT',
+      scheduledStart: '2026-03-02T13:00',
+      round: 'F',
+      fedBy: ['MT|ko|SF|1', 'MT|ko|SF|2'],
+      table: 'T1'
+    })
+  })
+
+  it('omits brackets entirely when no category has a knockout stage', () => {
+    const seed = buildLineupSeed(buildFixture())
+    expect('brackets' in seed).toBe(false)
+  })
+
+  it('labels a 256-slot round R256 and refuses sizes beyond the label set', () => {
+    const tournament = buildFixture()
+    // Generator-consistent shapes: a 256-entrant round holds 128 slots (only
+    // the first scheduled here), a 128-entrant round holds 64.
+    const unscheduled = (n: number) => Array.from({ length: n }, () => match(-1, -1, '', ''))
+    tournament.categories[0].knockoutRounds = [
+      { round: 256, matches: [match(-1, -1, '2026-03-02T09:00', 'T1'), ...unscheduled(127)] },
+      { round: 128, matches: unscheduled(64) }
+    ]
+    const seed = buildLineupSeed(tournament)
+    expect(seed.brackets![0].rounds.map((r) => [r.label, r.slots])).toEqual([
+      ['R256', 128],
+      ['R128', 64]
+    ])
+    expect(seed.ties.find((t) => t.round === 'R256')!.id).toBe('MT|ko|R256|T1|2026-03-02T09:00')
+
+    tournament.categories[0].knockoutRounds = [
+      { round: 512, matches: [match(-1, -1, '2026-03-02T09:00', 'T1')] }
+    ]
+    expect(() => buildLineupSeed(tournament)).toThrow(/power-of-two bracket size up to 256/)
+  })
+
+  it('fails loudly when the bracket does not halve (hand-edited document)', () => {
+    const tournament = buildFixture()
+    tournament.categories[0].knockoutRounds = [
+      {
+        round: 8,
+        matches: [match(-1, -1, '', ''), match(-1, -1, '', ''), match(-1, -1, '', ''), match(-1, -1, '', '')]
+      },
+      { round: 2, matches: [match(-1, -1, '', '')] }
+    ]
+    expect(() => buildLineupSeed(tournament)).toThrow(/rounds do not halve/)
+  })
+
+  it('fails loudly when a scheduled knockout match has no table', () => {
+    const tournament = buildFixture()
+    tournament.categories[0].knockoutRounds = [
+      { round: 4, matches: [match(-1, -1, '2026-03-02T09:00', ''), match(-1, -1, '', '')] },
+      { round: 2, matches: [match(-1, -1, '', '')] }
+    ]
+    expect(() => buildLineupSeed(tournament)).toThrow(/without a table/)
   })
 })

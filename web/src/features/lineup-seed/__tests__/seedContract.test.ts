@@ -1,10 +1,13 @@
 /**
- * Seed contract conformance guard (seed v1, ticket 03): the builder's output
- * must pass the consumer's REAL parser — the actual gate lineup-manager's
- * Import tournament runs — not a copy of its schema. The parser and its
- * supported version are imported live from the sibling checkout through the
- * test-only @lineup-manager alias, so a consumer-side contract change fails
- * HERE, as a red test in this repo, instead of at handover in the other app.
+ * Seed contract conformance guard (seed v2, ko-import tickets 03/10): the
+ * builder's output must pass the consumer's REAL parser — the actual gate
+ * lineup-manager's Import tournament runs — not a copy of its schema. The
+ * parser and its supported version are imported live from the sibling
+ * checkout through the test-only @lineup-manager alias, so a consumer-side
+ * contract change fails HERE, as a red test in this repo, instead of at
+ * handoff in the other app. During the v2 cutover (until lineup-manager's
+ * parser accepts v2, ko-import ticket 11) the guard asserts the version-gate
+ * rejection instead; the tests below document the flip.
  *
  * The consumer is imported lazily inside each test: a static import would
  * fail module resolution at collection time, which reds the file with a
@@ -41,32 +44,33 @@ describe('seed contract conformance (lineup-manager parseSeed)', () => {
     }).toBe(true)
   })
 
-  it('parses the builder output cleanly', async () => {
+  it('is rejected by the consumer parser until it supports v2 — flips when lineup-manager ticket 11 lands', async () => {
+    // Transitional cutover guard: the producer now emits v2 while the sibling
+    // consumer still supports v1, so the real parser must reject the export at
+    // the version gate with the re-export hint. When lineup-manager's parser
+    // accepts v2 (ko-import ticket 11), this test reds — flip it back to
+    // "parses the builder output cleanly" at that point.
     const { parseSeed } = await loadConsumer()
     const seed = buildLineupSeed(buildFixture())
-    const parsed = parseSeed(JSON.parse(JSON.stringify(seed)))
-    expect(parsed.tournamentName).toBe('Lineup Seed Test Cup')
-    expect(parsed.teams).toHaveLength(3)
-    expect(parsed.ties).toHaveLength(3)
-  })
-
-  it('emits the seed version the consumer supports', async () => {
-    const { SUPPORTED_SEED_VERSION } = await loadConsumer()
-    const seed = buildLineupSeed(buildFixture())
-    expect(seed.seedVersion).toBe(SUPPORTED_SEED_VERSION)
+    expect(() => parseSeed(JSON.parse(JSON.stringify(seed)))).toThrow(/Unsupported seed version/)
   })
 
   it('bites: a team without a manager email is rejected by the consumer parser', async () => {
-    const { parseSeed } = await loadConsumer()
+    const { parseSeed, SUPPORTED_SEED_VERSION } = await loadConsumer()
     const seed = buildLineupSeed(buildFixture()) as unknown as Record<string, unknown[]>
+    // The fixture is all group ties (v1-shaped), so parsing under the
+    // consumer's CURRENT version keeps these shared-invariant checks live
+    // through the v2 cutover.
+    seed.seedVersion = SUPPORTED_SEED_VERSION
     const teams = seed.teams as { managerEmail?: string }[]
     delete teams[0].managerEmail
     expect(() => parseSeed(seed)).toThrow(/managerEmail is missing/)
   })
 
   it('bites: a duplicate tie id is rejected by the consumer parser', async () => {
-    const { parseSeed } = await loadConsumer()
+    const { parseSeed, SUPPORTED_SEED_VERSION } = await loadConsumer()
     const seed = buildLineupSeed(buildFixture()) as unknown as Record<string, unknown[]>
+    seed.seedVersion = SUPPORTED_SEED_VERSION
     const ties = seed.ties as { id: string }[]
     ties[1].id = ties[0].id
     expect(() => parseSeed(seed)).toThrow(/Duplicate tie id/)
