@@ -217,6 +217,9 @@ function getSlotsForCategoryKnockout(
     let tableIdx = 0
     for (let m = 0; m < round.matches.length; m++) {
       const match = round.matches[m]
+      if (match.bye) {
+        continue // structural bye — never scheduled (no table, no time)
+      }
       const result = getOrCreateNextSlot(slots, tableIdx, numOfTable)
       slots = result.slots
       const slotIdx = result.slotIdx

@@ -129,8 +129,26 @@ export function nextPowerOfTwo(x: number): number {
   return x + 1
 }
 
+// Spread the entry round's bye matches as evenly as its match count allows:
+// index floor(j · matchCount / numByes) for each bye j. Deterministic across
+// regenerations. Which qualifier lands on a bye is decided later in the lineup
+// system — these positions only hold the bracket's shape.
+function byeMatchIndexes(numByes: number, matchCount: number): Set<number> {
+  const idxs = new Set<number>()
+  for (let j = 0; j < numByes; j++) {
+    idxs.add(Math.floor((j * matchCount) / numByes))
+  }
+  return idxs
+}
+
+const NO_BYES: Set<number> = new Set()
+
 // generateKnockoutRounds builds the empty bracket (all EntryEmptyIdx matches)
 // down to the final, sized to the next power of two over the qualified players.
+// Rounds are FULL power-of-two brackets: the entry round keeps every slot and
+// carries its byes structurally (Match.bye, evenly distributed — FUNCTIONALITY.md
+// "byes are distributed in the first round"). Bye matches are skipped by the
+// scheduler and never reach the schedule workbook or the lineup seed.
 export function generateKnockoutRounds(
   groups: Group[],
   numQualifiedPerGroup: number
@@ -144,18 +162,19 @@ export function generateKnockoutRounds(
   const qualifiedPlayersNum = groups.length * numQualifiedPerGroup
   const firstRound = nextPowerOfTwo(qualifiedPlayersNum)
   const numByes = firstRound - qualifiedPlayersNum
-  const numMatches = firstRound / 2 - numByes
 
   const koRounds: KnockoutRound[] = []
 
   for (let round = firstRound; round >= 2; round = Math.floor(round / 2)) {
-    const matchesCount = round === firstRound ? numMatches : round / 2
-    const matches: Match[] = Array.from({ length: matchesCount }, () => ({
+    const isEntryRound = round === firstRound
+    const byeIdxs = isEntryRound ? byeMatchIndexes(numByes, round / 2) : NO_BYES
+    const matches: Match[] = Array.from({ length: round / 2 }, (_, i) => ({
       entry1Idx: EntryEmptyIdx,
       entry2Idx: EntryEmptyIdx,
       datetime: '',
       durationMinutes: 0,
-      table: ''
+      table: '',
+      ...(byeIdxs.has(i) ? { bye: true } : {})
     }))
     koRounds.push({ round, matches })
   }

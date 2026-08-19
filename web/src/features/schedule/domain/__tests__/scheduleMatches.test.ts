@@ -269,3 +269,59 @@ describe('scheduleMatches', () => {
     )
   })
 })
+
+describe('knockout structural byes', () => {
+  // ko-import spec §4: the entry round keeps every bracket slot; bye matches
+  // are structural (Match.bye) and the scheduler must skip them entirely —
+  // no table, no time slot, no ScheduledMatch.
+  it('gives bye matches no slot while every real knockout match gets one', () => {
+    // 3 groups x 4 entries, 2 qualifiers per group -> 6 qualified -> draw of 8:
+    // entry round has 4 slots (2 byes at indices 0 and 2), then rounds of 2 and 1.
+    const tournament: Tournament = {
+      name: 'Bye Schedule Test',
+      numTables: 2,
+      startTime: '2025-03-22T09:00',
+      categories: [
+        {
+          name: "Men's Singles",
+          shortName: 'MS',
+          entryType: 'Singles',
+          durationMinutes: 30,
+          entriesPerGrpMain: 4,
+          entriesPerGrpRemainder: 0,
+          numQualifiedPerGroup: 2,
+          entries: buildSinglesEntries(12),
+          groups: [
+            { entriesIdx: [0, 1, 2, 3], rounds: [] },
+            { entriesIdx: [4, 5, 6, 7], rounds: [] },
+            { entriesIdx: [8, 9, 10, 11], rounds: [] }
+          ],
+          knockoutRounds: []
+        }
+      ]
+    }
+    generateRoundsForTournament(tournament)
+
+    const category = tournament.categories[0]
+    expect(category.knockoutRounds[0].matches).toHaveLength(4)
+    expect(category.knockoutRounds[0].matches.filter((m) => m.bye)).toHaveLength(2)
+
+    const schedule = scheduleMatches(tournament)
+    const koMatches: ScheduledMatch[] = []
+    for (const slot of schedule.timeSlots) {
+      for (const match of slot.tables) {
+        if (match && match.groupIdx === -1 && match.categoryShortName === 'MS') {
+          koMatches.push(match)
+        }
+      }
+    }
+    // Real KO matches only: 2 (entry round) + 2 (semis) + 1 (final) = 5.
+    expect(koMatches).toHaveLength(5)
+    for (const match of koMatches) {
+      expect(match.table).not.toBe('')
+      expect(match.dateTime.getTime()).toBeGreaterThanOrEqual(
+        new Date('2025-03-22T09:00Z').getTime()
+      )
+    }
+  })
+})

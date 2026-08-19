@@ -177,59 +177,40 @@ describe('generateKnockoutRounds', () => {
     )
   })
 
-  it('should build knockout brackets matching the Go structural golden', () => {
-    // Each case: [numGroups, numPlayersPerGroup, numQualifiedPerGroup, expectedRounds]
-    // where expectedRounds is [roundNumber, numMatches][] from Test_generateKnockoutRounds.
-    const cases: [number, number[], number, [number, number][]][] = [
-      // "2 groups, 2 qualified per group": 4 qualified -> nextPowerOfTwo(4)=4
-      [
-        2,
-        [0, 1, 2, 3],
-        2,
-        [
-          [4, 2],
-          [2, 1]
-        ]
-      ],
-      // "4 groups, 1 qualified per group": 4 qualified -> 4
-      [
-        4,
-        [0, 1],
-        1,
-        [
-          [4, 2],
-          [2, 1]
-        ]
-      ],
-      // "3 groups, 2 qualified per group": 6 qualified -> nextPowerOfTwo(6)=8
-      [
-        3,
-        [0, 1, 2, 3],
-        2,
-        [
-          [8, 2],
-          [4, 2],
-          [2, 1]
-        ]
-      ],
-      // "5 groups, 4 qualified per group": 20 qualified -> 32
+  it('should build FULL knockout rounds with structural byes in the entry round', () => {
+    // ko-import spec §4 (lineup-manager .scratch/ko-import): knockout rounds are
+    // full power-of-two brackets — the entry round keeps every slot and carries
+    // its byes structurally (Match.bye, evenly distributed), replacing the Go
+    // oracle's shrunk first round (numMatches = firstRound/2 − byes). The Go
+    // golden is retained for the bye-free cases, which are unchanged.
+    // Each case: [numGroups, groupSize, numQualifiedPerGroup, expectedRounds, entryRoundByeIdxs]
+    // where expectedRounds is [roundSize, numMatches][].
+    const cases: [number, number, number, [number, number][], number[]][] = [
+      // "2 groups, 2 qualified per group": 4 qualified -> nextPowerOfTwo(4)=4, no byes
+      [2, 2, 2, [[4, 2], [2, 1]], []],
+      // "4 groups, 1 qualified per group": 4 qualified -> 4, no byes
+      [4, 2, 1, [[4, 2], [2, 1]], []],
+      // "3 groups, 2 qualified per group": 6 qualified -> 8: 4 entry matches, 2 byes
+      [3, 4, 2, [[8, 4], [4, 2], [2, 1]], [0, 2]],
+      // "5 groups, 4 qualified per group": 20 qualified -> 32: 16 entry matches, 12 byes
       [
         5,
-        [0, 1, 2, 3],
+        4,
         4,
         [
-          [32, 4],
+          [32, 16],
           [16, 8],
           [8, 4],
           [4, 2],
           [2, 1]
-        ]
+        ],
+        [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14]
       ]
     ]
 
-    for (const [numGroups, entriesIdx, qualified, expectedRounds] of cases) {
+    for (const [numGroups, groupSize, qualified, expectedRounds, expectedByeIdxs] of cases) {
       const groups = Array.from({ length: numGroups }, (_, g) => ({
-        entriesIdx: entriesIdx.map((e) => e + g * entriesIdx.length),
+        entriesIdx: Array.from({ length: groupSize }, (_, i) => i + g * groupSize),
         rounds: [] as Array<Array<Match>>
       }))
       const rounds = generateKnockoutRounds(groups, qualified)
@@ -243,6 +224,12 @@ describe('generateKnockoutRounds', () => {
           expect(match.entry1Idx).toBe(EntryEmptyIdx)
           expect(match.entry2Idx).toBe(EntryEmptyIdx)
         }
+      }
+      // Byes live only in the entry round, at the evenly spread indices.
+      const byeIdxs = rounds[0].matches.map((m, i) => (m.bye ? i : -1)).filter((i) => i >= 0)
+      expect(byeIdxs).toEqual(expectedByeIdxs)
+      for (const round of rounds.slice(1)) {
+        expect(round.matches.some((m) => m.bye)).toBe(false)
       }
     }
   })

@@ -114,6 +114,10 @@ export type Match = {
   roundIdx?: number
   round?: number
   matchIdx?: number
+  /** Structural bye in a knockout entry round: the slot exists to hold the
+   *  bracket's full shape (its lone qualifier advances) but is never
+   *  scheduled — no table, no time — and never exported to the lineup seed. */
+  bye?: boolean
 }
 
 export type Group = {

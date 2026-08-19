@@ -13,12 +13,15 @@ const props = defineProps({
   }
 })
 
-// Add knockout matches computed property
+// Add knockout matches computed property. Structural byes (Match.bye) hold
+// bracket shape but are never played — they render in the bracket cards,
+// marked BYE, and are excluded from the match table.
 const knockoutMatches = computed(() => {
   let allMatches: Array<Match> = []
   if (props.category?.knockoutRounds) {
     props.category.knockoutRounds.forEach((k: any) => {
       k.matches.forEach((m: Match) => {
+        if (m.bye) return
         allMatches.push({ ...m, round: k.round })
       })
     })
@@ -83,6 +86,7 @@ function isSlotEmpty(idx: number): boolean {
                 <span v-if="match.table && match.datetime"> · </span>
                 <span v-if="match.datetime">{{ formatDate(match.datetime) }} {{ formatTime(match.datetime) }}</span>
               </div>
+              <div v-if="match.bye" class="mt-2 body-small text-on-surface-variant">BYE — no schedule</div>
             </div>
           </div>
         </div>

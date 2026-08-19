@@ -1,5 +1,17 @@
 import type { Group, KnockoutRound, Match, Tournament } from '@/types/types'
 
+// Map a workbook-parsed knockout match back onto the model, stamping the
+// category's current match duration.
+function toModelMatch(importedMatch: Match, durationMinutes: number): Match {
+  return {
+    entry1Idx: importedMatch.entry1Idx,
+    entry2Idx: importedMatch.entry2Idx,
+    datetime: importedMatch.datetime,
+    table: importedMatch.table,
+    durationMinutes
+  }
+}
+
 export function importFinalSchedule(
   categoriesGroupsMap: { [category: string]: Group[] },
   categoriesKnockoutRoundsMap: { [category: string]: KnockoutRound[] },
@@ -38,6 +50,11 @@ export function importFinalSchedule(
     if (categoriesKnockoutRoundsMap[category.shortName]) {
       const importedKnockoutRounds = categoriesKnockoutRoundsMap[category.shortName]
 
+      // The workbook holds only scheduled matches, so the imported map lacks
+      // the bracket's structural byes (Match.bye — never scheduled). Capture
+      // the existing rounds before clearing so byes can be re-attached.
+      const existingByRound = new Map(category.knockoutRounds.map((r) => [r.round, r]))
+
       // Clear existing knockout rounds and replace with imported ones
       category.knockoutRounds = []
 
@@ -48,16 +65,36 @@ export function importFinalSchedule(
           matches: []
         }
 
-        // Add each match from the imported round
-        for (const importedMatch of importedRound.matches) {
-          const match: Match = {
-            entry1Idx: importedMatch.entry1Idx,
-            entry2Idx: importedMatch.entry2Idx,
-            datetime: importedMatch.datetime,
-            table: importedMatch.table,
-            durationMinutes: category.durationMinutes
+        const existing = existingByRound.get(importedRound.round)
+        const existingByeCount =
+          existing?.matches.filter((m) => m.bye).length ?? 0
+        // Re-attach only when the workbook rows line up with the existing
+        // bracket's non-bye slots. This relies on imported matches arriving in
+        // bracket order — guaranteed today by the matchIdx sort in the parser.
+        const needsByeReattach =
+          existing !== undefined &&
+          existingByeCount > 0 &&
+          existing.matches.length === importedRound.matches.length + existingByeCount
+
+        if (needsByeReattach) {
+          // Re-attach byes positionally; real slots take the imported matches
+          // in order.
+          let next = 0
+          for (const existingMatch of existing.matches) {
+            if (existingMatch.bye) {
+              knockoutRound.matches.push(existingMatch)
+              continue
+            }
+            knockoutRound.matches.push(
+              toModelMatch(importedRound.matches[next++], category.durationMinutes)
+            )
           }
-          knockoutRound.matches.push(match)
+        } else {
+          // Shape mismatch (qualifier config changed between draft and final):
+          // the import wins wholesale, as before.
+          for (const importedMatch of importedRound.matches) {
+            knockoutRound.matches.push(toModelMatch(importedMatch, category.durationMinutes))
+          }
         }
 
         category.knockoutRounds.push(knockoutRound)

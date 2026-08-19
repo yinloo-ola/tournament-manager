@@ -40,10 +40,13 @@ export function exportScoresheets(
       }
     }
 
-    // Knockout matches
+    // Knockout matches (structural byes are never played — no scoresheet)
     for (const koRound of category.knockoutRounds) {
       for (let m = 0; m < koRound.matches.length; m++) {
         const match = koRound.matches[m]
+        if (match.bye) {
+          continue
+        }
         addMatchScoresheet(
           tournament.name,
           category.entries,
