@@ -44,15 +44,17 @@ describe('seed contract conformance (lineup-manager parseSeed)', () => {
     }).toBe(true)
   })
 
-  it('is rejected by the consumer parser until it supports v2 — flips when lineup-manager ticket 11 lands', async () => {
-    // Transitional cutover guard: the producer now emits v2 while the sibling
-    // consumer still supports v1, so the real parser must reject the export at
-    // the version gate with the re-export hint. When lineup-manager's parser
-    // accepts v2 (ko-import ticket 11), this test reds — flip it back to
-    // "parses the builder output cleanly" at that point.
-    const { parseSeed } = await loadConsumer()
+  it('parses the builder output cleanly (v2 cutover complete)', async () => {
+    // Flipped per this test's cutover note: lineup-manager's parser now
+    // accepts v2 (ko-import ticket 11), so the real consumer gate is green
+    // against the builder's output again.
+    const { parseSeed, SUPPORTED_SEED_VERSION } = await loadConsumer()
     const seed = buildLineupSeed(buildFixture())
-    expect(() => parseSeed(JSON.parse(JSON.stringify(seed)))).toThrow(/Unsupported seed version/)
+    expect(seed.seedVersion).toBe(SUPPORTED_SEED_VERSION)
+    const parsed = parseSeed(JSON.parse(JSON.stringify(seed)))
+    expect(parsed.tournamentName).toBe('Lineup Seed Test Cup')
+    expect(parsed.teams).toHaveLength(3)
+    expect(parsed.ties).toHaveLength(3)
   })
 
   it('bites: a team without a manager email is rejected by the consumer parser', async () => {
