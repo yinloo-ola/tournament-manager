@@ -3,8 +3,9 @@
  * `getMatchFromCellAddr` + `formCategoriesGroupsMap` + `formCategoriesKnockoutRoundsMap`.
  *
  * Reads the user-edited `.xlsx` via ExcelJS, identifies the match behind
- * each schedule-grid cell (by its SN value, or legacy hyperlinks in files
- * from older exports), extracts match metadata, and reconstructs
+ * each schedule-grid cell (by the "#SN" suffix in its text, with the
+ * interim hidden-prompt, internal-hyperlink and SN-as-value forms from
+ * older exports still supported), extracts match metadata, and reconstructs
  * `Record<string, Group[]>` and `Record<string, KnockoutRound[]>`.
  *
  * The existing `calculator/schedule.ts importFinalSchedule()` merges these maps
@@ -26,6 +27,7 @@ import ExcelJS from 'exceljs'
 import type { Group, KnockoutRound, Match } from '@/shared/model'
 import { splitCellName } from '@/shared/excel/address'
 import { readSheetHyperlinks } from '@/shared/excel/internalHyperlinks'
+import { readSheetValidationPrompts } from '@/shared/excel/validationPrompts'
 
 const SCHEDULE_SHEET = 'schedule'
 const MATCHES_SHEET = 'matches'
@@ -122,9 +124,9 @@ function getMatchFromHyperlink(hyperlink: string, wb: ExcelJS.Workbook): MatchMe
 
 /**
  * Resolve an SN to the matches-sheet row carrying that SN in column A.
- * The exporter writes the SN as every schedule cell's *value* (the match
- * name renders through the number format), so the identity survives any
- * cell move — which is how referees build the final schedule.
+ * Legacy identity: the exporter once wrote the SN as every schedule cell's
+ * *value*. Exports now carry the SN in a cell note instead; this path
+ * stays for files exported in between.
  */
 function getMatchBySN(wb: ExcelJS.Workbook, sn: number): MatchMeta | null {
   const wm = wb.getWorksheet(MATCHES_SHEET)
@@ -133,6 +135,39 @@ function getMatchBySN(wb: ExcelJS.Workbook, sn: number): MatchMeta | null {
     if (getCellInt(wm, row, 1) === sn) return getMatchFromRow(wm, row)
   }
   return null
+}
+
+/**
+ * Flatten a schedule cell value to its display text — plain strings and
+ * rich-text values (the exporter writes the name plus a "#SN" run).
+ */
+function getCellText(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'richText' in value) {
+    return (value as { richText: { text?: string }[] }).richText
+      .map((run) => run.text ?? '')
+      .join('')
+  }
+  return ''
+}
+
+/**
+ * Extract the match SN from a schedule cell's text: the exporter writes
+ * "MS Grp1 #12" — the "#SN" suffix is the identity, and being part of the
+ * value it survives every cut/paste, drag and re-save Excel can do.
+ */
+function getSNFromValueSuffix(value: unknown): number | null {
+  const match = /#(\d+)\s*$/.exec(getCellText(value))
+  return match ? parseInt(match[1], 10) : null
+}
+
+/**
+ * Extract the match SN from a validation prompt ("12") — the interim
+ * exporter hid the SN in a suppressed data-validation prompt.
+ */
+function getSNFromPrompt(prompt: string | undefined | null): number | null {
+  const raw = (prompt ?? '').trim()
+  return /^\d+$/.test(raw) ? parseInt(raw, 10) : null
 }
 
 // ---------------------------------------------------------------------------
@@ -311,9 +346,18 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
     throw new Error(`sheet ${SCHEDULE_SHEET} does not exist`)
   }
 
-  // Internal links written as `location` (this app's export, and Excel's own
-  // re-save form) are invisible to ExcelJS's reader — scrape them from the zip.
+  // Internal links written as `location` (older exports, and Excel's own
+  // re-save form) are invisible to ExcelJS's reader — scrape them from the
+  // zip.
   const hyperlinkByAddress = await readSheetHyperlinks(buffer, SCHEDULE_SHEET)
+
+  // Interim exporters hid the SN in each cell's validation prompt. Excel
+  // can save overlapping validation entries after a move (the moved cell's
+  // prompted rule plus the destination's plain rule), and ExcelJS's parser
+  // resolves overlaps last-wins — which can surface the plain rule and
+  // lose the SN. The scraper walks the raw entries in document order and
+  // lets the first covering prompt win.
+  const promptByAddress = await readSheetValidationPrompts(buffer, SCHEDULE_SHEET)
 
   // Build header map from row 1 (column index → table name)
   const headerRow = ws.getRow(1)
@@ -353,22 +397,36 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
       if (colNumber === 1) return // skip datetime column
       if (cell.value === null) return
 
-      // Cell identity, most robust first: the SN as the cell's numeric
-      // value (current exporter — the name is just the number format),
-      // then legacy hyperlinks — via the cell value on files ExcelJS wrote
-      // itself, or the scraped map for location-only links (ExcelJS's
-      // reader drops them)
+      // Cell identity: the "#SN" suffix in the cell text (this app's
+      // exporter — the value is the one thing Excel always moves with the
+      // cell), then the interim hidden-prompt form (with prompted entries
+      // preferred over overlapping plain rules), then internal hyperlinks
+      // (older exports, both the ExcelJS cell form and location-only links
+      // after Excel re-saves the file — the scraped map covers those, since
+      // ExcelJS's reader drops them), then the SN-as-value form from
+      // exports in between
       let extracted: MatchMeta | null = null
-      if (typeof cell.value === 'object' && 'hyperlink' in cell.value) {
-        extracted = getMatchFromHyperlink(
-          (cell.value as { hyperlink: string }).hyperlink,
-          wb
-        )
-      } else if (typeof cell.value === 'number' && Number.isInteger(cell.value) && cell.value > 0) {
-        extracted = getMatchBySN(wb, cell.value)
+      const suffixSN = getSNFromValueSuffix(cell.value)
+      if (suffixSN !== null) {
+        extracted = getMatchBySN(wb, suffixSN)
       } else {
-        const link = hyperlinkByAddress.get(cell.address)
-        if (link) extracted = getMatchFromHyperlink(link, wb)
+        const promptSN = getSNFromPrompt(
+          promptByAddress.get(cell.address) ?? cell.dataValidation?.prompt
+        )
+        if (promptSN !== null) {
+          extracted = getMatchBySN(wb, promptSN)
+        } else if (typeof cell.value === 'object' && 'hyperlink' in cell.value) {
+          extracted = getMatchFromHyperlink(
+            (cell.value as { hyperlink: string }).hyperlink,
+            wb
+          )
+        } else {
+          const link = hyperlinkByAddress.get(cell.address)
+          if (link) extracted = getMatchFromHyperlink(link, wb)
+          else if (typeof cell.value === 'number' && Number.isInteger(cell.value) && cell.value > 0) {
+            extracted = getMatchBySN(wb, cell.value)
+          }
+        }
       }
       if (extracted) {
         const table = headerMap.get(colNumber) || ''

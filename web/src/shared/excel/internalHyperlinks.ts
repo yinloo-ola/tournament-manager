@@ -95,7 +95,7 @@ export async function fixInternalHyperlinks(buffer: Uint8Array): Promise<Uint8Ar
 // ---------------------------------------------------------------------------
 
 /** Resolve a sheet name to its `xl/worksheets/sheetN.xml` path. */
-async function resolveSheetPath(
+export async function resolveSheetPath(
   zip: JSZip,
   sheetName: string
 ): Promise<string | undefined> {

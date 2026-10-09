@@ -195,20 +195,19 @@ describe('importFinalScheduleFromBuffer', () => {
       const { buffer } = await generateDraftBuffer()
 
       // Simulate cut/paste: move the B2 match cell (T1, slot 0) into the
-      // empty grid cell at D8 (T3, slot 6 → 11:00) — cut/paste carries the
-      // cell's value and format together. Pasting onto an occupied cell
-      // would displace that match, which the missing-match check catches.
+      // empty grid cell at D8 (T3, slot 6 → 11:00) — the identity is part
+      // of the cell value, so the plain move carries it. Pasting onto an
+      // occupied cell would displace that match, which the missing-match
+      // check catches.
       const wb = new ExcelJS.Workbook()
       await wb.xlsx.load(buffer)
       const ws = wb.getWorksheet('schedule')!
       const source = ws.getCell('B2')
-      expect(source.value).toBe(1)
-      expect(source.numFmt).toBe('"MS Grp1"')
+      expect(JSON.stringify(source.value)).toContain('#1')
       const dest = ws.getCell('D8')
       expect(dest.value).toBeNull()
       const slotTime = ws.getCell('A8').value as Date
       dest.value = source.value
-      dest.style = source.style
       source.value = null
       const edited = new Uint8Array(await wb.xlsx.writeBuffer())
 
@@ -465,6 +464,43 @@ describe('importFinalScheduleFromBuffer', () => {
       const moved = findGroupMatch(result, 0, 1)
       expect(moved!.datetime).toBe('2025-03-22T08:00:00.000Z')
       expect(moved!.table).toBe('T1')
+    })
+
+    it('should resolve the interim hidden-prompt identity form', async () => {
+      // The exporter between the hyperlink and suffix designs hid the SN in
+      // a suppressed validation prompt; those files must keep importing
+      const wb = new ExcelJS.Workbook()
+      const ws = wb.addWorksheet('schedule')
+      const wm = wb.addWorksheet('matches')
+
+      headers.forEach((h, i) => (wm.getCell(1, i + 1).value = h))
+      ws.getCell(1, 1).value = 'Date/Time'
+      ws.getCell(1, 2).value = 'T1'
+
+      wm.getCell(2, 1).value = 1 // SN
+      wm.getCell(2, 2).value = 'MS'
+      wm.getCell(2, 3).value = 1 // Round
+      wm.getCell(2, 4).value = 1 // Group
+      wm.getCell(2, 9).value = 3 // EntryID1
+      wm.getCell(2, 10).value = 4 // EntryID2
+
+      ws.getCell(2, 1).value = new Date('2025-03-22T09:00:00Z')
+      ws.getCell(2, 2).value = 'MS Grp1'
+      ws.getCell(2, 2).dataValidation = {
+        type: 'custom',
+        formulae: ['FALSE'],
+        allowBlank: true,
+        showErrorMessage: true,
+        promptTitle: 'SN',
+        prompt: '1'
+      }
+
+      const buffer = new Uint8Array(await wb.xlsx.writeBuffer())
+      const result = await importFinalScheduleFromBuffer(buffer)
+
+      const match = result.categoriesGroupsMap.MS[0].rounds[0][0]
+      expect(match.entry1Idx).toBe(2)
+      expect(match.entry2Idx).toBe(3)
     })
   })
 

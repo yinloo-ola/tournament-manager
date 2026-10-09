@@ -3,8 +3,8 @@
  * and all `populate*` functions. Builds an ExcelJS Workbook with sheets:
  *
  * - `schedule` — time-slot × table grid with color-coded match cells. Each
- *   cell's value is the matches-sheet SN, hidden behind a custom number
- *   format that renders the match name.
+ *   cell's text is the match name with its matches-sheet SN appended
+ *   ("MS Grp1 #12") — that suffix is the match identity.
  * - `matches` — one row per match (SN, Category, Round, Group, KO Round,
  *   Match, Date/Time, Table, EntryID1, EntryID2). Sheet-protected with the
  *   hardcoded password.
@@ -12,6 +12,18 @@
  * - `entries_<shortName>` — per-category entry sheets.
  *
  * Key porting decisions:
+ * - The match identity rides IN the cell text as a visible "#SN" suffix.
+ *   The identity must survive cut/paste and drag (how referees assemble
+ *   the final schedule), and the only carrier Excel moves unconditionally
+ *   is the cell value. Hidden carriers all failed in real use: per-match
+ *   number formats blow through Excel's 200–250 formats-per-workbook cap
+ *   (Excel "repairs" the styles); internal hyperlinks make Excel follow
+ *   the link on click (no click-select, no drag); cell notes draw a red
+ *   triangle per cell; validation prompts survive export but Excel
+ *   consolidates overlapping validation rules on move, and last-wins
+ *   readers drop the moved cell's identity (seen with real referee
+ *   edits). The suffix is also useful to referees: it matches the SN
+ *   column on the protected matches sheet.
  * - Column access uses numeric indices (`getCell(row, col)`) to avoid the
  *   Go code's single-letter column limitation (cell++ past 'Z').
  * - No "Sheet1" to delete (ExcelJS starts with zero worksheets).
@@ -20,10 +32,14 @@
  * - ExcelJS writes internal hyperlinks with a bogus External relationship
  *   (Excel: "Cannot open the specified file"); `workbookToBuffer` heals the
  *   buffer via `fixInternalHyperlinks` — see shared/excel/internalHyperlinks.
+ * - ExcelJS defaults every sheet's print DPI to the sentinel 4294967295,
+ *   which Excel rejects as file damage; `workbookToBuffer` strips it via
+ *   `fixInvalidPageSetupDpi` — see shared/excel/pageSetupDpi.
  */
 
 import ExcelJS from 'exceljs'
 import { fixInternalHyperlinks } from '@/shared/excel/internalHyperlinks'
+import { fixInvalidPageSetupDpi } from '@/shared/excel/pageSetupDpi'
 import type { Tournament, Player } from '@/shared/model'
 import { type Schedule, type ScheduledMatch, maxTableCount } from '../domain/scheduleMatches'
 import { generateColors, ColorMode } from './color'
@@ -102,14 +118,10 @@ function dateTimeStyle(): Partial<ExcelJS.Style> {
   }
 }
 
-function matchStyle(hexColor: string, displayName: string): Partial<ExcelJS.Style> {
+function matchStyle(hexColor: string): Partial<ExcelJS.Style> {
   // hexColor is "#RRGGBB"; ExcelJS needs "FFRRGGBB" (ARGB with alpha)
   const argb = 'FF' + hexColor.substring(1)
   return {
-    // A quoted literal in a format code renders verbatim, whatever the
-    // value — so the grid shows the display name while the cell's value
-    // stays the numeric SN. `"` inside a literal is escaped by doubling.
-    numFmt: `"${displayName.replace(/"/g, '""')}"`,
     fill: { type: 'pattern', pattern: 'solid', fgColor: { argb } },
     border: BLACK_BORDER,
     alignment: { horizontal: 'center' }
@@ -163,6 +175,22 @@ function populateSchedule(
     Object.assign(cell, { style: hdrStyle })
   })
 
+  // Typing over a match cell replaces its name and hidden SN and silently
+  // breaks the final-schedule import — a custom rule of constant FALSE
+  // rejects every typed entry, numbers included (blank clears stay
+  // allowed). Cut/paste (how referees assemble the final schedule)
+  // bypasses validation, which sheet protection would forbid outright.
+  const matchGridValidation: ExcelJS.DataValidation = {
+    type: 'custom',
+    formulae: ['FALSE'],
+    allowBlank: true,
+    showErrorMessage: true,
+    errorTitle: 'Match cells: move, don\'t retype',
+    error:
+      'Match cells can\'t be edited - move them with cut & paste (Ctrl+X / Ctrl+V). ' +
+      'Editing breaks the final-schedule import.'
+  }
+
   // --- Populate data ---
   let sn = 1
   let matchesRow = 2
@@ -200,14 +228,24 @@ function populateSchedule(
       }
       matchesRow++
 
-      // Schedule cell — the SN just written to the matches sheet is the
-      // value; the display name renders through the number format. Referees
-      // build the final schedule by shifting cells around: cut/paste moves
-      // value and format together, so the identity travels with the cell.
+      // Schedule cell — the display name plus an (effectively invisible)
+      // "#SN" suffix is the identity. Referees build the final schedule by
+      // shifting cells around: cut/paste and drag always move the cell
+      // value, so the identity cannot be lost, and the final-schedule
+      // import reads the SN straight off the text. Excel has no
+      // transparent font color, so the suffix is rendered tiny and in the
+      // cell's own fill color — invisible on the grid, still visible in
+      // the formula bar and matching the SN column of the matches sheet.
       const matchCell = ws.getCell(slotIdx + 2, tableIdx + 2)
-      matchCell.value = matchSN
+      const fillArgb = 'FF' + (colorMap.get(match.categoryShortName) ?? '#FFFFFF').substring(1)
+      matchCell.value = {
+        richText: [
+          { text: matchName(match) },
+          { text: ` #${matchSN}`, font: { color: { argb: fillArgb }, size: 1 } }
+        ]
+      }
       Object.assign(matchCell, {
-        style: matchStyle(colorMap.get(match.categoryShortName) ?? '#FFFFFF', matchName(match))
+        style: matchStyle(colorMap.get(match.categoryShortName) ?? '#FFFFFF')
       })
     })
   })
@@ -220,21 +258,8 @@ function populateSchedule(
     ws.getColumn(c).width = 14
   }
 
-  // Typing over a match cell replaces its SN and silently breaks the
-  // final-schedule import — a custom rule of constant FALSE rejects every
-  // typed entry, numbers included (blank clears stay allowed). Cut/paste
-  // (how referees assemble the final schedule) bypasses validation, which
-  // sheet protection would forbid outright.
-  const matchGridValidation: ExcelJS.DataValidation = {
-    type: 'custom',
-    formulae: ['FALSE'],
-    allowBlank: true,
-    showErrorMessage: true,
-    errorTitle: 'Match cells: move, don\'t retype',
-    error:
-      'Match cells can\'t be edited - move them with cut & paste (Ctrl+X / Ctrl+V). ' +
-      'Editing breaks the final-schedule import.'
-  }
+  // Empty grid cells share the plain anti-retype rule; match cells already
+  // carry it too (identity lives in the value, not the rule)
   for (let r = 2; r <= schedule.timeSlots.length + 1; r++) {
     for (let c = 2; c <= tableCount + 1; c++) {
       const cell = ws.getCell(r, c)
@@ -452,9 +477,11 @@ export function createDraftScheduleWorkbook(
 }
 
 /**
- * Serialize workbook to a Buffer (for blob download).
+ * Serialize workbook to a Buffer (for blob download). Heals the two ExcelJS
+ * 4.x writer defects Excel chokes on (see module docstring).
  */
 export async function workbookToBuffer(wb: ExcelJS.Workbook): Promise<Uint8Array> {
   const buffer = await wb.xlsx.writeBuffer()
-  return fixInternalHyperlinks(new Uint8Array(buffer))
+  const healed = await fixInvalidPageSetupDpi(new Uint8Array(buffer))
+  return fixInternalHyperlinks(healed)
 }

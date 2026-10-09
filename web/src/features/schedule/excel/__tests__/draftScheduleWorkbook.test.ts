@@ -143,13 +143,22 @@ describe('createDraftScheduleWorkbook', () => {
       expect((dt1 as Date).toISOString()).toBe('2025-03-22T09:30:00.000Z')
     })
 
-    it('should hide the SN as the cell value, showing the name via number format', () => {
+    it('should show the match name with its SN as an invisible rich-text suffix', () => {
       const { wb } = buildScheduleWorkbook()
       const ws = wb.getWorksheet('schedule')!
-      // Slot 0, T1: MS Grp1 (group 0), first match → SN 1 as hidden value
+      // Slot 0, T1: MS Grp1 (group 0), first match → SN 1. The suffix run
+      // is styled in the cell's own fill color at minimal size: invisible
+      // on the grid, but part of the value so cut/paste and drag move it
       const cell = ws.getCell(2, 2)
-      expect(cell.value).toBe(1)
-      expect(cell.numFmt).toBe('"MS Grp1"')
+      expect(cell.value).toEqual({
+        richText: [
+          { text: 'MS Grp1' },
+          { text: ' #1', font: { color: { argb: expect.any(String) }, size: 1 } }
+        ]
+      })
+      const runs = (cell.value as ExcelJS.CellRichTextValue).richText
+      const fillArgb = (cell.fill as ExcelJS.FillPattern).fgColor?.argb
+      expect((runs[1].font as ExcelJS.Font).color?.argb).toBe(fillArgb)
       expect(cell.alignment?.horizontal).toBe('center')
     })
 
@@ -451,27 +460,35 @@ describe('createDraftScheduleWorkbook', () => {
   })
 
   describe('workbookToBuffer schedule cells', () => {
-    it('should emit SN-valued cells with the name in the number format, no hyperlinks', async () => {
+    it('should carry the identity in the cell text, with no hyperlinks, notes or extra number formats', async () => {
       const { wb } = buildScheduleWorkbook()
       const buffer = await workbookToBuffer(wb)
 
       const zip = await JSZip.loadAsync(buffer)
       const sheet = await zip.file('xl/worksheets/sheet1.xml')!.async('string')
 
-      // Referees shift cells around to build the final schedule — no
-      // hyperlink machinery anywhere in the schedule sheet, and the value
-      // is the bare SN
+      // The "#SN" suffix in the value is the identity — the one carrier
+      // Excel always moves with the cell. No hidden machinery: hyperlinks
+      // follow clicks, notes draw markers, prompts get dropped when Excel
+      // consolidates overlapping validations after a move
       expect(sheet).not.toContain('<hyperlink')
-      expect(sheet).toContain('<v>1</v>')
+      expect(sheet).not.toContain('promptTitle=')
       expect(sheet).toContain('<dataValidation')
-      const rels = await zip.file('xl/worksheets/_rels/sheet1.xml.rels')?.async('string')
-      if (rels) {
-        expect(rels).not.toContain('relationships/hyperlink')
-      }
 
-      // The display name lives in styles.xml as a custom number format
+      // No notes — they drew a red triangle in every match cell
+      const commentsPath = Object.keys(zip.files).find((p) =>
+        /^xl\/comments\d+\.xml$/.test(p)
+      )
+      expect(commentsPath).toBeUndefined()
+
+      // Excel caps a workbook at 200–250 number formats (Excel
+      // specifications and limits); per-match literal formats blew past it
+      // and Excel "repaired" the styles ("Format from /xl/styles.xml").
+      // The only custom format left is the datetime one.
       const styles = await zip.file('xl/styles.xml')!.async('string')
-      expect(styles).toContain('MS Grp1')
+      const numFmtCount = (styles.match(/<numFmt /g) ?? []).length
+      expect(numFmtCount).toBe(1)
+      expect(styles).not.toContain('&quot;')
 
       // …and the import round-trip still resolves every cell
       const { importFinalScheduleFromBuffer } = await import(
@@ -483,6 +500,22 @@ describe('createDraftScheduleWorkbook', () => {
         .flatMap((group) => group.rounds)
         .flat()
       expect(groupMatches.length).toBe(24)
+    })
+
+    it('should not emit the ExcelJS sentinel print DPI that Excel flags as corruption', async () => {
+      const { wb } = buildScheduleWorkbook()
+      const buffer = await workbookToBuffer(wb)
+
+      const zip = await JSZip.loadAsync(buffer)
+      const sheetPaths = Object.keys(zip.files).filter((p) =>
+        /^xl\/worksheets\/sheet\d+\.xml$/.test(p)
+      )
+      expect(sheetPaths.length).toBeGreaterThan(0)
+      for (const path of sheetPaths) {
+        const xml = await zip.file(path)!.async('string')
+        expect(xml).not.toContain('horizontalDpi="4294967295"')
+        expect(xml).not.toContain('verticalDpi="4294967295"')
+      }
     })
 
     it('should serialize freeze panes, table column widths, and header centering to XML', async () => {
