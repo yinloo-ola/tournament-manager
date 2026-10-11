@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed — 14:59:59 ghost times after importing an edited schedule
+- Slot datetimes could land 10 ms under the intended minute (e.g. `14:59:59.990` for a 15:00 slot — sub-second float noise in the serial, or a legacy two-digit-millisecond truncation). Excel rounds its display, so the sheet shows a clean `15:00`; the import kept the remainder (`importFinalSchedule.ts` trusted the raw `Date` ExcelJS decoded) and the app displayed `14:59:59`. The importer now rounds every slot datetime to whole seconds — the `roundToNearestSecond` half of Go's `ExcelDateToTime` that a raw `Date` read skipped. Re-importing the same edited workbook heals the saved schedule; no re-editing needed. Seen on the Lee Bee Wah Cup 2026 file (Wed 25 Nov and Fri 27 Nov 15:00 rows).
+- Regression tests: the exact noisy serial from that workbook imports as `15:00:00.000Z`, and a round-trip of a state already carrying the ghost value snaps back instead of freezing it.
+- 341 tests, `vue-tsc` clean. (The `seedContract` v2-guard failure predates this change and fails identically on `main`.)
+
 ### Added — schedule grid polish + final-schedule import integrity (spec: `.scratch/schedule-integrity/spec.md`)
 - **Export**: header row and datetime column frozen for scrolling; table columns fixed-width (~14); every grid cell bordered, empty ones included, so free slots are obvious; header row centered.
 - **Import integrity gate**: the final-schedule import now fails loudly — one plain-language error listing every problem — instead of silently corrupting state. Detects: a match appearing in two cells (copied instead of cut; message explains cut moves), matches with no cell at all (would silently keep stale draft times on group matches and drop knockout matches), and two matches on the same table at the same date/time (mistyped slot rows when referees add slots). Expectations derive from the matches sheet's SN column, so legacy hyperlink-era files are checked identically.

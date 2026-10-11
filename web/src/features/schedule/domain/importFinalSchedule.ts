@@ -16,6 +16,9 @@
  *   `readWorkbook`) because hyperlink metadata is needed.
  * - Datetime cells: ExcelJS reads date-formatted cells as JS `Date` objects;
  *   no need for `ExcelDateToTime` conversion (unlike Go's `ParseFloat` approach).
+ *   Sub-second serial noise is rounded to whole seconds afterwards — the
+ *   `roundToNearestSecond` half of Go's `ExcelDateToTime` that a raw `Date`
+ *   read would otherwise skip.
  * - Cell-address parsing uses `splitCellName` from `shared/excel/address.ts`.
  * - Empty int cells default to 0, then `idx - 1 = -1 = EntryEmptyIdx` (bye matches).
  * - ExcelJS's reader drops internal `location` hyperlinks (it only maps ones
@@ -391,6 +394,13 @@ export async function importFinalScheduleFromBuffer(buffer: Uint8Array): Promise
     }
 
     if (!dateTime) return // skip non-datetime rows
+
+    // A serial written from a JS Date can sit a few milliseconds under the
+    // intended time (float noise, or a legacy two-digit-millisecond
+    // truncation: 14:59:59.990 for a 15:00 slot). Excel rounds its display,
+    // so only the import sees it — round to whole seconds, the equivalent
+    // of Go's ExcelDateToTime(serial, roundToNearestSecond=true).
+    dateTime = new Date(Math.round(dateTime.getTime() / 1000) * 1000)
 
     // Scan other columns for match cells
     row.eachCell((cell, colNumber) => {

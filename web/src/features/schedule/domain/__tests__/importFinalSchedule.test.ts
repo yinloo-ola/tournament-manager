@@ -415,6 +415,53 @@ describe('importFinalScheduleFromBuffer', () => {
       )
     })
 
+    it('should round away sub-second noise in the slot datetime cell', async () => {
+      // A serial can sit a few ms under the intended time (float noise, or a
+      // legacy two-digit-millisecond truncation) while Excel still displays
+      // the clean minute. The import must agree with what the sheet shows.
+      // Serial value taken from the Lee Bee Wah Cup 2026 workbook,
+      // schedule!A128 — 2026-11-25T14:59:59.990 for a 15:00 slot.
+      const wb = new ExcelJS.Workbook()
+      const ws = wb.addWorksheet('schedule')
+      const wm = wb.addWorksheet('matches')
+
+      headers.forEach((h, i) => (wm.getCell(1, i + 1).value = h))
+      ws.getCell(1, 1).value = 'Date/Time'
+      ws.getCell(1, 2).value = 'T1'
+
+      wm.getCell(2, 1).value = 1 // SN
+      wm.getCell(2, 2).value = 'MS'
+      wm.getCell(2, 3).value = 1 // Round
+      wm.getCell(2, 4).value = 1 // Group
+      wm.getCell(2, 9).value = 3 // EntryID1
+      wm.getCell(2, 10).value = 4 // EntryID2
+
+      ws.getCell(2, 1).value = 46351.624999884261
+      ws.getCell(2, 1).numFmt = 'd/m/yyyy h:mm'
+      ws.getCell(2, 2).value = 'MS Grp1 #1'
+
+      const buffer = new Uint8Array(await wb.xlsx.writeBuffer())
+      const result = await importFinalScheduleFromBuffer(buffer)
+
+      const match = result.categoriesGroupsMap.MS[0].rounds[0][0]
+      expect(match.datetime).toBe('2026-11-25T15:00:00.000Z')
+    })
+
+    it('should round a re-imported slot time that already carries sub-second noise', async () => {
+      // The stored tournament state can hold 14:59:59.990 for a 15:00 slot;
+      // exporting it and importing back must snap it to 15:00:00 instead of
+      // freezing the ghost value in
+      const { buffer } = await generateDraftBuffer()
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer)
+      wb.getWorksheet('schedule')!.getCell('A2').value = new Date('2025-03-22T14:59:59.990Z')
+      const edited = new Uint8Array(await wb.xlsx.writeBuffer())
+
+      const result = await importFinalScheduleFromBuffer(edited)
+      const first = result.categoriesGroupsMap.MS[0].rounds[0][0]
+      expect(first.datetime).toBe('2025-03-22T15:00:00.000Z')
+    })
+
     it('should accept an adjusted slot time', async () => {
       const { buffer } = await generateDraftBuffer()
       const wb = new ExcelJS.Workbook()
