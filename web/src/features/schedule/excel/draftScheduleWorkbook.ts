@@ -258,13 +258,16 @@ function populateSchedule(
     ws.getColumn(c).width = 14
   }
 
-  // Empty grid cells share the plain anti-retype rule; match cells already
-  // carry it too (identity lives in the value, not the rule)
+  // The anti-retype rule guards match cells only — typing over one destroys
+  // its hidden SN identity and breaks the final-schedule import. Empty grid
+  // cells stay editable (notes/annotations); the import skips any cell whose
+  // text carries no match identity, so free-typed notes are harmless there.
   for (let r = 2; r <= schedule.timeSlots.length + 1; r++) {
     for (let c = 2; c <= tableCount + 1; c++) {
       const cell = ws.getCell(r, c)
-      cell.dataValidation = matchGridValidation
-      if (cell.value === null) {
+      if (cell.value !== null) {
+        cell.dataValidation = matchGridValidation
+      } else {
         Object.assign(cell, { style: { border: BLACK_BORDER } })
       }
     }

@@ -162,14 +162,15 @@ describe('createDraftScheduleWorkbook', () => {
       expect(cell.alignment?.horizontal).toBe('center')
     })
 
-    it('should reject typing over the match grid via data validation', () => {
+    it('should reject typing over match cells via data validation, leaving empty cells editable', () => {
       const { wb } = buildScheduleWorkbook()
       const ws = wb.getWorksheet('schedule')!
       const dv = ws.getCell(2, 2).dataValidation
       expect(dv?.type).toBe('custom')
       expect(dv?.formulae).toEqual(['FALSE'])
-      // empty grid cells are covered too
-      expect(ws.getCell(8, 4).dataValidation?.type).toBe('custom')
+      // empty grid cells stay freely editable (notes/annotations are
+      // harmless — the import skips cells without match identity)
+      expect(ws.getCell(8, 4).dataValidation).toBeUndefined()
       // datetime and header cells stay freely editable
       expect(ws.getCell(2, 1).dataValidation).toBeUndefined()
       expect(ws.getCell(1, 2).dataValidation).toBeUndefined()
